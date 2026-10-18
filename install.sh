@@ -73,7 +73,7 @@ ask_wm() {
     [ -z "$wm" ] || return 0
 
     step "which desktop do you prefer?"
-    echo "  1) sway     - tiling windows and workspaces (SwayFX)"
+    echo "  1) sway     - tiling windows and workspaces"
     echo "  2) driftwm  - one infinite canvas, no workspaces (experimental)"
     echo
 
