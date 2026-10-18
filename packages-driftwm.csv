@@ -1,0 +1,4 @@
+# packages-driftwm.csv - installed only if you pick 2) driftwm
+# format: tag,package,description  (empty tag = pacman, A = AUR)
+# experimental: check the name with  sh install.sh --check
+A,driftwm,infinite canvas compositor (no workspaces)

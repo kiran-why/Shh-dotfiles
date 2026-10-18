@@ -1,4 +1,6 @@
 # packages.csv - what install.sh installs
+# common packages, installed for any desktop choice
+# the desktop itself is in packages-sway.csv / packages-driftwm.csv
 # format: tag,package,description
 #   empty tag = official repos (pacman), A = AUR (yay)
 # names are a draft: check them with  sh install.sh --check
@@ -10,8 +12,7 @@
 ,nnn,file manager (TUI)
 ,git,version control
 
-# wayland desktop
-A,swayfx,sway fork with rounded corners, shadows and blur
+# wayland tools (shared by both desktops)
 ,foot,terminal emulator
 ,mako,notifications
 ,swaybg,wallpaper

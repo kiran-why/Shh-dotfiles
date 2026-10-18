@@ -2,14 +2,16 @@
 # install.sh - set up a fresh Artix (s6) system with these dotfiles
 #
 # run as your normal user right after the base install, NOT as root:
-#   sh install.sh            install everything
-#   sh install.sh --check    only check that every package in packages.csv exists
+#   sh install.sh               install everything (asks which desktop you want)
+#   sh install.sh --wm sway     skip the question: sway or driftwm
+#   sh install.sh --check       only check that every package exists
 #
 # what it does, in order:
+#   0. asks which desktop you prefer: 1) sway  2) driftwm
 #   1. sanity checks (artix, s6, internet, sudo)
 #   2. pacman tweaks + arch repos (via artix-archlinux-support)
 #   3. AUR helper (yay)
-#   4. packages from packages.csv
+#   4. packages: packages.csv + the file of the chosen desktop
 #   5. s6 services from services.txt, user groups
 #   6. system tweaks: zsh as login shell, iwd config, no pc speaker beep
 #   7. symlinks via link.sh
@@ -25,6 +27,11 @@ dots_path=$(cd "$(dirname "$0")" && pwd -P)
 packages_file="$dots_path/packages.csv"
 services_file="$dots_path/services.txt"
 aur_helper="yay"
+
+# chosen desktop: sway or driftwm (empty = not chosen yet, ask_wm fills it)
+wm=""
+# where the choice is remembered, so the session start can read it later
+wm_file="$HOME/.local/state/shh/wm"
 
 # temporary sudoers rule, removed on exit (see enable_nopasswd)
 sudoers_tmp="/etc/sudoers.d/dotfiles-temp"
@@ -42,12 +49,47 @@ read_list() {
     grep -v '^[[:space:]]*#' "$1" | grep -v '^[[:space:]]*$' || true
 }
 
+# package_lines: every package line to handle, common ones + chosen desktop.
+# with no choice made (--check) both desktops are listed
+package_lines() {
+    read_list "$packages_file"
+    case "$wm" in
+        sway)    read_list "$dots_path/packages-sway.csv" ;;
+        driftwm) read_list "$dots_path/packages-driftwm.csv" ;;
+        *)       read_list "$dots_path/packages-sway.csv"
+                 read_list "$dots_path/packages-driftwm.csv" ;;
+    esac
+}
+
 # is_installed PKG: true if the package is already installed
 is_installed() {
     pacman -Qq "$1" >/dev/null 2>&1
 }
 
 ### STEPS ###
+
+# ask which desktop to install; skipped if --wm was given
+ask_wm() {
+    [ -z "$wm" ] || return 0
+
+    step "which desktop do you prefer?"
+    echo "  1) sway     - tiling windows and workspaces (SwayFX)"
+    echo "  2) driftwm  - one infinite canvas, no workspaces (experimental)"
+    echo
+
+    local answer
+    while [ -z "$wm" ]; do
+        printf 'your choice [1/2]: '
+        # no input at all (Ctrl+D) must not loop forever
+        read -r answer || error "no answer"
+        case "$answer" in
+            1|sway)    wm=sway ;;
+            2|driftwm) wm=driftwm ;;
+            *)         warn "type 1 or 2" ;;
+        esac
+    done
+    ok "desktop: $wm"
+}
 
 check_system() {
     step "checking the system"
@@ -144,11 +186,11 @@ install_aur_helper() {
 # packages.csv format: tag,package,description
 #   empty tag = official repos (pacman), A = AUR
 install_packages() {
-    step "packages from packages.csv"
+    step "packages ($wm desktop)"
 
     local tag pkg desc
     # read the list line by line; IFS=, splits each line on commas
-    read_list "$packages_file" | while IFS=, read -r tag pkg desc; do
+    package_lines | while IFS=, read -r tag pkg desc; do
         if is_installed "$pkg"; then
             ok "$pkg"
             continue
@@ -165,7 +207,7 @@ install_packages() {
 
 # --check mode: ask the repos whether each package exists, install nothing
 check_packages() {
-    step "checking packages.csv"
+    step "checking package names"
 
     local tag pkg desc missing=0
     while IFS=, read -r tag pkg desc; do
@@ -179,7 +221,7 @@ check_packages() {
             *) pacman -Si "$pkg" >/dev/null 2>&1 ;;
         esac && ok "$pkg" || { warn "not found: $pkg"; missing=$((missing + 1)); }
     done <<EOF
-$(read_list "$packages_file")
+$(package_lines)
 EOF
 
     [ "$missing" -eq 0 ] || error "$missing package(s) not found"
@@ -227,6 +269,11 @@ configure_system() {
     echo "blacklist pcspkr" | sudo tee /etc/modprobe.d/nobeep.conf >/dev/null
     info "pc speaker disabled"
 
+    # remember the desktop choice for the session start
+    mkdir -p "$(dirname "$wm_file")"
+    echo "$wm" > "$wm_file"
+    info "desktop choice saved: $wm_file"
+
     ok "done"
 }
 
@@ -237,26 +284,43 @@ link_dotfiles() {
 }
 
 usage() {
-    echo "usage: $0 [--check | -h | --help]"
+    echo "usage: $0 [--wm sway|driftwm] [--check] [-h | --help]"
+    echo "  --wm NAME   choose the desktop without being asked"
     echo "  --check     only check that all packages exist, install nothing"
     echo "  -h, --help  show this help"
 }
 
 ### MAIN ###
 
-logo
+check_only=0
 
-case "${1:-}" in
-    --check)
-        check_system
-        check_packages
-        exit 0
-        ;;
-    -h|--help) usage; exit 0 ;;
-    "") ;;
-    *) usage >&2; error "unknown option: $1" ;;
+# options; shift removes the handled argument from $@
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --check)   check_only=1 ;;
+        --wm)      [ $# -ge 2 ] || error "--wm needs a name: sway or driftwm"
+                   wm=$2
+                   shift ;;
+        -h|--help) usage; exit 0 ;;
+        *)         usage >&2; error "unknown option: $1" ;;
+    esac
+    shift
+done
+
+case "$wm" in
+    ""|sway|driftwm) ;;
+    *) error "unknown desktop: $wm (use sway or driftwm)" ;;
 esac
 
+logo
+
+if [ "$check_only" = 1 ]; then
+    check_system
+    check_packages
+    exit 0
+fi
+
+ask_wm
 check_system
 enable_nopasswd
 tweak_pacman
@@ -268,4 +332,4 @@ configure_system
 link_dotfiles
 
 echo
-ok "all done - reboot, log in on the TTY and sway should start"
+ok "all done - reboot and log in on the TTY"

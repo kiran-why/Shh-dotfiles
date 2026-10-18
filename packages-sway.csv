@@ -1,0 +1,3 @@
+# packages-sway.csv - installed only if you pick 1) sway
+# format: tag,package,description  (empty tag = pacman, A = AUR)
+A,swayfx,sway fork with rounded corners, shadows and blur
