@@ -11,7 +11,7 @@
 #   1. sanity checks (artix, s6, internet, sudo)
 #   2. pacman tweaks + arch repos (via artix-archlinux-support)
 #   3. AUR helper (yay)
-#   4. packages: packages.csv + the file of the chosen desktop
+#   4. packages: packages/common.csv + packages/<desktop>.csv
 #   5. s6 services from services.txt, user groups
 #   6. system tweaks: zsh as login shell, iwd config, no pc speaker beep
 #   7. symlinks via link.sh
@@ -24,7 +24,9 @@ set -eu
 # absolute path to the dotfiles repo (the directory this script lives in)
 dots_path=$(cd "$(dirname "$0")" && pwd -P)
 
-packages_file="$dots_path/packages.csv"
+# package lists live in their own directory
+packages_dir="$dots_path/packages"
+packages_file="$packages_dir/common.csv"
 services_file="$dots_path/services.txt"
 aur_helper="yay"
 
@@ -54,10 +56,10 @@ read_list() {
 package_lines() {
     read_list "$packages_file"
     case "$wm" in
-        sway)    read_list "$dots_path/packages-sway.csv" ;;
-        driftwm) read_list "$dots_path/packages-driftwm.csv" ;;
-        *)       read_list "$dots_path/packages-sway.csv"
-                 read_list "$dots_path/packages-driftwm.csv" ;;
+        sway)    read_list "$packages_dir/sway.csv" ;;
+        driftwm) read_list "$packages_dir/driftwm.csv" ;;
+        *)       read_list "$packages_dir/sway.csv"
+                 read_list "$packages_dir/driftwm.csv" ;;
     esac
 }
 
@@ -183,7 +185,7 @@ install_aur_helper() {
     ok "$aur_helper installed"
 }
 
-# packages.csv format: tag,package,description
+# package list format: tag,package,description
 #   empty tag = official repos (pacman), A = AUR
 install_packages() {
     step "packages ($wm desktop)"

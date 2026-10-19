@@ -1,0 +1,4 @@
+# packages/sway.csv - installed only if you pick 1) sway
+# format: tag,package,description  (empty tag = pacman, A = AUR)
+# plain sway from the repos; swayfx (AUR) is postponed, see NOTES.md
+,sway,tiling wayland compositor (includes swaybar and swaymsg)

@@ -1,0 +1,33 @@
+# packages/common.csv - what install.sh installs
+# common packages, installed for any desktop choice
+# the desktop itself is in sway.csv / driftwm.csv next to this file
+# format: tag,package,description
+#   empty tag = official repos (pacman), A = AUR (yay)
+# names are a draft: check them with  sh install.sh --check
+
+# shell and terminal tools
+,zsh,login shell
+,neovim,text editor
+,fzf,fuzzy finder (used by our launcher)
+,nnn,file manager (TUI)
+,git,version control
+
+# wayland tools (shared by both desktops)
+,foot,terminal emulator
+,mako,notifications
+,swaybg,wallpaper
+,swayidle,turn off the screen when idle
+,grim,screenshots
+,slurp,select a screen region (for grim)
+,wl-clipboard,clipboard: wl-copy and wl-paste
+
+# sound
+,pipewire,sound server
+,wireplumber,pipewire session manager
+,pipewire-pulse,pulseaudio compatibility (for ncpamixer)
+A,ncpamixer,audio mixer (TUI)
+
+# network
+,iwd,wifi daemon
+,iwd-s6,iwd service for s6
+,openresolv,DNS config for iwd (no systemd-resolved)
