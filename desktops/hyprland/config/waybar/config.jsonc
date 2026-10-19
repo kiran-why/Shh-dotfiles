@@ -9,7 +9,9 @@
 
     "modules-left":   ["custom/start", "hyprland/workspaces"],
     "modules-center": ["clock"],
-    "modules-right":  ["network", "pulseaudio"],
+    // "pulseaudio" goes back here once pipewire starts with the session:
+    // without a sound server the module floods "Too many open files"
+    "modules-right":  ["network"],
 
     // the "start menu": artix logo, opens our launcher
     "custom/start": {
@@ -45,8 +47,7 @@
         "on-click": "foot iwctl"
     },
 
-    // VERIFY: needs pipewire running, not started yet
-    // click: ncpamixer, our TUI mixer
+    // not in modules-right yet (see above). click: ncpamixer, our TUI mixer
     "pulseaudio": {
         "format": "{icon}",
         "format-muted": "󰖁",
