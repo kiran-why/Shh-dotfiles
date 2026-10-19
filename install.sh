@@ -3,11 +3,11 @@
 #
 # run as your normal user right after the base install, NOT as root:
 #   sh install.sh               install everything (asks which desktop you want)
-#   sh install.sh --wm sway     skip the question: sway or driftwm
+#   sh install.sh --wm sway     skip the question: sway, hyprland or driftwm
 #   sh install.sh --check       only check that every package exists
 #
 # what it does, in order:
-#   0. asks which desktop you prefer: 1) sway  2) driftwm
+#   0. asks which desktop you prefer: 1) sway  2) hyprland  3) driftwm
 #   1. sanity checks (artix, s6, internet, sudo)
 #   2. pacman tweaks + arch repos (via artix-archlinux-support)
 #   3. AUR helper (yay)
@@ -30,7 +30,7 @@ packages_file="$packages_dir/common.csv"
 services_file="$dots_path/services.txt"
 aur_helper="yay"
 
-# chosen desktop: sway or driftwm (empty = not chosen yet, ask_wm fills it)
+# chosen desktop: sway, hyprland or driftwm (empty = not chosen yet, ask_wm fills it)
 wm=""
 # where the choice is remembered, so the session start can read it later
 wm_file="$HOME/.local/state/shh/wm"
@@ -56,10 +56,10 @@ read_list() {
 package_lines() {
     read_list "$packages_file"
     case "$wm" in
-        sway)    read_list "$packages_dir/sway.csv" ;;
-        driftwm) read_list "$packages_dir/driftwm.csv" ;;
-        *)       read_list "$packages_dir/sway.csv"
-                 read_list "$packages_dir/driftwm.csv" ;;
+        sway|hyprland|driftwm) read_list "$packages_dir/$wm.csv" ;;
+        *) read_list "$packages_dir/sway.csv"
+           read_list "$packages_dir/hyprland.csv"
+           read_list "$packages_dir/driftwm.csv" ;;
     esac
 }
 
@@ -75,19 +75,21 @@ ask_wm() {
     [ -z "$wm" ] || return 0
 
     step "which desktop do you prefer?"
-    echo "  1) sway     - tiling windows and workspaces"
-    echo "  2) driftwm  - one infinite canvas, no workspaces (experimental)"
+    echo "  1) sway      - tiling windows and workspaces, swaybar"
+    echo "  2) hyprland  - tiling with animations and effects, waybar"
+    echo "  3) driftwm   - one infinite canvas, no workspaces (experimental)"
     echo
 
     local answer
     while [ -z "$wm" ]; do
-        printf 'your choice [1/2]: '
+        printf 'your choice [1/2/3]: '
         # no input at all (Ctrl+D) must not loop forever
         read -r answer || error "no answer"
         case "$answer" in
-            1|sway)    wm=sway ;;
-            2|driftwm) wm=driftwm ;;
-            *)         warn "type 1 or 2" ;;
+            1|sway)     wm=sway ;;
+            2|hyprland) wm=hyprland ;;
+            3|driftwm)  wm=driftwm ;;
+            *)          warn "type 1, 2 or 3" ;;
         esac
     done
     ok "desktop: $wm"
@@ -289,7 +291,7 @@ link_dotfiles() {
 }
 
 usage() {
-    echo "usage: $0 [--wm sway|driftwm] [--check] [-h | --help]"
+    echo "usage: $0 [--wm sway|hyprland|driftwm] [--check] [-h | --help]"
     echo "  --wm NAME   choose the desktop without being asked"
     echo "  --check     only check that all packages exist, install nothing"
     echo "  -h, --help  show this help"
@@ -303,7 +305,7 @@ check_only=0
 while [ $# -gt 0 ]; do
     case "$1" in
         --check)   check_only=1 ;;
-        --wm)      [ $# -ge 2 ] || error "--wm needs a name: sway or driftwm"
+        --wm)      [ $# -ge 2 ] || error "--wm needs a name: sway, hyprland or driftwm"
                    wm=$2
                    shift ;;
         -h|--help) usage; exit 0 ;;
@@ -313,8 +315,8 @@ while [ $# -gt 0 ]; do
 done
 
 case "$wm" in
-    ""|sway|driftwm) ;;
-    *) error "unknown desktop: $wm (use sway or driftwm)" ;;
+    ""|sway|hyprland|driftwm) ;;
+    *) error "unknown desktop: $wm (use sway, hyprland or driftwm)" ;;
 esac
 
 logo

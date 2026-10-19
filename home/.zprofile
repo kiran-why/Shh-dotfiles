@@ -14,9 +14,16 @@ if [ -z "${WAYLAND_DISPLAY:-}" ] && [ "$(tty)" = "/dev/tty1" ]; then
     case "$wm" in
         # exec: the desktop replaces this shell, so leaving it logs you out.
         # its output goes to a log: the tty scrollback is lost once it starts
-        sway)    exec sway >"$wm_log" 2>&1 ;;
+        sway)     exec sway >"$wm_log" 2>&1 ;;
+        # newer hyprland ships a start-hyprland wrapper and warns when
+        # started without it; fall back to the plain binary if it's missing
+        hyprland) if command -v start-hyprland >/dev/null; then
+                      exec start-hyprland >"$wm_log" 2>&1
+                  else
+                      exec Hyprland >"$wm_log" 2>&1
+                  fi ;;
         # VERIFY: binary name of driftwm not checked yet
-        driftwm) exec driftwm >"$wm_log" 2>&1 ;;
-        *)       echo "shh: no desktop in $wm_file, staying in the shell" ;;
+        driftwm)  exec driftwm >"$wm_log" 2>&1 ;;
+        *)        echo "shh: no desktop in $wm_file, staying in the shell" ;;
     esac
 fi
