@@ -21,21 +21,32 @@ fi
 
 ### MESSAGES ###
 
-# msg COLOR TAG TEXT: print "[ tag  ] text" with a colored tag
+# symbols in front of messages. The linux console (TTY, TERM=linux) uses a
+# small built-in font that probably lacks ✓ and ✗, so it gets plain ascii;
+# terminals like foot or ssh windows get the unicode ones
+case "${TERM:-}" in
+    linux) sym_ok='+' sym_info='-' sym_fail='x' ;;
+    *)     sym_ok='✓' sym_info='·' sym_fail='✗' ;;
+esac
+sym_warn='!'
+sym_bak='~'
+
+# msg COLOR SYMBOL TEXT: print "  SYMBOL text" with a colored symbol.
 # the text goes in as an argument, not into the format string,
 # so a "%" in a file name can't break printf
 msg() {
-    printf '%s[ %-4s ]%s %s\n' "$1" "$2" "$reset" "$3"
+    printf '  %s%s%s %s\n' "$1" "$2" "$reset" "$3"
 }
 
-step() { echo; msg "$red" "==" "$1"; }
-info() { msg "$dim"   ".."   "$1"; }
-ok()   { msg "$white" "ok"   "$1"; }
-warn() { msg "$red"   "warn" "$1"; }
+# step: a section header, not indented, like pacman's ":: Synchronizing"
+step() { printf '\n%s::%s %s%s%s\n' "$red" "$reset" "$white" "$1" "$reset"; }
+info() { msg "$dim"   "$sym_info" "$1"; }
+ok()   { msg "$white" "$sym_ok"   "$1"; }
+warn() { msg "$red"   "$sym_warn" "$1"; }
 
 # error TEXT: print to stderr and stop the whole script with failure
 error() {
-    msg "$red" "FAIL" "$1" >&2
+    msg "$red" "$sym_fail" "$1" >&2
     exit 1
 }
 
@@ -44,12 +55,12 @@ error() {
 # the whole logo in white, tagline dimmed.
 # every line is printf '%s' ... with the art in single quotes,
 # so backslashes and ' in the art are printed as is.
-# %-27s pads the left part to the same width, so the columns line up
+# %-26s pads the left part to the same width, so the columns line up
 logo() {
-    printf '%s%-27s%s  %s%s%s\n' "$white" '   _____ __    __' "$reset" "$white" '' "$reset"
-    printf '%s%-27s%s  %s%s%s\n' "$white" '  / ___// /_  / /_' "$reset" "$white" '     __     __  ____ __' "$reset"
-    printf '%s%-27s%s  %s%s%s\n' "$white" '  \__ \/ __ \/ __ \' "$reset" "$white" ' ___/ /__  / /_/ _(_) /__ ___' "$reset"
-    printf '%s%-27s%s  %s%s%s\n' "$white" ' ___/ / / / / / / /  _ _ _' "$reset" "$white" '/ _  / _ \/ __/ _/ / / -_|_-<' "$reset"
-    printf '%s%-27s%s  %s%s%s\n' "$white" '/____/_/ /_/_/ /_/  (_|_|_)' "$reset" "$white" '\_,_/\___/\__/_//_/_/\__/___/' "$reset"
+    printf '%s%-26s%s  %s%s%s\n' "$white" '   _____ __    __' "$reset" "$white" '' "$reset"
+    printf '%s%-26s%s  %s%s%s\n' "$white" '  / ___// /_  / /_' "$reset" "$white" '     __     __  ____ __' "$reset"
+    printf '%s%-26s%s  %s%s%s\n' "$white" '  \__ \/ __ \/ __ \' "$reset" "$white" ' ___/ /__  / /_/ _(_) /__ ___' "$reset"
+    printf '%s%-26s%s  %s%s%s\n' "$white" ' ___/ / / / / / / / _ _ _' "$reset" "$white" '/ _  / _ \/ __/ _/ / / -_|_-<' "$reset"
+    printf '%s%-26s%s  %s%s%s\n' "$white" '/____/_/ /_/_/ /_/ (_|_|_)' "$reset" "$white" '\_,_/\___/\__/_//_/_/\__/___/' "$reset"
     printf '\n%s%s%s\n\n' "$dim" '      // quiet  // minimal  // no useless GUI' "$reset"
 }
