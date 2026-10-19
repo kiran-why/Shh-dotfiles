@@ -1,0 +1,57 @@
+// ~/.config/waybar/config.jsonc - Shh... dotfiles
+// left: start button + pacman workspaces, center: clock, right: network and sound
+// icons come from a Nerd Font (ttf-jetbrains-mono-nerd), see style.css
+// docs: man 5 waybar, man 5 waybar-hyprland-workspaces, man 5 waybar-clock ...
+{
+    "layer": "top",
+    "position": "top",
+    "height": 26,
+
+    "modules-left":   ["custom/start", "hyprland/workspaces"],
+    "modules-center": ["clock"],
+    "modules-right":  ["network", "pulseaudio"],
+
+    // the "start menu": artix logo, opens our launcher
+    "custom/start": {
+        "format": "",
+        "tooltip": false,
+        "on-click": "foot --app-id=launcher ~/.local/bin/launcher"
+    },
+
+    // pacman on the current workspace, dots on the others
+    "hyprland/workspaces": {
+        "format": "{icon}",
+        "format-icons": {
+            "active":     "󰮯",
+            "default":    "󰧟",
+            "empty":      "󰧟",
+            "persistent": "󰧟"
+        },
+        // always show 5 dots, even for workspaces without windows
+        "persistent-workspaces": { "*": 5 }
+    },
+
+    "clock": {
+        "format": "{:%H:%M}",
+        "tooltip-format": "{:%A, %d %B %Y}"
+    },
+
+    // click: iwctl, the wifi tool of iwd, in a terminal
+    "network": {
+        "format-wifi":         "󰖩",
+        "format-ethernet":     "󰈀",
+        "format-disconnected": "󰖪",
+        "tooltip-format":      "{ifname}  {ipaddr}",
+        "on-click": "foot iwctl"
+    },
+
+    // VERIFY: needs pipewire running, not started yet
+    // click: ncpamixer, our TUI mixer
+    "pulseaudio": {
+        "format": "{icon}",
+        "format-muted": "󰖁",
+        "format-icons": { "default": ["󰕿", "󰖀", "󰕾"] },
+        "tooltip-format": "{volume}%",
+        "on-click": "foot ncpamixer"
+    }
+}

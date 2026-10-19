@@ -1,0 +1,54 @@
+/* ~/.config/waybar/style.css - Shh... dotfiles
+ * waybar is drawn with GTK, so this is GTK's flavour of CSS:
+ * #name = a module (#clock, #network ...), button.active = a button with that state
+ * palette: black bar, white icons, pacman is the only yellow thing
+ */
+
+* {
+    /* VERIFY: check the exact family name with  fc-list | grep -i jetbrains */
+    font-family: "JetBrainsMono Nerd Font";
+    font-size: 14px;
+    border: none;
+    border-radius: 0;
+    min-height: 0;
+}
+
+window#waybar {
+    background: #000000;
+    color: #e6e6e6;
+}
+
+/* artix logo in the far left corner */
+#custom-start {
+    padding: 0 12px;
+    font-size: 16px;
+}
+
+#workspaces button {
+    padding: 0 3px;
+    color: #e6e6e6;
+    background: transparent;
+    box-shadow: none;
+}
+
+/* workspaces without windows: dim dots */
+#workspaces button.empty {
+    color: #5a5a5a;
+}
+
+/* pacman */
+#workspaces button.active {
+    color: #f5d000;
+}
+
+/* no gtk highlight when the mouse is over a button */
+#workspaces button:hover {
+    background: transparent;
+    box-shadow: none;
+}
+
+#clock,
+#network,
+#pulseaudio {
+    padding: 0 10px;
+}
