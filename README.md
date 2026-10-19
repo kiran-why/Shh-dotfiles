@@ -97,8 +97,8 @@ services.txt        s6 services to enable
 packages/           package lists: tag,package,description  (empty tag = pacman, A = AUR)
 home/       ->  ~/                .zprofile ...
 config/     ->  ~/.config/        configs shared by every desktop
-scripts/    ->  ~/.local/bin/     everyday commands (launcher ...)
-desktops/   ->  ~/.config/        configs of one desktop: hyprland/config/{hypr,waybar}
+scripts/    ->  ~/.local/bin/     everyday commands
+desktops/   ->  ~/.config/        configs of one desktop
 ```
 
 Everything is plain POSIX `sh`, no bash-isms.
@@ -122,16 +122,6 @@ Everything is plain POSIX `sh`, no bash-isms.
 | `Super + S` | scratchpad |
 | `Super + M` | leave Hyprland |
 | `Alt + Shift` | switch keyboard layout (us / ru) |
-
-## Known issues / not done yet
-
-- `desktops/` is not linked by `link.sh` yet: copy `desktops/hyprland/config/*` to `~/.config/` by hand
-- PipeWire is not started yet, so there is no sound and no sound module on the bar
-- the launcher only starts programs under sway
-- the us / ru layout switch in Hyprland is not verified yet
-- sway: no visible mouse cursor in VirtualBox
-- no NVIDIA support (yet)
-- still to do: foot and zsh configs, notifications, screenshots, an ASCII art wallpaper, screenshots for this README
 
 ## Thanks
 
