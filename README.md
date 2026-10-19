@@ -41,7 +41,7 @@ The installer asks which desktop you want:
 
 | desktop | status |
 |---|---|
-| **hyprland** + waybar | main focus right now. Lua config split into files by topic. Black borders, no gaps, unfocused windows are see-through. The bar shows an Artix "start" button, pacman eating workspace dots, a clock and network |
+| **hyprland** + waybar | main focus right now. Lua config split into files by topic. Black borders, no gaps, unfocused windows are see-through.
 | **sway** + swaybar | first config; paused for now |
 | **driftwm** | experimental, not tested yet |
 
@@ -71,20 +71,6 @@ sh install.sh --help
 ```
 
 Running `install.sh` again is safe: whatever is already done is skipped.
-
-### What `install.sh` does
-
-1. asks which desktop to install
-2. checks the system: Artix, s6, sudo, internet, not root
-3. allows passwordless sudo **only while it runs** (removed on exit, even on Ctrl+C)
-4. pacman tweaks: colours, parallel downloads, `makepkg` on all cores
-5. enables the Arch `[extra]` repo through `artix-archlinux-support`
-6. installs `yay`
-7. installs packages from `packages/common.csv` + `packages/<desktop>.csv`
-8. enables s6 services from `services.txt` (seatd, dbus, iwd)
-9. system settings: zsh as login shell, iwd config, no PC speaker beep
-10. links the configs into `$HOME` with `link.sh`
-
 Nothing is ever deleted: a file that is in the way is renamed to `name.bak-DATE`.
 
 ## Repository layout
