@@ -228,9 +228,13 @@ EOF
     ok "all packages exist"
 }
 
-# VERIFY IN THE VM: this is the method from the s6-frontend docs
-# (s6 set enable -> s6 set commit -> s6 live install). On our test VM
-# "s6 live install" once failed with "Broken pipe", so test it on a snapshot.
+# method from the s6-frontend docs, verified in the VM on 19.10.2026:
+#   s6 set enable  - mark services as active in the working set (a draft)
+#   s6 set commit  - compile the working set into a service database
+#   s6 live install - make that database the live one; services start at boot
+# commit alone changes nothing at boot. Right after install, s6-supervise may
+# print "unable to chdir to <svc>-srv" once per new service: harmless, the
+# services run fine after a reboot. Running install again is a no-op.
 enable_services() {
     step "s6 services from services.txt"
 
@@ -241,8 +245,7 @@ enable_services() {
     done
 
     sudo s6 set commit || error "s6 set commit failed"
-    sudo s6 live install ||
-        warn "s6 live install failed - services will start after a reboot (verify!)"
+    sudo s6 live install || error "s6 live install failed"
 
     # seatd lets sway use the screen and input devices without root
     sudo usermod -aG seat "$USER"

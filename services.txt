@@ -2,4 +2,7 @@
 # one service name per line; the matching *-s6 package must be installed
 
 seatd
+# iwd talks to its clients over D-Bus: without dbus "s6 set commit" fails
+# with "found inconsistent dependencies"
+dbus
 iwd
