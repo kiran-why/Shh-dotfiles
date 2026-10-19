@@ -42,8 +42,8 @@ backups=0
 [ -f "$dots_path/lib.sh" ] || { echo "lib.sh not found in $dots_path" >&2; exit 1; }
 . "$dots_path/lib.sh"
 
-# link.sh's own tag for backups
-backup_msg() { msg "$yellow" "bak" "$1"; }
+# link.sh's own message for backups: red "~" (moved aside)
+backup_msg() { msg "$red" "$sym_bak" "$1"; }
 
 usage() {
     echo "usage: $0 [-n | --dry-run] [-h | --help]"

@@ -1,0 +1,14 @@
+#!/bin/sh
+# launcher - pick a program with fzf and start it through sway
+#
+# sway opens it in a small floating foot window ($mod+d, see config/sway/config).
+# swaymsg exec makes sway start the program, so it keeps running
+# after this window closes
+
+set -eu
+
+# every program in /usr/bin, one per line; Esc in fzf exits with an error,
+# "|| exit 0" turns that into a quiet normal exit
+cmd=$(ls /usr/bin | fzf --prompt='run > ' --reverse) || exit 0
+
+swaymsg exec "$cmd" >/dev/null
