@@ -1,4 +1,4 @@
-# ~/.config/sway/workspaces - workspace keys
+# ~/.config/sway/workspaces - workspace keys (the same as in hyprland and niri)
 
 # $mod+N to switch, $mod+Shift+N to send the window there (0 = workspace 10)
 bindsym $mod+1 workspace number 1
@@ -22,6 +22,6 @@ bindsym $mod+Shift+8 move container to workspace number 8
 bindsym $mod+Shift+9 move container to workspace number 9
 bindsym $mod+Shift+0 move container to workspace number 10
 
-# scratchpad: a hidden place for a window you call back with $mod+minus
-bindsym $mod+Shift+minus move scratchpad
-bindsym $mod+minus scratchpad show
+# scratchpad: $mod+s shows / hides it, $mod+Shift+s puts the window there
+bindsym $mod+s scratchpad show
+bindsym $mod+Shift+s move scratchpad

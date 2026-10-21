@@ -1,25 +1,24 @@
 -- shh/keybinds.lua - keys for programs and windows
--- workspace keys live in workspaces.lua
+-- the same keys as in sway and niri; workspace keys live in workspaces.lua
 
 local programs = require("shh.programs")
 
 -- the Windows key
 local mainMod = "SUPER"
 
--- programs (default hyprland keys)
-hl.bind(mainMod .. " + Q", hl.dsp.exec_cmd(programs.terminal))
-hl.bind(mainMod .. " + E", hl.dsp.exec_cmd(programs.fileManager))
+-- programs
+hl.bind(mainMod .. " + T", hl.dsp.exec_cmd(programs.terminal))
+hl.bind(mainMod .. " + B", hl.dsp.exec_cmd(programs.browser))
+hl.bind(mainMod .. " + F", hl.dsp.exec_cmd(programs.fileManager))
 hl.bind(mainMod .. " + R", hl.dsp.exec_cmd(programs.menu))
 
 -- windows
-hl.bind(mainMod .. " + C", hl.dsp.window.close())
-hl.bind(mainMod .. " + V", hl.dsp.window.float({ action = "toggle" }))
-hl.bind(mainMod .. " + F", hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }))
-hl.bind(mainMod .. " + P", hl.dsp.window.pseudo())
-hl.bind(mainMod .. " + J", hl.dsp.layout("togglesplit"))
+hl.bind(mainMod .. " + Q",         hl.dsp.window.close())
+hl.bind(mainMod .. " + SHIFT + F", hl.dsp.window.fullscreen({ mode = "fullscreen", action = "toggle" }))
+hl.bind(mainMod .. " + V",         hl.dsp.window.float({ action = "toggle" }))
 
 -- leave hyprland (hyprshutdown if installed, otherwise a plain exit)
-hl.bind(mainMod .. " + M", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
+hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
 
 -- focus with mainMod + arrows, move the window with mainMod + SHIFT + arrows
 local arrows = { "left", "right", "up", "down" }
@@ -28,7 +27,7 @@ for _, dir in ipairs(arrows) do
     hl.bind(mainMod .. " + SHIFT + " .. dir, hl.dsp.window.move({ direction = dir }))
 end
 
--- move / resize windows with mainMod + left / right mouse button
+-- drag a window with mainMod + left mouse, resize it with mainMod + right mouse
 hl.bind(mainMod .. " + mouse:272", hl.dsp.window.drag(),   { mouse = true })
 hl.bind(mainMod .. " + mouse:273", hl.dsp.window.resize(), { mouse = true })
 

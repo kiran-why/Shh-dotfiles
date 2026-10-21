@@ -110,24 +110,27 @@ desktops/   ->  ~/.config/        configs of the chosen desktop only: sway/, hyp
 
 Everything is plain POSIX `sh`, no bash-isms.
 
-## Hyprland keys
+## Keys
 
-`Super` is the Windows key.
+The same on every desktop. `Super` is the Windows key.
 
 | keys | action |
 |---|---|
-| `Super + Q` | terminal (foot) |
+| `Super + T` | terminal (foot) |
+| `Super + B` | browser |
+| `Super + F` | files (nnn) |
 | `Super + R` | launcher |
-| `Super + E` | files (nnn) |
-| `Super + C` | close window |
-| `Super + F` | fullscreen |
+| `Super + Q` | close window |
+| `Super + Shift + F` | fullscreen |
 | `Super + V` | float / tile |
 | `Super + arrows` | move focus |
 | `Super + Shift + arrows` | move window |
+| `Super + mouse` | drag (left) / resize (right) a window |
 | `Super + 1 … 0` | go to workspace |
 | `Super + Shift + 1 … 0` | send window to workspace |
-| `Super + S` | scratchpad |
-| `Super + M` | leave Hyprland |
+| `Super + S` | show / hide scratchpad |
+| `Super + Shift + S` | send window to scratchpad |
+| `Super + L` | leave the desktop |
 | `Alt + Shift` | switch keyboard layout (us / ru) |
 
 ## Known issues / not done yet

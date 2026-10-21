@@ -3,13 +3,10 @@
 # Mod4 = the Windows key
 set $mod Mod4
 
-# vim-style directions (arrow keys work too)
-set $left h
-set $down j
-set $up k
-set $right l
-
 set $term foot
+set $browser firefox
+# nnn is a terminal program, so it opens inside foot
+set $files foot nnn
 # our launcher: foot + fzf in a small floating window (scripts/launcher)
 set $menu foot --app-id=launcher ~/.local/bin/launcher
 
