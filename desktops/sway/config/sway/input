@@ -1,0 +1,7 @@
+# ~/.config/sway/input - keyboard and mouse
+
+# english + russian, switch with Alt+Shift
+input type:keyboard {
+    xkb_layout us,ru
+    xkb_options grp:alt_shift_toggle
+}

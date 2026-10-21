@@ -1,0 +1,4 @@
+# ~/.config/sway/rules - rules for particular windows
+
+# the launcher floats in the middle instead of taking a tile
+for_window [app_id="launcher"] floating enable, resize set 600 400, move position center

@@ -1,0 +1,21 @@
+# ~/.config/sway/vars - names used by the other files
+
+# Mod4 = the Windows key
+set $mod Mod4
+
+# vim-style directions (arrow keys work too)
+set $left h
+set $down j
+set $up k
+set $right l
+
+set $term foot
+# our launcher: foot + fzf in a small floating window (scripts/launcher)
+set $menu foot --app-id=launcher ~/.local/bin/launcher
+
+# palette
+set $black #000000
+set $white #e6e6e6
+set $gray  #5a5a5a
+set $dark  #2a2a2a
+set $red   #d7263d

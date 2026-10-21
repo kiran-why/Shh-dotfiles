@@ -1,0 +1,21 @@
+# ~/.config/swaybar/bar - included by ~/.config/sway/config
+# swaybar: workspaces on the left, plain text status on the right
+
+bar {
+    position top
+    font monospace 10
+    # the status line comes from our script, one line every few seconds
+    status_command ~/.config/swaybar/status.sh
+
+    colors {
+        background $black
+        statusline $gray
+        separator  $dark
+
+        # class            border  backgr. text
+        focused_workspace  $black  $black  $white
+        active_workspace   $black  $black  $white
+        inactive_workspace $black  $black  $gray
+        urgent_workspace   $black  $black  $red
+    }
+}

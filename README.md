@@ -105,7 +105,7 @@ packages/           package lists: tag,package,description  (empty tag = pacman,
 home/       ->  ~/                .zprofile ...
 config/     ->  ~/.config/        configs shared by every desktop
 scripts/    ->  ~/.local/bin/     everyday commands (launcher ...)
-desktops/   ->  ~/.config/        configs of one desktop: hyprland/config/{hypr,waybar}
+desktops/   ->  ~/.config/        configs of the chosen desktop only: sway/, hyprland/
 ```
 
 Everything is plain POSIX `sh`, no bash-isms.
@@ -132,7 +132,6 @@ Everything is plain POSIX `sh`, no bash-isms.
 
 ## Known issues / not done yet
 
-- `desktops/` is not linked by `link.sh` yet: copy `desktops/hyprland/config/*` to `~/.config/` by hand
 - PipeWire is not started yet, so there is no sound and no sound module on the bar
 - no NVIDIA support (yet)
 - still to do: foot and zsh configs, notifications, screenshots.
