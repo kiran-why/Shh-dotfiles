@@ -52,15 +52,46 @@ error() {
 
 ### LOGO ###
 
-# the whole logo in white, tagline dimmed.
-# every line is printf '%s' ... with the art in single quotes,
-# so backslashes and ' in the art are printed as is.
-# %-26s pads the left part to the same width, so the columns line up
+# the big logo is 94 columns wide; in a narrower terminal it would wrap,
+# so there we print the small one instead.
+# "stty size" prints "ROWS COLUMNS" of the terminal on stdin;
+# not a terminal -> empty output -> small logo
 logo() {
+    local cols
+    cols=$(stty size 2>/dev/null | cut -d' ' -f2)
+
+    if [ "${cols:-0}" -ge 94 ]; then
+        logo_big
+    else
+        logo_small
+    fi
+    printf '\n%s%s%s\n\n' "$dim" '      // quiet  // minimal  // no useless GUI' "$reset"
+}
+
+# <<'EOF' is a here-document: the lines up to EOF go to cat's input as is.
+# the quotes around EOF turn off $ and \ expansion inside, so the art stays untouched
+logo_big() {
+    printf '%s' "$white"
+    cat <<'EOF'
+         █▄        █▄                  ▄█▀          ▄█▀    ▄█▀█▄ ▄▀▀▄  ▄█▀
+         █▓▌       █▓▌                ▐▓█▄         ▐▓█▄▄  █▓▌  █▌▌■▀▐▌▐▓█
+   ▄▄██▄▐▓▓█░▄▓▄  ▐▓▓█░▄▓▄        ▄▓▄░▀▓▓▌  ▄▓██▄  ▀▓▓▌  ▐▓▓▄  ▀ ▀■▓▀ ▐▓▓▌      ▄▄█▄▄    ▄▄██▄
+  ▓▓  ▀▀▐▒▒ ▀ ▀██ ▐▒▒ ▀ ▀██      ██▀ ▀ ▒▒  ▓▓▀  ▀▓ ▐▒▒    ▒▒▌▀█▄  ▄▄▓▀▐▒▒      ▓█▀ ▀▓▓  ▓▓  ▀▀
+   ▀▀▀▄  ░░▌   ▐▓▌ ░░▌   ▐▓▌    ▐▓▌    ░░▌▐▒▌   ▐▓▌ ░░▌  ▐░░  ░   ▐▓▓  ░░▌    ▐▒▌  ▄▒▀   ▀▀▀▄
+▐█▌  ░█░ ██▓  ▄██  ██▓  ▄██      ██▄  ▐██ ▐░░▄ ▄▒▒  ▐██  ██▌       ▒▒▌ ▐██   ▄ ▀░░▀   ▐█▌  ░█░
+ █░▄██▀  ▐█▌  █▀   ▐█▌  █▀        ▀░█▄██▌  ▀█░█░▀    █░▀▀░█       ▐░░   █░█▄█▀  ▀█▄  ▄ █░▄██▀
+  ▀▀░     ▀    ▀    ▀    ▀           ▀▀▀      ▀     ▀      ▀      ██▀    ▀▀▀       ▀▀   ▀▀░
+                                                                  ▀▄
+EOF
+    printf '%s' "$reset"
+}
+
+# the old slant logo, 57 columns
+# %-26s pads the left part to the same width, so the columns line up
+logo_small() {
     printf '%s%-26s%s  %s%s%s\n' "$white" '   _____ __    __' "$reset" "$white" '' "$reset"
     printf '%s%-26s%s  %s%s%s\n' "$white" '  / ___// /_  / /_' "$reset" "$white" '     __     __  ____ __' "$reset"
     printf '%s%-26s%s  %s%s%s\n' "$white" '  \__ \/ __ \/ __ \' "$reset" "$white" ' ___/ /__  / /_/ _(_) /__ ___' "$reset"
     printf '%s%-26s%s  %s%s%s\n' "$white" ' ___/ / / / / / / / _ _ _' "$reset" "$white" '/ _  / _ \/ __/ _/ / / -_|_-<' "$reset"
     printf '%s%-26s%s  %s%s%s\n' "$white" '/____/_/ /_/_/ /_/ (_|_|_)' "$reset" "$white" '\_,_/\___/\__/_//_/_/\__/___/' "$reset"
-    printf '\n%s%s%s\n\n' "$dim" '      // quiet  // minimal  // no useless GUI' "$reset"
 }
