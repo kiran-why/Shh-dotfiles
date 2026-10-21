@@ -12,10 +12,7 @@
 > finish, but most configs are still being written. So far everything has been tested
 > only in a VirtualBox VM. Expect rough edges.
 
-Dotfiles and an installer for **Artix Linux with the s6 init system**, built around
-**FGUI**: a GUI that only eats RAM is not needed. Everything that can live in a
-terminal lives in a terminal. The desktop is black and white, and the only colour
-on screen is a yellow pacman.
+Dotfiles and an installer for **Artix Linux with the s6 init system**
 
 ## Stack
 
@@ -47,9 +44,9 @@ The installer asks which desktop you want:
 
 | desktop | status |
 |---|---|
-| **hyprland** + waybar | main focus right now. Lua config split into files by topic. Black borders, no gaps, unfocused windows are see-through. The bar shows an Artix "start" button, pacman eating workspace dots, a clock and network |
+| **hyprland** + waybar | main focus right now. |
 | **sway** + swaybar | first config; paused for now |
-| **niri** | windows stand in an endless row that scrolls sideways; only installs for now, no config yet |
+| **niri** + waybar | no config yet |
 
 You can skip the question with `--wm sway`, `--wm hyprland` or `--wm niri`.
 
@@ -133,11 +130,8 @@ Everything is plain POSIX `sh`, no bash-isms.
 
 - `desktops/` is not linked by `link.sh` yet: copy `desktops/hyprland/config/*` to `~/.config/` by hand
 - PipeWire is not started yet, so there is no sound and no sound module on the bar
-- the launcher only starts programs under sway
-- the us / ru layout switch in Hyprland is not verified yet
-- sway: no visible mouse cursor in VirtualBox
 - no NVIDIA support (yet)
-- still to do: foot and zsh configs, notifications, screenshots, an ASCII art wallpaper, screenshots for this README
+- still to do: foot and zsh configs, notifications, screenshots.
 
 ## Thanks
 
