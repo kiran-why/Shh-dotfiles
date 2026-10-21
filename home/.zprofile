@@ -22,8 +22,9 @@ if [ -z "${WAYLAND_DISPLAY:-}" ] && [ "$(tty)" = "/dev/tty1" ]; then
                   else
                       exec Hyprland >"$wm_log" 2>&1
                   fi ;;
-        # VERIFY: binary name of driftwm not checked yet
-        driftwm)  exec driftwm >"$wm_log" 2>&1 ;;
+        # without systemd niri is started with --session (niri docs);
+        # niri-session is only for systemd/dinit
+        niri)     exec niri --session >"$wm_log" 2>&1 ;;
         *)        echo "shh: no desktop in $wm_file, staying in the shell" ;;
     esac
 fi

@@ -11,6 +11,12 @@
 > **🚧 Work in progress.** The installer already sets up a fresh system from start to
 > finish, but most configs are still being written. So far everything has been tested
 > only in a VirtualBox VM. Expect rough edges.
+
+Dotfiles and an installer for **Artix Linux with the s6 init system**, built around
+**FGUI**: a GUI that only eats RAM is not needed. Everything that can live in a
+terminal lives in a terminal. The desktop is black and white, and the only colour
+on screen is a yellow pacman.
+
 ## Stack
 
 | | |
@@ -36,16 +42,16 @@ The installer asks which desktop you want:
 :: which desktop do you prefer?
   1) sway      - tiling windows and workspaces, swaybar
   2) hyprland  - tiling with animations and effects, waybar
-  3) driftwm   - one infinite canvas, no workspaces (experimental)
+  3) niri      - scrolling tiling: windows in an endless row, waybar
 ```
 
 | desktop | status |
 |---|---|
-| **hyprland** + waybar | main focus right now. Lua config split into files by topic. Black borders, no gaps, unfocused windows are see-through.
+| **hyprland** + waybar | main focus right now. Lua config split into files by topic. Black borders, no gaps, unfocused windows are see-through. The bar shows an Artix "start" button, pacman eating workspace dots, a clock and network |
 | **sway** + swaybar | first config; paused for now |
-| **driftwm** | experimental, not tested yet |
+| **niri** | windows stand in an endless row that scrolls sideways; only installs for now, no config yet |
 
-You can skip the question with `--wm sway`, `--wm hyprland` or `--wm driftwm`.
+You can skip the question with `--wm sway`, `--wm hyprland` or `--wm niri`.
 
 ## Install
 
@@ -71,6 +77,20 @@ sh install.sh --help
 ```
 
 Running `install.sh` again is safe: whatever is already done is skipped.
+
+### What `install.sh` does
+
+1. asks which desktop to install
+2. checks the system: Artix, s6, sudo, internet, not root
+3. allows passwordless sudo **only while it runs** (removed on exit, even on Ctrl+C)
+4. pacman tweaks: colours, parallel downloads, `makepkg` on all cores
+5. enables the Arch `[extra]` repo through `artix-archlinux-support`
+6. installs `yay`
+7. installs packages from `packages/common.csv` + `packages/<desktop>.csv`
+8. enables s6 services from `services.txt` (seatd, dbus, iwd)
+9. system settings: zsh as login shell, iwd config, no PC speaker beep
+10. links the configs into `$HOME` with `link.sh`
+
 Nothing is ever deleted: a file that is in the way is renamed to `name.bak-DATE`.
 
 ## Repository layout
@@ -83,8 +103,8 @@ services.txt        s6 services to enable
 packages/           package lists: tag,package,description  (empty tag = pacman, A = AUR)
 home/       ->  ~/                .zprofile ...
 config/     ->  ~/.config/        configs shared by every desktop
-scripts/    ->  ~/.local/bin/     everyday commands
-desktops/   ->  ~/.config/        configs of one desktop
+scripts/    ->  ~/.local/bin/     everyday commands (launcher ...)
+desktops/   ->  ~/.config/        configs of one desktop: hyprland/config/{hypr,waybar}
 ```
 
 Everything is plain POSIX `sh`, no bash-isms.
@@ -108,6 +128,16 @@ Everything is plain POSIX `sh`, no bash-isms.
 | `Super + S` | scratchpad |
 | `Super + M` | leave Hyprland |
 | `Alt + Shift` | switch keyboard layout (us / ru) |
+
+## Known issues / not done yet
+
+- `desktops/` is not linked by `link.sh` yet: copy `desktops/hyprland/config/*` to `~/.config/` by hand
+- PipeWire is not started yet, so there is no sound and no sound module on the bar
+- the launcher only starts programs under sway
+- the us / ru layout switch in Hyprland is not verified yet
+- sway: no visible mouse cursor in VirtualBox
+- no NVIDIA support (yet)
+- still to do: foot and zsh configs, notifications, screenshots, an ASCII art wallpaper, screenshots for this README
 
 ## Thanks
 

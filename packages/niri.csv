@@ -1,0 +1,4 @@
+# packages/niri.csv - installed only if you pick 3) niri
+# format: tag,package,description  (empty tag = pacman, A = AUR)
+,niri,scrolling tiling wayland compositor
+,waybar,status bar (workspaces, clock, network, sound)

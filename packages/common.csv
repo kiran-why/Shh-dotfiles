@@ -1,6 +1,6 @@
 # packages/common.csv - what install.sh installs
 # common packages, installed for any desktop choice
-# the desktop itself is in sway.csv / driftwm.csv next to this file
+# the desktop itself is in sway.csv / hyprland.csv / niri.csv next to this file
 # format: tag,package,description
 #   empty tag = official repos (pacman), A = AUR (yay)
 # names are a draft: check them with  sh install.sh --check
