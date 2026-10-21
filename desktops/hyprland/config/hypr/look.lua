@@ -1,7 +1,7 @@
--- shh/look.lua - borders, gaps, opacity, animations
+-- ~/.config/hypr/look.lua - borders, gaps, opacity, animations
 -- black and white, no gaps; the focused window is solid, the rest see-through
 
-local colors = require("shh.colors")
+local colors = require("colors")
 
 hl.config({
     general = {

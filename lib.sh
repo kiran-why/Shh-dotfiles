@@ -62,10 +62,17 @@ logo() {
 
     if [ "${cols:-0}" -ge 94 ]; then
         logo_big
+        tagline 27
     else
         logo_small
+        tagline 9
     fi
-    printf '\n%s%s%s\n\n' "$dim" '      // quiet  // minimal  // no useless GUI' "$reset"
+}
+
+# tagline N: the dimmed tagline, N spaces from the left to center it under the logo.
+# %*s takes the width from the next argument: printf '%*s' 3 '' prints 3 spaces
+tagline() {
+    printf '\n%*s%s%s%s\n\n' "$1" '' "$dim" '// quiet  // minimal  // no useless GUI' "$reset"
 }
 
 # <<'EOF' is a here-document: the lines up to EOF go to cat's input as is.

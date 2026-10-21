@@ -1,4 +1,4 @@
--- shh/input.lua - keyboard and mouse
+-- ~/.config/hypr/input.lua - keyboard and mouse
 
 hl.config({
     input = {

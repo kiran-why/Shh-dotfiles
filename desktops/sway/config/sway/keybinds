@@ -1,5 +1,8 @@
-# ~/.config/sway/keys - keys for programs and windows
+# ~/.config/sway/keybinds - keys for programs and windows
 # the same keys as in hyprland and niri; workspace keys live in workspaces
+
+# Mod4 = the Windows key
+set $mod Mod4
 
 # programs
 bindsym $mod+t exec $term

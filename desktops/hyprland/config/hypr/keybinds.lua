@@ -1,7 +1,7 @@
--- shh/keybinds.lua - keys for programs and windows
+-- ~/.config/hypr/keybinds.lua - keys for programs and windows
 -- the same keys as in sway and niri; workspace keys live in workspaces.lua
 
-local programs = require("shh.programs")
+local programs = require("programs")
 
 -- the Windows key
 local mainMod = "SUPER"

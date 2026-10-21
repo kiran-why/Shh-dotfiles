@@ -1,7 +1,7 @@
--- shh/colors.lua - the palette, in one place
+-- ~/.config/hypr/colors.lua - the palette, in one place
 --
 -- not a config on its own: other files load it with
---   local colors = require("shh.colors")
+--   local colors = require("colors")
 -- and use colors.black, colors.white ...
 -- format "rgba(RRGGBBAA)": the last two digits are opacity, ff = solid
 

@@ -9,7 +9,7 @@
   ▀▀░     ▀    ▀    ▀    ▀           ▀▀▀      ▀     ▀      ▀      ██▀    ▀▀▀       ▀▀   ▀▀░
                                                                   ▀▄
 
-      // quiet  // minimal  // no useless GUI
+                           // quiet  // minimal  // no useless GUI
 ```
 
 > **🚧 Work in progress.** The installer already sets up a fresh system from start to

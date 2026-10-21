@@ -4,13 +4,15 @@
 # this file only loads the others, one topic per file, from this folder;
 # the bar lives in ~/.config/swaybar (swaybar has no config of its own,
 # sway reads its bar { } block and hands it over).
-# order matters: variables first, everything after can use them.
+# order matters: colors and programs first, everything after can use them;
+# $mod is set in keybinds, before workspaces
 # reload after editing: $mod+Shift+c
 
-include ~/.config/sway/vars
+include ~/.config/sway/colors
+include ~/.config/sway/programs
 include ~/.config/sway/look
 include ~/.config/sway/input
 include ~/.config/sway/rules
-include ~/.config/sway/keys
+include ~/.config/sway/keybinds
 include ~/.config/sway/workspaces
 include ~/.config/swaybar/bar

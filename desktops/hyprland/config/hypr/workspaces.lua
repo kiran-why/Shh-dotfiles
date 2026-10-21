@@ -1,4 +1,4 @@
--- shh/workspaces.lua - workspace keys (the same as in sway and niri)
+-- ~/.config/hypr/workspaces.lua - workspace keys (the same as in sway and niri)
 
 local mainMod = "SUPER"
 

@@ -1,5 +1,5 @@
--- shh/programs.lua - which program opens for what
--- loaded by keybinds.lua with  local programs = require("shh.programs")
+-- ~/.config/hypr/programs.lua - which program opens for what
+-- loaded by keybinds.lua with  local programs = require("programs")
 
 local home = os.getenv("HOME")
 
