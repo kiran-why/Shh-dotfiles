@@ -1,0 +1,6 @@
+# wallpapers: the folder is in the repo, the pictures in it are not
+# (most come from the internet, with unknown licenses).
+# "wallpapers/*" ignores everything inside, "!" brings .gitkeep back,
+# so git still keeps the empty folder
+wallpapers/*
+!wallpapers/.gitkeep

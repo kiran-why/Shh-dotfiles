@@ -1,7 +1,10 @@
 # ~/.config/sway/look - borders, gaps, background
 
-# plain black background
+# black first, then our script puts the newest picture from ~/wallpapers
+# on top (sway runs swaybg for it). exec_always: at start and on every
+# reload, so a new picture shows up after $mod+Shift+c
 output * bg $black solid_color
+exec_always ~/.local/bin/wallpaper
 
 # thin border, no title bars; no gaps, windows touch each other
 default_border pixel 2

@@ -1,0 +1,25 @@
+#!/bin/sh
+# wallpaper - put the newest picture from ~/wallpapers on the screen
+#
+# sway runs it at start and on every reload (exec_always, see sway/look).
+# drop a png or jpg into ~/wallpapers and press $mod+Shift+c.
+# no pictures there -> plain black
+
+set -eu
+
+dir="$HOME/wallpapers"
+
+# ls -t sorts by modification time, newest first; head -n 1 keeps the first.
+# a pattern that matches nothing stays as plain text, ls can't find it and
+# complains: 2>/dev/null hides that. "|| true": no pictures at all is fine
+pic=$(ls -t "$dir"/*.png "$dir"/*.PNG "$dir"/*.jpg "$dir"/*.JPG \
+    "$dir"/*.jpeg "$dir"/*.JPEG 2>/dev/null | head -n 1) || true
+
+# swaymsg sends a command to the running sway, like a line of its config.
+# the path goes in quotes, so a name with spaces still works.
+# fill: cover the whole screen, keep proportions; black under the edges
+if [ -n "$pic" ]; then
+    swaymsg "output * bg \"$pic\" fill #000000" >/dev/null
+else
+    swaymsg 'output * bg #000000 solid_color' >/dev/null
+fi

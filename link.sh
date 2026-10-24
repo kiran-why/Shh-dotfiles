@@ -6,6 +6,7 @@
 #   desktops/<desktop>/config/NAME -> ~/.config/NAME (only the chosen desktop)
 #   home/FILE                    -> ~/FILE
 #   scripts/FILE                 -> ~/.local/bin/FILE
+#   wallpapers/                  -> ~/wallpapers     (pictures not in git)
 #
 # the chosen desktop is read from ~/.local/state/shh/wm (install.sh writes it)
 #
@@ -128,6 +129,10 @@ esac
 link_dir "$dots_path/config"  "$config_dir"
 link_dir "$dots_path/home"    "$HOME"
 link_dir "$dots_path/scripts" "$bin_dir"
+
+# the whole folder, not every file in it: new pictures appear in ~/wallpapers
+# by themselves, without running link.sh again
+link "$dots_path/wallpapers" "$HOME/wallpapers"
 
 # configs of the chosen desktop only
 wm=$(cat "$wm_file" 2>/dev/null || true)

@@ -105,6 +105,7 @@ packages/           package lists: tag,package,description  (empty tag = pacman,
 home/       ->  ~/                .zprofile ...
 config/     ->  ~/.config/        configs shared by every desktop
 scripts/    ->  ~/.local/bin/     everyday commands (launcher ...)
+wallpapers/ ->  ~/wallpapers      the newest picture here is the wallpaper (pictures are not in git)
 desktops/   ->  ~/.config/        configs of the chosen desktop only: sway/, hyprland/
 ```
 
