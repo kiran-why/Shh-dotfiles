@@ -7,6 +7,15 @@
 wm_file="$HOME/.local/state/shh/wm"
 wm_log="$HOME/.local/state/shh/wm.log"
 
+# ~/.local/bin holds our scripts (link.sh puts them there) and user-installed
+# programs like claude. Set it before the desktop starts, so the desktop and
+# every terminal opened from it inherit it. Added only once, even if this
+# file is read again
+case ":$PATH:" in
+    *":$HOME/.local/bin:"*) ;;
+    *) export PATH="$HOME/.local/bin:$PATH" ;;
+esac
+
 # only on the first tty, and only if no desktop is running yet
 if [ -z "${WAYLAND_DISPLAY:-}" ] && [ "$(tty)" = "/dev/tty1" ]; then
     wm=$(cat "$wm_file" 2>/dev/null)
