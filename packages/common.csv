@@ -20,6 +20,7 @@
 ,grim,screenshots
 ,slurp,select a screen region (for grim)
 ,wl-clipboard,clipboard: wl-copy and wl-paste
+,ttf-jetbrains-mono-nerd,font with icons (bar)
 
 # sound
 ,pipewire,sound server
