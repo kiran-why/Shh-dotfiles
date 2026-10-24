@@ -132,6 +132,7 @@ The same on every desktop. `Super` is the Windows key.
 | `Super + S` | show / hide scratchpad |
 | `Super + Shift + S` | send window to scratchpad |
 | `Super + L` | leave the desktop |
+| `Print` | screenshot of a region: saved to `~/pictures/screenshots` and copied |
 | `Alt + Shift` | switch keyboard layout (us / ru) |
 
 ## Known issues / not done yet

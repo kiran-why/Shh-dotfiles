@@ -20,6 +20,9 @@ hl.bind(mainMod .. " + V",         hl.dsp.window.float({ action = "toggle" }))
 -- leave hyprland (hyprshutdown if installed, otherwise a plain exit)
 hl.bind(mainMod .. " + L", hl.dsp.exec_cmd("command -v hyprshutdown >/dev/null 2>&1 && hyprshutdown || hyprctl dispatch 'hl.dsp.exit()'"))
 
+-- screenshot of a region: saved and copied (scripts/screenshot)
+hl.bind("Print", hl.dsp.exec_cmd(programs.screenshot))
+
 -- focus with mainMod + arrows, move the window with mainMod + SHIFT + arrows
 local arrows = { "left", "right", "up", "down" }
 for _, dir in ipairs(arrows) do

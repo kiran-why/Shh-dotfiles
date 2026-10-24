@@ -10,4 +10,6 @@ return {
     fileManager = "foot nnn",
     -- our launcher: foot + fzf in a floating window (see rules.lua)
     menu        = "foot --app-id=launcher " .. home .. "/.local/bin/launcher",
+    -- region screenshot: saved and copied (scripts/screenshot)
+    screenshot  = home .. "/.local/bin/screenshot",
 }
