@@ -1,17 +1,22 @@
 # ~/.config/swaybar/bar - included by ~/.config/sway/config
-# swaybar: workspaces on the left, plain text status on the right
+# swaybar: workspace circles on the left, status on the right
 
 bar {
     position top
-    font monospace 10
-    # the status line comes from our script, one line every few seconds
+    # nerd font: it has the icons used by status.sh (wifi ...)
+    font pango:JetBrainsMono Nerd Font 10
+    # the status line comes from our script (i3bar protocol, see status.sh)
     status_command ~/.config/swaybar/status.sh
+
+    # workspaces are named "1:●", "2:●" ...; show only the circle
+    strip_workspace_numbers yes
 
     colors {
         background $black
         statusline $gray
         separator  $dark
 
+        # the current workspace is a white circle, the others gray, urgent red
         # class            border  backgr. text
         focused_workspace  $black  $black  $white
         active_workspace   $black  $black  $white
