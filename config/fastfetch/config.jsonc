@@ -1,0 +1,37 @@
+// ~/.config/fastfetch/config.jsonc - Shh... dotfiles
+// runs in every new foot window (see ~/.zshrc). black and white:
+// the small artix logo and all the text in white
+{
+    "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+    "logo": {
+        "source": "artix_small",
+        // the logo has two colors ($1, $2), both white
+        "color": {
+            "1": "white",
+            "2": "white"
+        },
+        "padding": {
+            "right": 2
+        }
+    },
+    "display": {
+        "separator": "  ",
+        "color": {
+            "keys": "white",
+            "title": "white"
+        }
+    },
+    "modules": [
+        "title",
+        "os",
+        "kernel",
+        "uptime",
+        "packages",
+        "shell",
+        "wm",
+        "terminal",
+        "cpu",
+        "gpu",
+        "memory"
+    ]
+}

@@ -11,6 +11,7 @@
 ,fzf,fuzzy finder (used by our launcher)
 ,nnn,file manager (TUI)
 ,git,version control
+,fastfetch,system info when a terminal opens
 
 # wayland tools (shared by both desktops)
 ,foot,terminal emulator
