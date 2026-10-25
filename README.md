@@ -14,7 +14,6 @@
 
 > **🚧 Work in progress.** The installer already sets up a fresh system from start to
 > finish, but most configs are still being written. So far everything has been tested
-> only in a VirtualBox VM. Expect rough edges.
 
 Dotfiles and an installer for **Artix Linux with the s6 init system**
 
@@ -48,8 +47,8 @@ The installer asks which desktop you want:
 
 | desktop | status |
 |---|---|
-| **hyprland** + waybar | main focus right now. |
-| **sway** + swaybar | first config; paused for now |
+| **hyprland** + waybar | no config yet |
+| **sway** + swaybar | main focus rn |
 | **niri** + waybar | no config yet |
 
 You can skip the question with `--wm sway`, `--wm hyprland` or `--wm niri`.
