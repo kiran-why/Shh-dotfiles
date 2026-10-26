@@ -70,6 +70,15 @@ check_system() {
     [ -f "$packages_file" ]     || error "not found: $packages_file"
     [ -f "$services_file" ]     || error "not found: $services_file"
 
+    # we use seatd, not elogind. seatd-s6 and elogind-s6 conflict, and
+    # pacman with --noconfirm answers "no" to removing one, so the install
+    # would fail later anyway. Swapping them is left to the user
+    if is_installed elogind-s6; then
+        warn "elogind-s6 is installed, this setup uses seatd instead"
+        info "swap it: sudo pacman -S seatd-s6  (answer y to remove elogind-s6)"
+        error "replace elogind-s6 with seatd-s6, then run install.sh again"
+    fi
+
     ping -c 1 -W 5 artixlinux.org >/dev/null 2>&1 ||
         error "no internet connection"
 
@@ -212,9 +221,12 @@ enable_services() {
     sudo s6 set commit || error "s6 set commit failed"
     sudo s6 live install || error "s6 live install failed"
 
-    # seatd lets sway use the screen and input devices without root
-    sudo usermod -aG seat "$USER"
-    ok "added $USER to group seat (relogin to apply)"
+    # seat: seatd lets sway use the screen and input devices without root.
+    # audio: without elogind nobody gives us access to the sound card
+    # (/dev/snd), the audio group does. -a adds, without it usermod would
+    # replace all other groups
+    sudo usermod -aG seat,audio "$USER"
+    ok "added $USER to groups seat, audio (relogin to apply)"
 }
 
 configure_system() {

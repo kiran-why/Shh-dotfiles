@@ -3,6 +3,10 @@
 #   empty tag = official repos (pacman), A = AUR (yay)
 # names are a draft: check them with  sh install.sh --check
 
+# system: seatd instead of elogind. seatd-s6 and elogind-s6 conflict,
+# only one of them can be installed (install.sh stops if elogind-s6 is there)
+,seatd-s6,seatd service for s6: screen and input for sway without root (no elogind)
+
 # shell and terminal tools
 ,zsh,login shell
 ,neovim,text editor
@@ -15,10 +19,10 @@
 ,sway,tiling wayland compositor (includes swaybar and swaymsg)
 
 # wayland tools
+# no swayidle: on Artix it depends on the elogind daemon
 ,foot,terminal emulator
 ,mako,notifications
 ,swaybg,wallpaper
-,swayidle,turn off the screen when idle
 ,grim,screenshots
 ,slurp,select a screen region (for grim)
 ,wl-clipboard,clipboard: wl-copy and wl-paste
@@ -29,6 +33,7 @@
 ,pipewire,sound server
 ,wireplumber,pipewire session manager
 ,pipewire-pulse,pulseaudio compatibility (for ncpamixer)
+,pipewire-alsa,ALSA programs play through pipewire
 A,ncpamixer,audio mixer (TUI)
 
 # network

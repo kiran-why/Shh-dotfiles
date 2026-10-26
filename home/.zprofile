@@ -20,6 +20,9 @@ if [ -z "${WAYLAND_DISPLAY:-}" ] && [ "$(tty)" = "/dev/tty1" ]; then
     # the log folder may not exist on a fresh system
     mkdir -p "$(dirname "$wm_log")"
     # exec: sway replaces this shell, so leaving it logs you out.
-    # its output goes to a log: the tty scrollback is lost once it starts
-    exec sway >"$wm_log" 2>&1
+    # its output goes to a log: the tty scrollback is lost once it starts.
+    # dbus-run-session starts a session D-Bus (pipewire and mako need it,
+    # without elogind nobody else starts one), runs sway inside it and
+    # stops the bus when sway exits
+    exec dbus-run-session sway >"$wm_log" 2>&1
 fi

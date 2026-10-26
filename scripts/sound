@@ -1,0 +1,44 @@
+#!/bin/sh
+# sound - start PipeWire for this sway session
+#
+# there is no systemd (and no s6 user services here), so nobody starts
+# PipeWire for us. sway runs this once at login (exec in sway/programs):
+#   pipewire        the sound server itself
+#   wireplumber     the session manager: finds the sound card, picks the
+#                   default output; without it pipewire plays nothing
+#   pipewire-pulse  speaks the PulseAudio protocol (firefox, ncpamixer)
+# all three need the session D-Bus: ~/.zprofile starts sway inside
+# dbus-run-session. They connect to each other through a socket
+# in $XDG_RUNTIME_DIR
+
+set -eu
+
+# after leaving sway the old copies keep running and hold the socket,
+# so the next login would start a second pipewire that fails.
+# pkill -u UID: only our own processes; -x: the exact name, so
+# "pipewire" does not also match "pipewire-pulse".
+# "|| true": pkill fails when there is nothing to stop, that is fine
+for prog in pipewire-pulse wireplumber pipewire; do
+    pkill -u "$(id -u)" -x "$prog" || true
+done
+
+# & runs it in the background, the script goes on
+pipewire &
+
+# wireplumber and pipewire-pulse fail if pipewire is not ready yet.
+# wait until its socket exists ([ -S FILE ]: FILE is a socket),
+# checking every 0.2 s, 25 times = 5 s at most
+socket="$XDG_RUNTIME_DIR/pipewire-0"
+tries=0
+until [ -S "$socket" ]; do
+    tries=$((tries + 1))
+    if [ "$tries" -gt 25 ]; then
+        # sway writes our output to its log (~/.local/state/shh/wm.log)
+        echo "sound: pipewire did not start, no $socket" >&2
+        exit 1
+    fi
+    sleep 0.2
+done
+
+wireplumber &
+pipewire-pulse &

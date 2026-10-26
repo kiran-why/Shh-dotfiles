@@ -6,3 +6,7 @@ set $browser firefox
 set $files foot broot
 # our launcher: foot + fzf in a small floating window (scripts/launcher)
 set $menu foot --app-id=launcher ~/.local/bin/launcher
+
+# sound: pipewire, wireplumber, pipewire-pulse (scripts/sound).
+# exec, not exec_always: once per session, a reload must not restart it
+exec ~/.local/bin/sound
