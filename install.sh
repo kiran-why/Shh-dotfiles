@@ -245,6 +245,16 @@ configure_system() {
         sudo tee /etc/iwd/main.conf >/dev/null
     info "iwd: built-in DHCP, DNS via resolvconf"
 
+    # XDG_RUNTIME_DIR (/run/user/UID): sway keeps its wayland socket there
+    # and aborts without it. elogind used to create it, now pam_rundir does:
+    # PAM runs it at every login (system-login is used by tty logins).
+    # "optional": if the module fails, the login still works
+    if ! grep -q pam_rundir /etc/pam.d/system-login; then
+        echo 'session    optional   pam_rundir.so' |
+            sudo tee -a /etc/pam.d/system-login >/dev/null
+    fi
+    info "pam_rundir: XDG_RUNTIME_DIR at login"
+
     # broot: its shell function br is already in ~/.zshrc. Tell broot so,
     # otherwise on the first start it offers to append br to ~/.zshrc,
     # which is a link into this repo

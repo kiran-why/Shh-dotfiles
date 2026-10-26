@@ -19,10 +19,16 @@ esac
 if [ -z "${WAYLAND_DISPLAY:-}" ] && [ "$(tty)" = "/dev/tty1" ]; then
     # the log folder may not exist on a fresh system
     mkdir -p "$(dirname "$wm_log")"
-    # exec: sway replaces this shell, so leaving it logs you out.
-    # its output goes to a log: the tty scrollback is lost once it starts.
+    # sway's output goes to a log: the tty scrollback is lost once it starts.
     # dbus-run-session starts a session D-Bus (pipewire and mako need it,
     # without elogind nobody else starts one), runs sway inside it and
-    # stops the bus when sway exits
-    exec dbus-run-session sway >"$wm_log" 2>&1
+    # stops the bus when sway exits.
+    # no exec: if sway fails, we stay in this shell and see why, instead
+    # of being thrown back to the login over and over. A normal exit
+    # from sway (status 0) still logs you out
+    if dbus-run-session sway >"$wm_log" 2>&1; then
+        exit
+    fi
+    echo "sway failed, the end of $wm_log:"
+    tail -n 5 "$wm_log"
 fi

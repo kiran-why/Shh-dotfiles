@@ -6,6 +6,7 @@
 # system: seatd instead of elogind. seatd-s6 and elogind-s6 conflict,
 # only one of them can be installed (install.sh stops if elogind-s6 is there)
 ,seatd-s6,seatd service for s6: screen and input for sway without root (no elogind)
+,pam_rundir,creates XDG_RUNTIME_DIR at login (elogind did it before; sway needs it)
 
 # shell and terminal tools
 ,zsh,login shell
