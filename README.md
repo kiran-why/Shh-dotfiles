@@ -27,7 +27,7 @@ Dotfiles and an installer for **Artix Linux with the s6 init system**
 | desktop | sway + swaybar, no XWayland |
 | shell / terminal / editor | zsh / foot / neovim |
 | launcher | foot + fzf (own script) |
-| files | nnn |
+| files | broot (a tree) |
 | notifications | mako |
 | sound | PipeWire + WirePlumber, mixer ncpamixer |
 | network | iwd (built-in DHCP) + openresolv |
@@ -96,7 +96,7 @@ Everything is plain POSIX `sh`, no bash-isms.
 |---|---|
 | `Super + T` | terminal (foot) |
 | `Super + B` | browser |
-| `Super + F` | files (nnn) |
+| `Super + F` | files (broot) |
 | `Super + R` | launcher |
 | `Super + Q` | close window |
 | `Super + Shift + F` | fullscreen |

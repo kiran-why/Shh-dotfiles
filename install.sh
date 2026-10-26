@@ -233,6 +233,12 @@ configure_system() {
         sudo tee /etc/iwd/main.conf >/dev/null
     info "iwd: built-in DHCP, DNS via resolvconf"
 
+    # broot: its shell function br is already in ~/.zshrc. Tell broot so,
+    # otherwise on the first start it offers to append br to ~/.zshrc,
+    # which is a link into this repo
+    broot --set-install-state installed
+    info "broot: br is in .zshrc"
+
     # no annoying beep from the pc speaker
     echo "blacklist pcspkr" | sudo tee /etc/modprobe.d/nobeep.conf >/dev/null
     info "pc speaker disabled"

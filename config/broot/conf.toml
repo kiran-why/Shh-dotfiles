@@ -1,0 +1,114 @@
+# ~/.config/broot/conf.toml - Shh... dotfiles
+# broot: the file manager, shows the folder as a tree (Super+F, or br in zsh)
+# black and white, like the rest: grays, white for folders and matches,
+# red only for errors.
+#
+# this is the whole config on purpose: the default one imports colorful
+# skins, so it is not used. any skin key missing below falls back to a
+# colorful default, that's why every key is listed.
+# colors: ansi(N) = color N of the foot palette (see foot.ini):
+#   0 #2a2a2a  1 #d7263d (red)  7 #e6e6e6  8 #5a5a5a  15 #ffffff
+# gray(N) = a gray step from 0 (black) to 23 (white)
+# format: "foreground background attributes"
+# press ? inside broot for help
+
+# a small triangle marks the selected line, visible even without the
+# background color
+show_selection_mark = true
+
+[skin]
+default = "ansi(7) none"
+tree = "ansi(8) none"
+parent = "ansi(7) none"
+file = "ansi(7) none"
+directory = "ansi(15) none bold"
+exe = "ansi(15) none"
+link = "ansi(7) none italic"
+pruning = "ansi(8) none italic"
+
+perm__ = "ansi(8) none"
+perm_r = "ansi(7) none"
+perm_w = "ansi(7) none"
+perm_x = "ansi(7) none"
+owner = "ansi(8) none"
+group = "ansi(8) none"
+count = "ansi(8) none"
+dates = "ansi(8) none"
+sparse = "ansi(8) none"
+device_id_major = "ansi(8) none"
+device_id_sep = "ansi(8) none"
+device_id_minor = "ansi(8) none"
+
+content_extract = "ansi(8) none"
+content_match = "ansi(15) none bold underlined"
+char_match = "ansi(15) none bold underlined"
+file_error = "ansi(1) none"
+
+git_branch = "ansi(7) none"
+git_insertions = "ansi(7) none"
+git_deletions = "ansi(8) none"
+git_status_current = "ansi(8) none"
+git_status_modified = "ansi(7) none"
+git_status_staged = "ansi(15) none"
+git_status_new = "ansi(15) none"
+git_status_ignored = "ansi(8) none"
+git_status_conflicted = "ansi(1) none"
+git_status_other = "ansi(8) none"
+
+selected_line = "none ansi(0)"
+input = "ansi(15) none"
+flag_label = "ansi(8) none"
+flag_value = "ansi(15) none bold"
+
+status_error = "ansi(1) none"
+status_job = "ansi(8) none"
+status_normal = "ansi(7) none"
+status_italic = "ansi(7) none italic"
+status_bold = "ansi(15) none bold"
+status_code = "ansi(15) none"
+status_ellipsis = "ansi(8) none"
+
+purpose_normal = "ansi(7) none"
+purpose_italic = "ansi(7) none italic"
+purpose_bold = "ansi(15) none bold"
+purpose_ellipsis = "ansi(8) none"
+
+scrollbar_track = "ansi(0) none"
+scrollbar_thumb = "ansi(8) none"
+
+help_paragraph = "ansi(7) none"
+help_bold = "ansi(15) none bold"
+help_italic = "ansi(7) none italic"
+help_code = "ansi(15) none"
+help_headers = "ansi(15) none bold"
+help_table_border = "ansi(8) none"
+
+preview = "ansi(7) none"
+preview_title = "ansi(15) none bold"
+preview_separator = "ansi(8) none"
+preview_line_number = "ansi(8) none"
+preview_match = "ansi(15) none bold underlined"
+diff_line_number = "ansi(8) none"
+diff_added = "ansi(15) none"
+diff_removed = "ansi(8) none crossedout"
+
+hex_null = "ansi(8) none"
+hex_ascii_graphic = "ansi(7) none"
+hex_ascii_whitespace = "ansi(8) none"
+hex_ascii_other = "ansi(7) none"
+hex_non_ascii = "ansi(8) none"
+
+staging_area_title = "ansi(15) none bold"
+mode_command_mark = "ansi(0) ansi(15) bold"
+
+# the scale from "fine" to "too much" (disk usage etc.): white to dark gray
+good_to_bad_0 = "gray(23) none"
+good_to_bad_1 = "gray(22) none"
+good_to_bad_2 = "gray(21) none"
+good_to_bad_3 = "gray(20) none"
+good_to_bad_4 = "gray(18) none"
+good_to_bad_5 = "gray(16) none"
+good_to_bad_6 = "gray(14) none"
+good_to_bad_7 = "gray(12) none"
+good_to_bad_8 = "gray(11) none"
+good_to_bad_9 = "gray(10) none"

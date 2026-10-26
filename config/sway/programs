@@ -2,7 +2,7 @@
 
 set $term foot
 set $browser firefox
-# nnn is a terminal program, so it opens inside foot
-set $files foot nnn
+# broot is a terminal program, so it opens inside foot
+set $files foot broot
 # our launcher: foot + fzf in a small floating window (scripts/launcher)
 set $menu foot --app-id=launcher ~/.local/bin/launcher

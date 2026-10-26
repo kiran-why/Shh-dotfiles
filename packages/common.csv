@@ -7,7 +7,7 @@
 ,zsh,login shell
 ,neovim,text editor
 ,fzf,fuzzy finder (used by our launcher)
-,nnn,file manager (TUI)
+,broot,file manager that shows folders as a tree (Super+F)
 ,git,version control
 ,fastfetch,system info when a terminal opens
 

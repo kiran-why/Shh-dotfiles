@@ -18,6 +18,14 @@ else
     PROMPT='%F{15}'$''' %n %F{8}%~ %(?.%F{15}.%F{1})%#%f '
 fi
 
+# br: broot, and on exit cd into the folder picked there (alt+enter).
+# broot prints this function itself (broot docs, "install br"); the
+# install state is set once by install.sh, so broot doesn't offer to
+# write into this file on its first start
+if command -v broot >/dev/null; then
+    eval "$(broot --print-shell-function zsh)"
+fi
+
 # system info in every new foot window. not on the TTY: that's for rescue,
 # keep it plain and fast
 if [ "$TERM" = foot ] && command -v fastfetch >/dev/null; then
