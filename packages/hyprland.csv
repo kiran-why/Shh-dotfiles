@@ -1,4 +1,0 @@
-# packages/hyprland.csv - installed only if you pick 2) hyprland
-# format: tag,package,description  (empty tag = pacman, A = AUR)
-,hyprland,tiling wayland compositor with animations and effects
-,waybar,status bar (workspaces, clock, network, sound)
