@@ -9,12 +9,14 @@
 #   pipewire-pulse  speaks the PulseAudio protocol (firefox, ncpamixer)
 # all three need the session D-Bus: ~/.zprofile starts sway inside
 # dbus-run-session. They connect to each other through a socket
-# in $XDG_RUNTIME_DIR
+# in $XDG_RUNTIME_DIR.
+# the script keeps running until sway exits and then stops all three:
+# they don't need wayland, so on their own they would keep running
 
 set -eu
 
-# after leaving sway the old copies keep running and hold the socket,
-# so the next login would start a second pipewire that fails.
+# copies left over from a session that did not end cleanly (sway
+# crashed) would hold the socket, and a second pipewire would fail.
 # pkill -u UID: only our own processes; -x: the exact name, so
 # "pipewire" does not also match "pipewire-pulse".
 # "|| true": pkill fails when there is nothing to stop, that is fine
@@ -22,8 +24,10 @@ for prog in pipewire-pulse wireplumber pipewire; do
     pkill -u "$(id -u)" -x "$prog" || true
 done
 
-# & runs it in the background, the script goes on
+# & runs it in the background, the script goes on;
+# $! is the pid of what was just started, kept to stop it later
 pipewire &
+pipewire_pid=$!
 
 # wireplumber and pipewire-pulse fail if pipewire is not ready yet.
 # wait until its socket exists ([ -S FILE ]: FILE is a socket),
@@ -41,4 +45,12 @@ until [ -S "$socket" ]; do
 done
 
 wireplumber &
+wireplumber_pid=$!
 pipewire-pulse &
+pulse_pid=$!
+
+# wait for sway to exit: swaymsg subscribes to the "shutdown" event
+# (man 7 sway-ipc) and, without -m, exits after the first one. If sway
+# crashes instead, the connection breaks and swaymsg exits too ("|| true")
+swaymsg -t subscribe '["shutdown"]' >/dev/null 2>&1 || true
+kill "$pulse_pid" "$wireplumber_pid" "$pipewire_pid" 2>/dev/null || true
