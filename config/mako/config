@@ -1,0 +1,23 @@
+# ~/.config/mako/config - notifications, black and white like the rest
+# format: key=value (man 5 mako). Colors match sway/colors and foot.ini.
+# try it: notify-send hello   /   notify-send -u critical oops
+
+font=JetBrainsMono Nerd Font 10
+background-color=#000000
+text-color=#e6e6e6
+border-color=#5a5a5a
+border-size=2
+padding=10
+# the gap to the screen edge
+margin=10
+width=350
+# top right, under the bar
+anchor=top-right
+# a notification goes away after 5 s (in milliseconds)
+default-timeout=5000
+
+# the lines below apply only to notifications that match [criteria]:
+# critical ones get a red border and stay until clicked
+[urgency=critical]
+border-color=#d7263d
+default-timeout=0

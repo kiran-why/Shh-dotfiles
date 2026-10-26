@@ -10,3 +10,7 @@ set $menu foot --app-id=launcher ~/.local/bin/launcher
 # sound: pipewire, wireplumber, pipewire-pulse (scripts/sound).
 # exec, not exec_always: once per session, a reload must not restart it
 exec ~/.local/bin/sound
+
+# notifications (config in ~/.config/mako). It needs the session D-Bus
+# from dbus-run-session (~/.zprofile) and quits by itself with sway
+exec mako
