@@ -1,19 +1,9 @@
-# ~/.config/broot/conf.toml - Shh... dotfiles
-# broot: the file manager, shows the folder as a tree (Super+F, or br in zsh)
-# black and white, like the rest: grays, white for folders and matches,
-# red only for errors.
-#
-# this is the whole config on purpose: the default one imports colorful
-# skins, so it is not used. any skin key missing below falls back to a
-# colorful default, that's why every key is listed.
-# colors: ansi(N) = color N of the foot palette (see foot.ini):
-#   0 #2a2a2a  1 #d7263d (red)  7 #e6e6e6  8 #5a5a5a  15 #ffffff
-# gray(N) = a gray step from 0 (black) to 23 (white)
-# format: "foreground background attributes"
-# press ? inside broot for help
+# ~/.config/broot/conf.toml - file manager as a tree (Super+F, or br in zsh)
+# skin: "foreground background attributes"; ansi(N) = color N of foot.ini
+# (0 dark gray, 1 red, 7 text, 8 gray, 15 white), gray(0..23) = black..white.
+# every key is listed: a missing one falls back to a colorful default.
+# launcher/refused tells broot not to offer installing br (.zshrc has it)
 
-# a small triangle marks the selected line, visible even without the
-# background color
 show_selection_mark = true
 
 [skin]
