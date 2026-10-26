@@ -29,7 +29,7 @@ Dotfiles and an installer for **Artix Linux with the s6 init system**
 | launcher | foot + fzf (own script) |
 | files | broot (a tree) |
 | notifications | mako |
-| sound | PipeWire + WirePlumber, mixer ncpamixer |
+| sound | PipeWire + WirePlumber, own menu on the bar, mixer ncpamixer |
 | network | iwd (built-in DHCP) + openresolv |
 | AUR | yay |
 | font | JetBrains Mono Nerd Font |
@@ -81,8 +81,8 @@ lib.sh              shared messages, colours and the logo
 services.txt        s6 services to enable
 packages/           package list: tag,package,description  (empty tag = pacman, A = AUR)
 home/       ->  ~/                .zprofile .zshrc
-config/     ->  ~/.config/        sway, swaybar, foot, fastfetch
-scripts/    ->  ~/.local/bin/     everyday commands (launcher, wallpaper, screenshot, autotile)
+config/     ->  ~/.config/        sway, swaybar, foot, fastfetch, broot, nvim, mako
+scripts/    ->  ~/.local/bin/     everyday commands (launcher, wallpaper, screenshot, autotile, sound, volume)
 wallpapers/ ->  ~/wallpapers      the newest picture here is the wallpaper (pictures are not in git)
 ```
 
@@ -112,10 +112,21 @@ Everything is plain POSIX `sh`, no bash-isms.
 | `Print` | screenshot of a region: saved to `~/pictures/screenshots` and copied |
 | `Alt + Shift` | switch keyboard layout (us / ru) |
 
+On the bar: click the wifi icon for `iwctl`, click the volume for a sound menu
+(louder, quieter, mute, output device, mic), scroll on it to change the volume.
+
+In the terminal (zsh):
+
+| keys | action |
+|---|---|
+| `Tab` | complete a command, path or flag; again for a list |
+| `→` / `End` | accept the gray suggestion from the history |
+| `↑` / `↓` | older / newer commands that start like the typed text |
+| `Ctrl + ←` / `Ctrl + →` | one word back / forward |
+
 ## Known issues / not done yet
 
 - no NVIDIA support (yet)
-- still to do: notifications (mako), zsh history and keys
 
 ## Thanks
 

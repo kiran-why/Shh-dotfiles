@@ -9,6 +9,8 @@
 
 # shell and terminal tools
 ,zsh,login shell
+,zsh-autosuggestions,zsh: gray suggestions from the history while typing
+,zsh-syntax-highlighting,zsh: unknown commands turn gray while typing
 ,neovim,text editor
 ,fzf,fuzzy finder (used by our launcher)
 ,broot,file manager that shows folders as a tree (Super+F)
@@ -22,6 +24,7 @@
 # no swayidle: on Artix it depends on the elogind daemon
 ,foot,terminal emulator
 ,mako,notifications
+,libnotify,notify-send: send a notification from the shell or a script
 ,swaybg,wallpaper
 ,grim,screenshots
 ,slurp,select a screen region (for grim)
