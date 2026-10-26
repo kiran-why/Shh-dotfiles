@@ -79,8 +79,11 @@ if command -v broot >/dev/null; then
     eval "$(broot --print-shell-function zsh)"
 fi
 
-# plugins from the repos (packages/common.csv), loaded only if installed
+# plugins from the repos (packages/common.csv), loaded only if installed.
+# not on the TTY: its console has real colors (cyan, purple ...) instead
+# of our grays, and the TTY is for rescue, keep it plain
 plugins=/usr/share/zsh/plugins
+[ "$TERM" = linux ] && plugins=/nonexistent
 
 # suggestions: while typing, the rest of a matching command from the
 # history shows in gray (color 8); Right arrow or End accepts it
