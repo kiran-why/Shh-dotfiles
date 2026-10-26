@@ -1,0 +1,74 @@
+#!/bin/sh
+# autotile - split windows like hyprland's dwindle layout
+#
+# plain sway puts every new window into the same row: three windows are
+# three thin columns. here a new window always halves the focused one
+# along its longer side: a wide window is split left / right, a tall one
+# top / bottom. sway can't decide where a window goes when it appears,
+# but it can be told in advance how to split the focused window
+# (splith / splitv), so this script does that after every window event.
+#
+# sway starts it once per session (exec in sway/look). it ends by itself
+# when sway exits: the event stream closes and the loop runs out.
+# needs jq: sway speaks JSON, plain sh can't read it
+
+set -eu
+
+# jq program: find the focused window and its parent, print one line
+#   "id type fullscreen width height parent_layout siblings"
+# ..             walks every value of the tree
+# objects        keeps only the {...} ones, i.e. the nodes
+# any(a; b)      true if b holds for at least one item of a
+# first // empty the first match, or nothing at all instead of an error
+# floating windows sit in floating_nodes, not in nodes, so they are not
+# found here and the script leaves them alone
+focused='
+[.. | objects | select(.nodes? and any(.nodes[]; .focused))]
+| first // empty
+| . as $parent
+| ($parent.nodes[] | select(.focused)) as $win
+| "\($win.id) \($win.type) \($win.fullscreen_mode // 0) \($win.rect.width) \($win.rect.height) \($parent.layout) \($parent.nodes | length)"
+'
+
+# swaymsg -t subscribe -m: print every window event, until sway exits.
+# jq -r '.change': keep only what happened (new, focus, close ...);
+# --unbuffered: pass each line on at once, not in big chunks
+swaymsg -t subscribe -m '["window"]' | jq --unbuffered -r '.change' |
+while read -r change; do
+    # these don't move or resize anything
+    case "$change" in
+        title|mark|urgent) continue ;;
+    esac
+
+    info=$(swaymsg -t get_tree | jq -r "$focused") || continue
+    [ -n "$info" ] || continue
+
+    # set -- splits the line on spaces into $1 $2 ... $7
+    set -- $info
+    id=$1 type=$2 fullscreen=$3 width=$4 height=$5 layout=$6 siblings=$7
+
+    # only a normal tiled window: not a workspace, not fullscreen
+    [ "$type" = con ] && [ "$fullscreen" -eq 0 ] || continue
+    # stacked / tabbed containers keep their own layout
+    case "$layout" in
+        stacked|tabbed) continue ;;
+    esac
+
+    # taller than wide: next window below, otherwise to the right
+    if [ "$height" -gt "$width" ]; then
+        split=splitv
+    else
+        split=splith
+    fi
+
+    # the only window in its container, and it is already split that way:
+    # nothing to do. with neighbours we split even in the same direction,
+    # that is what halves the window instead of adding one more column
+    if [ "$siblings" -eq 1 ] && [ "$layout" = "$split" ]; then
+        continue
+    fi
+
+    # [con_id=N]: apply to exactly this window, even if focus moved since.
+    # || true: the window may already be closed, that is not an error
+    swaymsg "[con_id=$id] $split" >/dev/null || true
+done

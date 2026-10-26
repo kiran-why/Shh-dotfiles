@@ -22,6 +22,7 @@
 ,grim,screenshots
 ,slurp,select a screen region (for grim)
 ,wl-clipboard,clipboard: wl-copy and wl-paste
+,jq,reads JSON from sway (used by scripts/autotile)
 ,ttf-jetbrains-mono-nerd,font with icons (bar)
 
 # sound

@@ -11,6 +11,10 @@ default_border pixel 2
 default_floating_border pixel 2
 gaps inner 0
 
+# split like hyprland: a new window halves the focused one (scripts/autotile).
+# exec, not exec_always: one copy per session, a reload must not start another
+exec ~/.local/bin/autotile
+
 # the focused window gets a white border, the rest stay dark
 # class                 border  backgr. text    indicator child_border
 client.focused          $white  $white  $black  $white    $white

@@ -82,7 +82,7 @@ services.txt        s6 services to enable
 packages/           package list: tag,package,description  (empty tag = pacman, A = AUR)
 home/       ->  ~/                .zprofile .zshrc
 config/     ->  ~/.config/        sway, swaybar, foot, fastfetch
-scripts/    ->  ~/.local/bin/     everyday commands (launcher, wallpaper, screenshot)
+scripts/    ->  ~/.local/bin/     everyday commands (launcher, wallpaper, screenshot, autotile)
 wallpapers/ ->  ~/wallpapers      the newest picture here is the wallpaper (pictures are not in git)
 ```
 
