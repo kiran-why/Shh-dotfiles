@@ -4,12 +4,11 @@
 //
 // every row is: key box | value box
 //   key   = "│ icon Name │" (fixed width, written by hand)
-//   value = "│ text" + right border
-// values have different lengths, so the right border is placed with
-// terminal escapes, not spaces:
-//   \u001b7    save the cursor (it stands on the left border)
-//   \u001b8    jump back there after the text
-//   \u001b[37C move 37 columns right = the right border
+//   value = "│ text │", the text always 34 columns wide
+// fastfetch pads a value itself: {name<34} adds spaces on the right up to
+// 34, {name>10} adds them on the left (numbers line up like in a table).
+// padding counts bytes, fine here: every value is plain ascii.
+// a value longer than its width is not cut, its row just gets wider
 // {#90} {#37} {#97} {#} are fastfetch colors: dark gray, light gray,
 // white, reset (codes of the foot palette, see foot.ini)
 // check after editing: fastfetch -c ~/.config/fastfetch/config.jsonc
@@ -39,34 +38,35 @@
 
         // system
         { "type": "custom", "format": "{#90}┌────────────┐ ┌────────────────────────────────────┐" },
-        { "type": "os",         "key": "{#90}│{#37}  OS       {#90}│", "format": "\u001b7{#90}│{#97} {pretty-name}\u001b8\u001b[37C{#90}│{#}" },
-        { "type": "kernel",     "key": "{#90}│{#37}  Kernel   {#90}│", "format": "\u001b7{#90}│{#97} {release}\u001b8\u001b[37C{#90}│{#}" },
-        { "type": "initsystem", "key": "{#90}│{#37}  Init     {#90}│", "format": "\u001b7{#90}│{#97} {name}\u001b8\u001b[37C{#90}│{#}" },
-        { "type": "uptime",     "key": "{#90}│{#37}  Uptime   {#90}│", "format": "\u001b7{#90}│{#97} {formatted}\u001b8\u001b[37C{#90}│{#}" },
+        { "type": "os",         "key": "{#90}│{#37}  OS       {#90}│", "format": "{#90}│{#97} {pretty-name<34} {#90}│{#}" },
+        { "type": "kernel",     "key": "{#90}│{#37}  Kernel   {#90}│", "format": "{#90}│{#97} {release<34} {#90}│{#}" },
+        { "type": "initsystem", "key": "{#90}│{#37}  Init     {#90}│", "format": "{#90}│{#97} {name<34} {#90}│{#}" },
+        { "type": "uptime",     "key": "{#90}│{#37}  Uptime   {#90}│", "format": "{#90}│{#97} {formatted<34} {#90}│{#}" },
         // os age = how many days ago / was created
         { "type": "disk", "folders": "/",
-                                "key": "{#90}│{#37}  OS Age   {#90}│", "format": "\u001b7{#90}│{#97} {days} days\u001b8\u001b[37C{#90}│{#}" },
-        { "type": "packages",   "key": "{#90}│{#37}  Packages {#90}│", "format": "\u001b7{#90}│{#97} {all}\u001b8\u001b[37C{#90}│{#}" },
+                                "key": "{#90}│{#37}  OS Age   {#90}│", "format": "{#90}│{#97} {days>3} days                           {#90}│{#}" },
+        { "type": "packages",   "key": "{#90}│{#37}  Packages {#90}│", "format": "{#90}│{#97} {all<34} {#90}│{#}" },
         { "type": "custom", "format": "{#90}└────────────┘ └────────────────────────────────────┘" },
         "break",
 
         // desktop
         { "type": "custom", "format": "{#90}┌────────────┐ ┌────────────────────────────────────┐" },
-        { "type": "wm",         "key": "{#90}│{#37}  WM       {#90}│", "format": "\u001b7{#90}│{#97} {pretty-name}\u001b8\u001b[37C{#90}│{#}" },
-        { "type": "terminal",   "key": "{#90}│{#37}  Term     {#90}│", "format": "\u001b7{#90}│{#97} {pretty-name} {version}\u001b8\u001b[37C{#90}│{#}" },
-        { "type": "shell",      "key": "{#90}│{#37}  Shell    {#90}│", "format": "\u001b7{#90}│{#97} {pretty-name} {version}\u001b8\u001b[37C{#90}│{#}" },
-        { "type": "display",    "key": "{#90}│{#37}  Display  {#90}│", "format": "\u001b7{#90}│{#97} {width}x{height} {refresh-rate} Hz\u001b8\u001b[37C{#90}│{#}" },
+        { "type": "wm",         "key": "{#90}│{#37}  WM       {#90}│", "format": "{#90}│{#97} {pretty-name<34} {#90}│{#}" },
+        // the widths count on "foot" and "zsh": fastfetch only runs in foot
+        { "type": "terminal",   "key": "{#90}│{#37}  Term     {#90}│", "format": "{#90}│{#97} {pretty-name} {version<29} {#90}│{#}" },
+        { "type": "shell",      "key": "{#90}│{#37}  Shell    {#90}│", "format": "{#90}│{#97} {pretty-name} {version<30} {#90}│{#}" },
+        { "type": "display",    "key": "{#90}│{#37}  Display  {#90}│", "format": "{#90}│{#97} {width>4}x{height<4} {refresh-rate>3} Hz                   {#90}│{#}" },
         { "type": "custom", "format": "{#90}└────────────┘ └────────────────────────────────────┘" },
         "break",
 
         // hardware
         { "type": "custom", "format": "{#90}┌────────────┐ ┌────────────────────────────────────┐" },
-        { "type": "cpu",        "key": "{#90}│{#37}  CPU      {#90}│", "format": "\u001b7{#90}│{#97} {name}\u001b8\u001b[37C{#90}│{#}" },
-        { "type": "gpu",        "key": "{#90}│{#37}  GPU      {#90}│", "format": "\u001b7{#90}│{#97} {name}\u001b8\u001b[37C{#90}│{#}" },
-        { "type": "memory",     "key": "{#90}│{#37}  RAM      {#90}│", "format": "\u001b7{#90}│{#97} {used} / {total}\u001b8\u001b[37C{#90}│{#}" },
-        { "type": "swap",       "key": "{#90}│{#37}  Swap     {#90}│", "format": "\u001b7{#90}│{#97} {used} / {total}\u001b8\u001b[37C{#90}│{#}" },
+        { "type": "cpu",        "key": "{#90}│{#37}  CPU      {#90}│", "format": "{#90}│{#97} {name<34} {#90}│{#}" },
+        { "type": "gpu",        "key": "{#90}│{#37}  GPU      {#90}│", "format": "{#90}│{#97} {name<34} {#90}│{#}" },
+        { "type": "memory",     "key": "{#90}│{#37}  RAM      {#90}│", "format": "{#90}│{#97} {used>10} / {total<21} {#90}│{#}" },
+        { "type": "swap",       "key": "{#90}│{#37}  Swap     {#90}│", "format": "{#90}│{#97} {used>10} / {total<21} {#90}│{#}" },
         { "type": "disk", "folders": "/",
-                                "key": "{#90}│{#37}  Disk     {#90}│", "format": "\u001b7{#90}│{#97} {size-used} / {size-total} - {filesystem}\u001b8\u001b[37C{#90}│{#}" },
+                                "key": "{#90}│{#37}  Disk     {#90}│", "format": "{#90}│{#97} {size-used>10} / {size-total<10} - {filesystem<8} {#90}│{#}" },
         { "type": "custom", "format": "{#90}└────────────┘ └────────────────────────────────────┘" }
     ]
 }
