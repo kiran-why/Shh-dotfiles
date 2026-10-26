@@ -1,37 +1,72 @@
 // ~/.config/fastfetch/config.jsonc - Shh... dotfiles
 // runs in every new foot window (see ~/.zshrc). black and white:
-// the small artix logo and all the text in white
+// the artix logo in white, info in three boxed groups on the right
+//
+// every row is: key box | value box
+//   key   = "│ icon Name │" (fixed width, written by hand)
+//   value = "│ text" + right border
+// values have different lengths, so the right border is placed with
+// terminal escapes, not spaces:
+//   \u001b7    save the cursor (it stands on the left border)
+//   \u001b8    jump back there after the text
+//   \u001b[37C move 37 columns right = the right border
+// {#90} {#37} {#97} {#} are fastfetch colors: dark gray, light gray,
+// white, reset (codes of the foot palette, see foot.ini)
+// check after editing: fastfetch -c ~/.config/fastfetch/config.jsonc
 {
     "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
     "logo": {
-        "source": "artix_small",
+        "source": "artix",
         // the logo has two colors ($1, $2), both white
         "color": {
             "1": "white",
             "2": "white"
         },
         "padding": {
-            "right": 2
+            "right": 3
         }
     },
     "display": {
-        "separator": "  ",
+        "separator": " ",
         "color": {
-            "keys": "white",
-            "title": "white"
+            "keys": "37",
+            "title": "97"
         }
     },
     "modules": [
         "title",
-        "os",
-        "kernel",
-        "uptime",
-        "packages",
-        "shell",
-        "wm",
-        "terminal",
-        "cpu",
-        "gpu",
-        "memory"
+        "break",
+
+        // system
+        { "type": "custom", "format": "{#90}┌────────────┐ ┌────────────────────────────────────┐" },
+        { "type": "os",         "key": "{#90}│{#37}  OS       {#90}│", "format": "\u001b7{#90}│{#97} {pretty-name}\u001b8\u001b[37C{#90}│{#}" },
+        { "type": "kernel",     "key": "{#90}│{#37}  Kernel   {#90}│", "format": "\u001b7{#90}│{#97} {release}\u001b8\u001b[37C{#90}│{#}" },
+        { "type": "initsystem", "key": "{#90}│{#37}  Init     {#90}│", "format": "\u001b7{#90}│{#97} {name}\u001b8\u001b[37C{#90}│{#}" },
+        { "type": "uptime",     "key": "{#90}│{#37}  Uptime   {#90}│", "format": "\u001b7{#90}│{#97} {formatted}\u001b8\u001b[37C{#90}│{#}" },
+        // os age = how many days ago / was created
+        { "type": "disk", "folders": "/",
+                                "key": "{#90}│{#37}  OS Age   {#90}│", "format": "\u001b7{#90}│{#97} {days} days\u001b8\u001b[37C{#90}│{#}" },
+        { "type": "packages",   "key": "{#90}│{#37}  Packages {#90}│", "format": "\u001b7{#90}│{#97} {all}\u001b8\u001b[37C{#90}│{#}" },
+        { "type": "custom", "format": "{#90}└────────────┘ └────────────────────────────────────┘" },
+        "break",
+
+        // desktop
+        { "type": "custom", "format": "{#90}┌────────────┐ ┌────────────────────────────────────┐" },
+        { "type": "wm",         "key": "{#90}│{#37}  WM       {#90}│", "format": "\u001b7{#90}│{#97} {pretty-name}\u001b8\u001b[37C{#90}│{#}" },
+        { "type": "terminal",   "key": "{#90}│{#37}  Term     {#90}│", "format": "\u001b7{#90}│{#97} {pretty-name} {version}\u001b8\u001b[37C{#90}│{#}" },
+        { "type": "shell",      "key": "{#90}│{#37}  Shell    {#90}│", "format": "\u001b7{#90}│{#97} {pretty-name} {version}\u001b8\u001b[37C{#90}│{#}" },
+        { "type": "display",    "key": "{#90}│{#37}  Display  {#90}│", "format": "\u001b7{#90}│{#97} {width}x{height} {refresh-rate} Hz\u001b8\u001b[37C{#90}│{#}" },
+        { "type": "custom", "format": "{#90}└────────────┘ └────────────────────────────────────┘" },
+        "break",
+
+        // hardware
+        { "type": "custom", "format": "{#90}┌────────────┐ ┌────────────────────────────────────┐" },
+        { "type": "cpu",        "key": "{#90}│{#37}  CPU      {#90}│", "format": "\u001b7{#90}│{#97} {name}\u001b8\u001b[37C{#90}│{#}" },
+        { "type": "gpu",        "key": "{#90}│{#37}  GPU      {#90}│", "format": "\u001b7{#90}│{#97} {name}\u001b8\u001b[37C{#90}│{#}" },
+        { "type": "memory",     "key": "{#90}│{#37}  RAM      {#90}│", "format": "\u001b7{#90}│{#97} {used} / {total}\u001b8\u001b[37C{#90}│{#}" },
+        { "type": "swap",       "key": "{#90}│{#37}  Swap     {#90}│", "format": "\u001b7{#90}│{#97} {used} / {total}\u001b8\u001b[37C{#90}│{#}" },
+        { "type": "disk", "folders": "/",
+                                "key": "{#90}│{#37}  Disk     {#90}│", "format": "\u001b7{#90}│{#97} {size-used} / {size-total} - {filesystem}\u001b8\u001b[37C{#90}│{#}" },
+        { "type": "custom", "format": "{#90}└────────────┘ └────────────────────────────────────┘" }
     ]
 }
