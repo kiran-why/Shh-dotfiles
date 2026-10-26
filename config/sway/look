@@ -1,21 +1,18 @@
-# ~/.config/sway/look - borders, gaps, background
+# ~/.config/sway/look - wallpaper, borders, gaps, colors
 
-# black first, then our script puts the newest picture from ~/wallpapers
-# on top (sway runs swaybg for it). exec_always: at start and on every
-# reload, so a new picture shows up after $mod+Shift+c
+# wallpaper: the newest picture in ~/wallpapers, black if none (scripts/wallpaper)
 output * bg $black solid_color
 exec_always ~/.local/bin/wallpaper
 
-# thin border, no title bars; no gaps, windows touch each other
+# border width in px; gaps between windows
 default_border pixel 2
 default_floating_border pixel 2
 gaps inner 0
 
-# split like hyprland: a new window halves the focused one (scripts/autotile).
-# exec, not exec_always: one copy per session, a reload must not start another
+# hyprland-like splits (scripts/autotile)
 exec ~/.local/bin/autotile
 
-# the focused window gets a white border, the rest stay dark
+# colors come from sway/colors
 # class                 border  backgr. text    indicator child_border
 client.focused          $white  $white  $black  $white    $white
 client.focused_inactive $dark   $black  $gray   $dark     $dark

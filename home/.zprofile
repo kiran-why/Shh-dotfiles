@@ -1,31 +1,21 @@
-# ~/.zprofile - read once by zsh at login (not by every new terminal)
-#
-# on tty1 start sway;
-# other ttys (Ctrl+Alt+F2 ...) stay plain consoles, handy for rescue.
+# ~/.zprofile - read once at login: PATH, and sway on tty1
+# other ttys (Ctrl+Alt+F2 ...) stay plain consoles for rescue.
 # no "set -e" here: an error must never kill the login shell
 
+# sway's output goes here
 wm_log="$HOME/.local/state/shh/wm.log"
 
-# ~/.local/bin holds our scripts (link.sh puts them there) and user-installed
-# programs like claude. Set it before the desktop starts, so the desktop and
-# every terminal opened from it inherit it. Added only once, even if this
-# file is read again
+# ~/.local/bin: our scripts and user-installed programs
 case ":$PATH:" in
     *":$HOME/.local/bin:"*) ;;
     *) export PATH="$HOME/.local/bin:$PATH" ;;
 esac
 
-# only on the first tty, and only if no desktop is running yet
 if [ -z "${WAYLAND_DISPLAY:-}" ] && [ "$(tty)" = "/dev/tty1" ]; then
-    # the log folder may not exist on a fresh system
     mkdir -p "$(dirname "$wm_log")"
-    # sway's output goes to a log: the tty scrollback is lost once it starts.
-    # dbus-run-session starts a session D-Bus (pipewire and mako need it,
-    # without elogind nobody else starts one), runs sway inside it and
-    # stops the bus when sway exits.
-    # no exec: if sway fails, we stay in this shell and see why, instead
-    # of being thrown back to the login over and over. A normal exit
-    # from sway (status 0) still logs you out
+    # dbus-run-session: a session D-Bus for pipewire and mako.
+    # a normal exit from sway logs you out; if sway fails you stay here
+    # and see the end of its log
     if dbus-run-session sway >"$wm_log" 2>&1; then
         exit
     fi

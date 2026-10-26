@@ -1,24 +1,17 @@
 #!/bin/sh
-# screenshot - select a region with the mouse, save it and copy it
-#
-# bound to Print in sway. the picture goes to
-# ~/pictures/screenshots/DATE.png and into the clipboard (paste with Ctrl+V).
-# Esc cancels. a whole screen = select the whole screen
+# screenshot - select a region, save it to ~/pictures/screenshots and copy it
+# bound to Print in sway; Esc cancels
 
 set -eu
 
+# change the folder or the file name format here
 dir="$HOME/pictures/screenshots"
 file="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
 
-# slurp: drag a rectangle, it prints its geometry ("X,Y WxH").
-# -b dims the screen, -c -w: thin white border around the selection.
-# Esc makes slurp fail; "|| exit 0" turns that into a quiet exit.
-# </dev/null: when stdin is not a terminal, slurp reads a list of
-# ready-made boxes from it (man slurp); this way the list is just empty
+# -b dimmed background, -c border color, -w border width.
+# </dev/null: otherwise slurp waits for a list of boxes on stdin
 geometry=$(slurp -b '#00000080' -c '#e6e6e6ff' -w 1 </dev/null) || exit 0
 
 mkdir -p "$dir"
-# grim: take the picture of exactly that region
 grim -g "$geometry" "$file"
-# wl-copy: put the file into the wayland clipboard, as an image
 wl-copy --type image/png <"$file"

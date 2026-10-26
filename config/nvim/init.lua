@@ -1,18 +1,11 @@
--- ~/.config/nvim/init.lua - Shh... dotfiles
--- for now only the look: black and white like the rest, red only for errors.
--- features (keys, plugins) come later
---
--- base: "quiet", a mostly monochrome colorscheme that ships with neovim
--- (runtime/colors/quiet.vim). it still colors a few things (selection,
--- search, diffs ...), those are turned gray below.
--- colors match foot.ini: #e6e6e6 text, #5a5a5a gray, #2a2a2a dark gray
+-- ~/.config/nvim/init.lua - for now only the look: black and white, red for errors
+-- base is the built-in "quiet" colorscheme; its few colors are made gray below
 
--- vim.o.NAME = value  sets an option, like :set NAME=value
-vim.o.termguicolors = true -- use the #rrggbb colors below
+vim.o.termguicolors = true
 vim.o.background = "dark"
 vim.cmd.colorscheme("quiet")
 
--- the palette
+-- the palette (same as foot.ini); change a color here
 local black = "#000000"
 local dark = "#2a2a2a"
 local gray = "#5a5a5a"
@@ -21,8 +14,7 @@ local white = "#e6e6e6"
 local bright = "#ffffff"
 local red = "#d7263d"
 
--- hl(group, colors): set the colors of one highlight group.
--- fg = text, bg = background; see :help nvim_set_hl
+-- hl(group, colors): fg = text, bg = background (:help nvim_set_hl)
 local function hl(group, colors)
     vim.api.nvim_set_hl(0, group, colors)
 end

@@ -1,10 +1,8 @@
 # packages/common.csv - what install.sh installs
-# format: tag,package,description
-#   empty tag = official repos (pacman), A = AUR (yay)
-# names are a draft: check them with  sh install.sh --check
+# tag,package,description: empty tag = pacman, A = AUR (yay).
+# add a line to install one more; check names with  sh install.sh --check
 
-# system: seatd instead of elogind. seatd-s6 and elogind-s6 conflict,
-# only one of them can be installed (install.sh stops if elogind-s6 is there)
+# system: seatd instead of elogind
 ,seatd-s6,seatd service for s6: screen and input for sway without root (no elogind)
 ,pam_rundir,creates XDG_RUNTIME_DIR at login (elogind did it before; sway needs it)
 
@@ -13,12 +11,12 @@
 ,zsh-autosuggestions,zsh: gray suggestions from the history while typing
 ,zsh-syntax-highlighting,zsh: unknown commands turn gray while typing
 ,neovim,text editor
-,fzf,fuzzy finder (used by our launcher)
+,fzf,fuzzy finder (launcher, volume and wifi menus)
 ,broot,file manager that shows folders as a tree (Super+F)
 ,git,version control
 ,fastfetch,system info when a terminal opens
 
-# desktop: plain sway from the repos; swayfx (AUR) is postponed, see NOTES.md
+# desktop
 ,sway,tiling wayland compositor (includes swaybar and swaymsg)
 
 # wayland tools
@@ -30,7 +28,7 @@
 ,grim,screenshots
 ,slurp,select a screen region (for grim)
 ,wl-clipboard,clipboard: wl-copy and wl-paste
-,jq,reads JSON from sway (used by scripts/autotile)
+,jq,reads JSON (autotile, volume menu, bar clicks)
 ,ttf-jetbrains-mono-nerd,font with icons (bar)
 
 # sound

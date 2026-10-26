@@ -1,16 +1,10 @@
-# ~/.config/sway/programs - which program opens for what
+# ~/.config/sway/programs - programs for the keys, and what starts with sway
 
 set $term foot
 set $browser firefox
-# broot is a terminal program, so it opens inside foot
 set $files foot broot
-# our launcher: foot + fzf in a small floating window (scripts/launcher)
 set $menu foot --app-id=launcher ~/.local/bin/launcher
 
-# sound: pipewire, wireplumber, pipewire-pulse (scripts/sound).
-# exec, not exec_always: once per session, a reload must not restart it
+# exec: once per session (exec_always would also run on every reload)
 exec ~/.local/bin/sound
-
-# notifications (config in ~/.config/mako). It needs the session D-Bus
-# from dbus-run-session (~/.zprofile) and quits by itself with sway
 exec mako

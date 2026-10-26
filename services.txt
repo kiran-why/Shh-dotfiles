@@ -1,8 +1,7 @@
 # services.txt - s6 services install.sh enables at boot
-# one service name per line; the matching *-s6 package must be installed
+# one per line; the matching *-s6 package must be in packages/common.csv
 
 seatd
-# iwd talks to its clients over D-Bus: without dbus "s6 set commit" fails
-# with "found inconsistent dependencies"
+# iwd needs dbus
 dbus
 iwd

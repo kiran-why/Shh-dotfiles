@@ -1,17 +1,8 @@
-// ~/.config/fastfetch/config.jsonc - Shh... dotfiles
-// runs in every new foot window (see ~/.zshrc). black and white:
-// the artix logo in white, info in three boxed groups on the right
-//
-// every row is: key box | value box
-//   key   = "│ icon Name │" (fixed width, written by hand)
-//   value = "│ text │", the text always 34 columns wide
-// fastfetch pads a value itself: {name<34} adds spaces on the right up to
-// 34, {name>10} adds them on the left (numbers line up like in a table).
-// padding counts bytes, fine here: every value is plain ascii.
-// a value longer than its width is not cut, its row just gets wider
-// {#90} {#37} {#97} {#} are fastfetch colors: dark gray, light gray,
-// white, reset (codes of the foot palette, see foot.ini)
-// check after editing: fastfetch -c ~/.config/fastfetch/config.jsonc
+// ~/.config/fastfetch/config.jsonc - system info in every new foot window
+// rows are "│ icon Name │ │ value │"; a value is padded to 34 columns
+// ({name<34}), keep that width when adding a row or the box breaks.
+// colors: {#90} border, {#37} names, {#97} values, {#} reset.
+// check: fastfetch -c ~/.config/fastfetch/config.jsonc
 {
     "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
     "logo": {
