@@ -3,7 +3,7 @@
 #
 # speaks the i3bar protocol (man 7 swaybar-protocol): first a header,
 # then "[", then one JSON array of blocks per update, forever:
-#   󰖩   bat 87%   21.10  14:05
+#   󰕾 50%   󰖩   bat 87%   21.10  14:05
 # with click_events swaybar also writes every click on a block
 # to our stdin; a click on the wifi icon opens iwctl
 
@@ -50,6 +50,22 @@ bat() {
     done
 }
 
+# vol: volume of the default output. wpctl prints "Volume: 0.50"
+# or "Volume: 0.50 [MUTED]"; awk turns 0.50 into 50.
+# icon U+F057E nf-md-volume_high white, or U+F0581 nf-md-volume_off gray
+# when muted or when pipewire is not running (wpctl fails)
+vol() {
+    local out
+    if ! out=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null); then
+        block vol '󰖁' "$gray"
+        return
+    fi
+    case "$out" in
+        *MUTED*) block vol '󰖁' "$gray" ;;
+        *) block vol "󰕾 $(echo "$out" | awk '{printf "%.0f%%", $2 * 100}')" "$white" ;;
+    esac
+}
+
 clock() {
     block clock "$(date +'%d.%m  %H:%M')" "$white"
 }
@@ -57,7 +73,7 @@ clock() {
 # a new array every 5 seconds; the "," after it continues the endless array
 status_loop() {
     while :; do
-        printf '[%s,%s%s],\n' "$(net)" "$(bat)" "$(clock)"
+        printf '[%s,%s,%s%s],\n' "$(vol)" "$(net)" "$(bat)" "$(clock)"
         sleep 5
     done
 }

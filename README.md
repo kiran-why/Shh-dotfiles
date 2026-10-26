@@ -114,7 +114,6 @@ Everything is plain POSIX `sh`, no bash-isms.
 
 ## Known issues / not done yet
 
-- PipeWire is not started yet, so there is no sound and no sound module on the bar
 - no NVIDIA support (yet)
 - still to do: notifications (mako), zsh history and keys
 
