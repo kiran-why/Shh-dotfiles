@@ -1,14 +1,39 @@
 #!/bin/sh
 # launcher - pick a program with fzf and start it through sway
 #
-# sway opens it in a small floating foot window ($mod+d, see config/sway/config).
+# sway opens it in a small floating foot window ($mod+r, see sway/rules).
 # swaymsg exec makes sway start the program, so it keeps running
 # after this window closes
 
 set -eu
 
+# the look of fzf, black and white like the rest:
+#   --layout=reverse         the input on top, the list below it
+#   --border=sharp           a thin border with square corners
+#   --border-label=' run '   a label in the middle of the top border
+#   --info=inline-right      the counter (12/2048) on the input line, right
+#   --prompt / --pointer     "> " before the input, ▌ at the picked line
+#   --no-scrollbar           no scrollbar on the right
+#   --highlight-line         the whole picked line gets the bg+ color
+# --color=NAME:COLOR,... uses the colors of the foot palette (foot.ini):
+#   7 light text, 15 white, 8 gray, 0 dark gray, -1 = terminal default.
+#   fg/fg+ text of a line / of the picked line, bg+ its background,
+#   hl/hl+ the letters that match what you typed
+colors='fg:7,fg+:15,bg+:0,hl:15:underline,hl+:15:underline'
+colors="$colors,info:8,border:8,label:15,prompt:15,pointer:15,query:15"
+colors="$colors,separator:8,spinner:8,gutter:-1"
+
 # every program in /usr/bin, one per line; Esc in fzf exits with an error,
 # "|| exit 0" turns that into a quiet normal exit
-cmd=$(ls /usr/bin | fzf --prompt='run > ' --reverse) || exit 0
+cmd=$(ls /usr/bin | fzf \
+    --layout=reverse \
+    --border=sharp \
+    --border-label=' run ' \
+    --info=inline-right \
+    --prompt='> ' \
+    --pointer='▌' \
+    --no-scrollbar \
+    --highlight-line \
+    --color="$colors") || exit 0
 
 swaymsg exec "$cmd" >/dev/null
