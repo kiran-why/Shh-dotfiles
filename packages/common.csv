@@ -1,6 +1,4 @@
 # packages/common.csv - what install.sh installs
-# common packages, installed for any desktop choice
-# the desktop itself is in sway.csv / hyprland.csv / niri.csv next to this file
 # format: tag,package,description
 #   empty tag = official repos (pacman), A = AUR (yay)
 # names are a draft: check them with  sh install.sh --check
@@ -13,7 +11,10 @@
 ,git,version control
 ,fastfetch,system info when a terminal opens
 
-# wayland tools (shared by both desktops)
+# desktop: plain sway from the repos; swayfx (AUR) is postponed, see NOTES.md
+,sway,tiling wayland compositor (includes swaybar and swaymsg)
+
+# wayland tools
 ,foot,terminal emulator
 ,mako,notifications
 ,swaybg,wallpaper

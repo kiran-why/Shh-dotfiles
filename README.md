@@ -24,7 +24,7 @@ Dotfiles and an installer for **Artix Linux with the s6 init system**
 | distro / init | Artix Linux, s6 (no systemd) |
 | login | plain TTY, no display manager; the desktop starts from `~/.zprofile` on tty1 |
 | seat | seatd (no elogind) |
-| desktop | your choice at install time, see below |
+| desktop | sway + swaybar, no XWayland |
 | shell / terminal / editor | zsh / foot / neovim |
 | launcher | foot + fzf (own script) |
 | files | nnn |
@@ -33,25 +33,6 @@ Dotfiles and an installer for **Artix Linux with the s6 init system**
 | network | iwd (built-in DHCP) + openresolv |
 | AUR | yay |
 | font | JetBrains Mono Nerd Font |
-
-## Desktops
-
-The installer asks which desktop you want:
-
-```
-:: which desktop do you prefer?
-  1) sway      - tiling windows and workspaces, swaybar
-  2) hyprland  - tiling with animations and effects, waybar
-  3) niri      - scrolling tiling: windows in an endless row, waybar
-```
-
-| desktop | status |
-|---|---|
-| **hyprland** + waybar | no config yet |
-| **sway** + swaybar | main focus rn |
-| **niri** + waybar | no config yet |
-
-You can skip the question with `--wm sway`, `--wm hyprland` or `--wm niri`.
 
 ## Install
 
@@ -65,14 +46,13 @@ cd ~/Shh-dotfiles
 sh install.sh
 ```
 
-Reboot and log in on **tty1**: the chosen desktop starts by itself.
+Reboot and log in on **tty1**: sway starts by itself.
 Other ttys (`Ctrl+Alt+F2` ...) stay plain consoles, handy if something breaks.
 
 Other options:
 
 ```sh
-sh install.sh --check          # only check that every package exists, install nothing
-sh install.sh --wm hyprland    # don't ask, use this desktop
+sh install.sh --check    # only check that every package exists, install nothing
 sh install.sh --help
 ```
 
@@ -80,16 +60,15 @@ Running `install.sh` again is safe: whatever is already done is skipped.
 
 ### What `install.sh` does
 
-1. asks which desktop to install
-2. checks the system: Artix, s6, sudo, internet, not root
-3. allows passwordless sudo **only while it runs** (removed on exit, even on Ctrl+C)
-4. pacman tweaks: colours, parallel downloads, `makepkg` on all cores
-5. enables the Arch `[extra]` repo through `artix-archlinux-support`
-6. installs `yay`
-7. installs packages from `packages/common.csv` + `packages/<desktop>.csv`
-8. enables s6 services from `services.txt` (seatd, dbus, iwd)
-9. system settings: zsh as login shell, iwd config, no PC speaker beep
-10. links the configs into `$HOME` with `link.sh`
+1. checks the system: Artix, s6, sudo, internet, not root
+2. allows passwordless sudo **only while it runs** (removed on exit, even on Ctrl+C)
+3. pacman tweaks: colours, parallel downloads, `makepkg` on all cores
+4. enables the Arch `[extra]` repo through `artix-archlinux-support`
+5. installs `yay`
+6. installs packages from `packages/common.csv`
+7. enables s6 services from `services.txt` (seatd, dbus, iwd)
+8. system settings: zsh as login shell, iwd config, no PC speaker beep
+9. links the configs into `$HOME` with `link.sh`
 
 Nothing is ever deleted: a file that is in the way is renamed to `name.bak-DATE`.
 
@@ -100,19 +79,18 @@ install.sh          the installer
 link.sh             symlinks configs into $HOME   (link.sh --dry-run to preview)
 lib.sh              shared messages, colours and the logo
 services.txt        s6 services to enable
-packages/           package lists: tag,package,description  (empty tag = pacman, A = AUR)
-home/       ->  ~/                .zprofile ...
-config/     ->  ~/.config/        configs shared by every desktop
-scripts/    ->  ~/.local/bin/     everyday commands (launcher ...)
+packages/           package list: tag,package,description  (empty tag = pacman, A = AUR)
+home/       ->  ~/                .zprofile .zshrc
+config/     ->  ~/.config/        sway, swaybar, foot, fastfetch
+scripts/    ->  ~/.local/bin/     everyday commands (launcher, wallpaper, screenshot)
 wallpapers/ ->  ~/wallpapers      the newest picture here is the wallpaper (pictures are not in git)
-desktops/   ->  ~/.config/        configs of the chosen desktop only: sway/, hyprland/
 ```
 
 Everything is plain POSIX `sh`, no bash-isms.
 
 ## Keys
 
-The same on every desktop. `Super` is the Windows key.
+`Super` is the Windows key.
 
 | keys | action |
 |---|---|
@@ -138,10 +116,9 @@ The same on every desktop. `Super` is the Windows key.
 
 - PipeWire is not started yet, so there is no sound and no sound module on the bar
 - no NVIDIA support (yet)
-- still to do: foot and zsh configs, notifications, screenshots.
+- still to do: notifications (mako), zsh history and keys
 
 ## Thanks
 
-Ideas taken from [LARBS](https://github.com/LukeSmithxyz/LARBS) (installer),
-[holman/dotfiles](https://github.com/holman/dotfiles) (symlinks) and
-[end-4/dots-hyprland](https://github.com/end-4/dots-hyprland) (Hyprland config layout).
+Ideas taken from [LARBS](https://github.com/LukeSmithxyz/LARBS) (installer) and
+[holman/dotfiles](https://github.com/holman/dotfiles) (symlinks).

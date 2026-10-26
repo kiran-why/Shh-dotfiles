@@ -2,13 +2,10 @@
 # link.sh - create symlinks in $HOME pointing to files in this repo
 #
 # layout:
-#   config/NAME                  -> ~/.config/NAME   (shared by every desktop)
-#   desktops/<desktop>/config/NAME -> ~/.config/NAME (only the chosen desktop)
-#   home/FILE                    -> ~/FILE
-#   scripts/FILE                 -> ~/.local/bin/FILE
-#   wallpapers/                  -> ~/wallpapers     (pictures not in git)
-#
-# the chosen desktop is read from ~/.local/state/shh/wm (install.sh writes it)
+#   config/NAME   -> ~/.config/NAME     (sway, swaybar, foot ...)
+#   home/FILE     -> ~/FILE
+#   scripts/FILE  -> ~/.local/bin/FILE
+#   wallpapers/   -> ~/wallpapers       (pictures not in git)
 #
 # usage: link.sh [-n | --dry-run] [-h | --help]
 #
@@ -28,9 +25,6 @@ dots_path=$(cd "$(dirname "$0")" && pwd -P)
 # where links go
 config_dir="$HOME/.config"
 bin_dir="$HOME/.local/bin"
-
-# the desktop chosen in install.sh: sway, hyprland or niri
-wm_file="$HOME/.local/state/shh/wm"
 
 # one timestamp per run, so all backups from this run share it
 stamp=$(date +%Y%m%d-%H%M%S)
@@ -133,16 +127,6 @@ link_dir "$dots_path/scripts" "$bin_dir"
 # the whole folder, not every file in it: new pictures appear in ~/wallpapers
 # by themselves, without running link.sh again
 link "$dots_path/wallpapers" "$HOME/wallpapers"
-
-# configs of the chosen desktop only
-wm=$(cat "$wm_file" 2>/dev/null || true)
-if [ -z "$wm" ]; then
-    warn "no desktop chosen ($wm_file is missing), skipping desktops/"
-elif [ -d "$dots_path/desktops/$wm/config" ]; then
-    link_dir "$dots_path/desktops/$wm/config" "$config_dir"
-else
-    warn "no configs for desktop '$wm' yet"
-fi
 
 echo
 echo "done: $linked linked, $skipped already ok, $backups backed up"

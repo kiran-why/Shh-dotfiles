@@ -1,0 +1,24 @@
+# ~/.config/sway/look - borders, gaps, background
+
+# black first, then our script puts the newest picture from ~/wallpapers
+# on top (sway runs swaybg for it). exec_always: at start and on every
+# reload, so a new picture shows up after $mod+Shift+c
+output * bg $black solid_color
+exec_always ~/.local/bin/wallpaper
+
+# thin border, no title bars; no gaps, windows touch each other
+default_border pixel 2
+default_floating_border pixel 2
+gaps inner 0
+
+# the focused window gets a white border, the rest stay dark
+# class                 border  backgr. text    indicator child_border
+client.focused          $white  $white  $black  $white    $white
+client.focused_inactive $dark   $black  $gray   $dark     $dark
+client.unfocused        $dark   $black  $gray   $dark     $dark
+client.urgent           $red    $red    $black  $red      $red
+
+font monospace 10
+
+# no X11 programs: everything we use speaks wayland natively
+# xwayland disable

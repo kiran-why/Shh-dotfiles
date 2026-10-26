@@ -1,7 +1,7 @@
 #!/bin/sh
 # screenshot - select a region with the mouse, save it and copy it
 #
-# bound to Print on every desktop. the picture goes to
+# bound to Print in sway. the picture goes to
 # ~/pictures/screenshots/DATE.png and into the clipboard (paste with Ctrl+V).
 # Esc cancels. a whole screen = select the whole screen
 
