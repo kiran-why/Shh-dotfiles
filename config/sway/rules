@@ -1,10 +1,5 @@
-# ~/.config/sway/rules - rules for particular windows
+# ~/.config/sway/rules - floating windows and their size (width height)
 
-# the launcher floats in the middle instead of taking a tile
 for_window [app_id="launcher"] floating enable, resize set 600 400, move position center
-
-# iwctl, opened by a click on the wifi icon in the bar, floats too
-for_window [app_id="iwctl"] floating enable, resize set 800 500, move position center
-
-# the volume menu (scripts/volume), opened by a click on the volume icon
+for_window [app_id="wifi"] floating enable, resize set 600 400, move position center
 for_window [app_id="volume"] floating enable, resize set 500 300, move position center

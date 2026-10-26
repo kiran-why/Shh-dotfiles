@@ -1,0 +1,78 @@
+#!/bin/sh
+# wifi - pick a wifi network and connect (iwd), asks for the password itself
+# opened by a click on the wifi icon in swaybar (window size in sway/rules).
+# Esc closes it
+
+set -eu
+
+# same look as scripts/launcher
+colors='fg:7,fg+:15,bg+:0,hl:15:underline,hl+:15:underline'
+colors="$colors,info:8,border:8,label:15,prompt:15,pointer:15,query:15"
+colors="$colors,separator:8,spinner:8,gutter:-1,header:7"
+
+menu() {
+    fzf --layout=reverse --border=sharp --info=hidden --prompt='> ' \
+        --pointer='▌' --no-scrollbar --highlight-line --color="$colors" "$@"
+}
+
+# iwctl colors its output; this removes the color codes
+plain() {
+    sed 's/\x1b\[[0-9;]*m//g'
+}
+
+# wifi devices: every network interface that has a "wireless" folder
+devices=$(for d in /sys/class/net/*; do
+    if [ -d "$d/wireless" ]; then echo "${d##*/}"; fi
+done)
+if [ -z "$devices" ]; then
+    echo 'no wifi device found'
+    sleep 3
+    exit 1
+fi
+# more than one (say, a usb wifi stick): ask which
+if [ "$(echo "$devices" | wc -l)" -gt 1 ]; then
+    dev=$(echo "$devices" | menu --border-label=' device ') || exit 0
+else
+    dev=$devices
+fi
+
+# the network we are connected to, from "iwctl station DEV show"
+current() {
+    iwctl station "$dev" show | plain |
+        sed -n 's/^ *Connected network  *\(.*[^ ]\) *$/\1/p'
+}
+
+# network names from "iwctl station DEV get-networks": drop the table
+# header, the ">" before the current network and the last two columns
+# (security, signal)
+networks() {
+    iwctl station "$dev" get-networks | plain |
+        grep -v -e '---' -e 'Available networks' -e 'Network name' |
+        sed -E 's/^[ >]*//; s/ +[a-z0-9-]+ +\** *$//' |
+        grep -v '^ *$'
+}
+
+iwctl station "$dev" scan 2>/dev/null || true
+sleep 2
+
+while :; do
+    pick=$({ echo rescan; echo disconnect; networks; } |
+        menu --border-label=' wifi ' --header="$dev: $(current || true)") || exit 0
+    case "$pick" in
+        rescan)
+            iwctl station "$dev" scan || true
+            sleep 2
+            ;;
+        disconnect)
+            iwctl station "$dev" disconnect || true
+            ;;
+        *)
+            # iwctl asks for the password here if the network is new
+            if iwctl station "$dev" connect "$pick"; then
+                exit 0
+            fi
+            echo 'could not connect, press Enter'
+            read -r _
+            ;;
+    esac
+done

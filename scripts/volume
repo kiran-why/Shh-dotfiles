@@ -1,31 +1,33 @@
 #!/bin/sh
-# volume - a small sound menu: louder, quieter, mute, pick the output
-#
-# a click on the volume icon in swaybar (status.sh) opens it in a small
-# floating foot window (sway/rules). The menu is fzf with the look of our
-# launcher; after every action it opens again with the new volume on top,
+# volume - sound menu: louder, quieter, mute, output device, mic mute
+# opened by a click on the volume icon in swaybar (window size in sway/rules).
 # Esc closes it
 
 set -eu
 
-# @DEFAULT_AUDIO_SINK@ / @DEFAULT_AUDIO_SOURCE@: wpctl's names for the
-# current output (speakers, headphones) and input (microphone)
 out=@DEFAULT_AUDIO_SINK@
 mic=@DEFAULT_AUDIO_SOURCE@
+# volume step and the highest volume (1.0 = 100%)
+step=5%
+max=1.0
 
-# the same colors as scripts/launcher
+# same look as scripts/launcher
 colors='fg:7,fg+:15,bg+:0,hl:15:underline,hl+:15:underline'
 colors="$colors,info:8,border:8,label:15,prompt:15,pointer:15,query:15"
 colors="$colors,separator:8,spinner:8,gutter:-1,header:7"
 
-# menu [FZF OPTIONS]: fzf with our look; "$@" passes the extra options
-# (label, header ...). --info=hidden: no 5/5 counter, the list is short
 menu() {
     fzf --layout=reverse --border=sharp --info=hidden --prompt='> ' \
         --pointer='▌' --no-scrollbar --highlight-line --color="$colors" "$@"
 }
 
-# line PERCENT: the volume as 10 parts, like on the bar (status.sh)
+# wpctl prints harmless "RTKit error" lines (no rtkit installed);
+# they would mess up the menu, so its errors are hidden
+wp() {
+    wpctl "$@" 2>/dev/null
+}
+
+# line PERCENT: ━━━━━───── like on the bar
 line() {
     local full=$((($1 + 5) / 10)) i=0 text=''
     [ "$full" -gt 10 ] && full=10
@@ -36,48 +38,40 @@ line() {
     printf '%s' "$text"
 }
 
-# now: two lines for the top of the menu, the volume and the output:
-#   󰕾 ━━━━━───── 50%
-#   Built-in Audio Analog Stereo
-# wpctl inspect prints the properties of the output, one of them is
-#   * node.description = "Built-in Audio Analog Stereo"
-# sed -n 's/A/B/p' prints only the lines where A was replaced
+# the top of the menu: volume and the name of the output
 now() {
     local vol pct icon name
-    vol=$(wpctl get-volume "$out") || { echo 'no sound: pipewire is not running'; return; }
+    vol=$(wp get-volume "$out") || { echo 'no sound: pipewire is not running'; return; }
     pct=$(echo "$vol" | awk '{printf "%.0f", $2 * 100}')
     case "$vol" in *MUTED*) icon='󰖁' ;; *) icon='󰕾' ;; esac
-    name=$(wpctl inspect "$out" | sed -n 's/.*node\.description = "\(.*\)"/\1/p' | head -n 1)
+    name=$(wp inspect "$out" | sed -n 's/.*node\.description = "\(.*\)"/\1/p' | head -n 1)
     printf '%s %s %s%%\n%s' "$icon" "$(line "$pct")" "$pct" "$name"
 }
 
-# pick_output: choose where the sound goes.
-# pw-dump prints everything pipewire knows as JSON; jq keeps the outputs
-# (media.class "Audio/Sink") as "ID<tab>name" lines. fzf shows only the
-# name (--with-nth=2, fields split at the tab), cut -f1 takes the ID back.
-# Esc in fzf leaves the ID empty: then nothing changes
+# list the outputs (pw-dump + jq), pick one, make it the default
 pick_output() {
     local id
-    id=$(pw-dump | jq -r '.[]
+    id=$(pw-dump 2>/dev/null | jq -r '.[]
         | select(.type == "PipeWire:Interface:Node")
         | select(.info.props["media.class"] == "Audio/Sink")
         | "\(.id)\t\(.info.props["node.description"] // .info.props["node.name"])"' |
         menu --border-label=' output ' --delimiter='\t' --with-nth=2 |
         cut -f1)
     if [ -n "$id" ]; then
-        wpctl set-default "$id"
+        wp set-default "$id"
     fi
 }
 
+# pos: the line the cursor starts on, so it stays where it was
+pos=1
 while :; do
-    # Esc in fzf exits with an error, "|| exit 0" closes the window quietly
     pick=$(printf '%s\n' louder quieter mute 'output device' 'mic mute' |
-        menu --border-label=' volume ' --header="$(now)") || exit 0
+        menu --border-label=' volume ' --header="$(now)" --bind="start:pos($pos)") || exit 0
     case "$pick" in
-        louder) wpctl set-volume -l 1.0 "$out" 5%+ ;;
-        quieter) wpctl set-volume "$out" 5%- ;;
-        mute) wpctl set-mute "$out" toggle ;;
-        'output device') pick_output ;;
-        'mic mute') wpctl set-mute "$mic" toggle ;;
+        louder) pos=1; wp set-volume -l "$max" "$out" "$step+" ;;
+        quieter) pos=2; wp set-volume "$out" "$step-" ;;
+        mute) pos=3; wp set-mute "$out" toggle ;;
+        'output device') pos=4; pick_output ;;
+        'mic mute') pos=5; wp set-mute "$mic" toggle ;;
     esac
 done
