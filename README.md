@@ -15,10 +15,9 @@
 ![desktop](docs/screenshot.jpg)
 
 > **🚧 Work in progress.** The installer sets up a fresh system from start to finish;
-> configs are still being polished. Tested in a VM and on a real PC.
+> configs are still being polished.
 
-Dotfiles and an installer for **Artix Linux with the s6 init system**: black and white,
-everything in the terminal, no useless GUI.
+Dotfiles and an installer for **Artix Linux with the s6 init system**: no useless GUI.
 
 ## Stack
 
@@ -42,12 +41,14 @@ everything in the terminal, no useless GUI.
 Start from a fresh **Artix base install with s6** (pick `seatd-s6`, not elogind), a user
 in the `wheel` group and a working internet connection. Then, as that user (**not root**):
 
+
 ```sh
 sudo pacman -S git
 git clone https://github.com/kiran-why/Shh-dotfiles.git ~/Shh-dotfiles
 cd ~/Shh-dotfiles
 sh install.sh
 ```
+
 
 Reboot and log in on **tty1**: sway starts by itself. Other ttys (`Ctrl+Alt+F2` ...)
 stay plain consoles for rescue.
