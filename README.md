@@ -68,7 +68,7 @@ services.txt                s6 services
 config/     ->  ~/.config/  sway, swaybar, foot, fastfetch, broot, nvim, mako
 home/       ->  ~/          .zprofile .zshrc
 scripts/    ->  ~/.local/bin/  launcher, volume, wifi, sound, wallpaper, screenshot, autotile
-wallpapers/ ->  ~/wallpapers   the newest picture here is the wallpaper (not in git)
+wallpapers/ ->  ~/wallpapers   the newest picture here is the wallpaper (authors: wallpapers/README.md)
 ```
 
 To change something, edit the file in the repo: the configs in `$HOME` are links to it.
