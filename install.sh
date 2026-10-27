@@ -17,6 +17,9 @@ aur_helper="yay"
 # temporary passwordless sudo, removed on exit (see enable_nopasswd)
 sudoers_tmp="/etc/sudoers.d/dotfiles-temp"
 
+# suffix for backups of replaced system files, same as link.sh
+stamp=$(date +%Y%m%d-%H%M%S)
+
 [ -f "$dots_path/lib.sh" ] || { echo "lib.sh not found in $dots_path" >&2; exit 1; }
 . "$dots_path/lib.sh"
 
@@ -33,6 +36,21 @@ package_lines() {
 
 is_installed() {
     pacman -Qq "$1" >/dev/null 2>&1
+}
+
+# write_root FILE TEXT: put TEXT into FILE as root. An old FILE with other
+# text is renamed to FILE.bak-DATE first; the same text is left alone
+write_root() {
+    local file="$1"
+    local text="$2"
+
+    if sudo test -e "$file"; then
+        [ "$(sudo cat "$file")" != "$text" ] || return 0
+        sudo mv "$file" "$file.bak-$stamp" || error "cannot back up $file"
+        msg "$red" "$sym_bak" "$file -> $file.bak-$stamp"
+    fi
+
+    printf '%s\n' "$text" | sudo tee "$file" >/dev/null || error "cannot write $file"
 }
 
 ### STEPS ###
@@ -57,7 +75,9 @@ check_system() {
         error "replace elogind-s6 with seatd-s6, then run install.sh again"
     fi
 
-    ping -c 1 -W 5 artixlinux.org >/dev/null 2>&1 ||
+    # https, not ping: ICMP is often blocked, pacman needs https anyway
+    # (curl comes with pacman)
+    curl -s -o /dev/null -m 10 https://artixlinux.org ||
         error "no internet connection"
 
     ok "artix + s6, internet, sudo"
@@ -67,6 +87,12 @@ check_system() {
 enable_nopasswd() {
     step "temporary passwordless sudo"
     sudo -v || error "sudo failed"
+
+    # left over when a run was killed hard (kill -9, power off)
+    if sudo test -e "$sudoers_tmp"; then
+        warn "found a leftover $sudoers_tmp from an interrupted run, removing it"
+        sudo rm -f "$sudoers_tmp"
+    fi
 
     # the rule is removed on any exit, Ctrl+C too
     trap 'sudo rm -f "$sudoers_tmp"' EXIT
@@ -199,8 +225,8 @@ configure_system() {
 
     # iwd gets IP addresses itself, DNS goes to openresolv
     sudo mkdir -p /etc/iwd
-    printf '[General]\nEnableNetworkConfiguration=true\n\n[Network]\nNameResolvingService=resolvconf\n' |
-        sudo tee /etc/iwd/main.conf >/dev/null
+    write_root /etc/iwd/main.conf \
+        "$(printf '[General]\nEnableNetworkConfiguration=true\n\n[Network]\nNameResolvingService=resolvconf')"
     info "iwd: built-in DHCP, DNS via resolvconf"
 
     # XDG_RUNTIME_DIR at login, sway won't start without it (elogind did it before)
@@ -210,7 +236,7 @@ configure_system() {
     fi
     info "pam_rundir: XDG_RUNTIME_DIR at login"
 
-    echo "blacklist pcspkr" | sudo tee /etc/modprobe.d/nobeep.conf >/dev/null
+    write_root /etc/modprobe.d/nobeep.conf "blacklist pcspkr"
     info "pc speaker disabled"
 
     ok "done"
