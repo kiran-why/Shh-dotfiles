@@ -5,39 +5,39 @@
 set $mod Mod4
 
 # programs
-bindsym $mod+t exec $term
-bindsym $mod+b exec $browser
-bindsym $mod+f exec $files
-bindsym $mod+r exec $menu
+bindsym --to-code $mod+t exec $term
+bindsym --to-code $mod+b exec $browser
+bindsym --to-code $mod+f exec $files
+bindsym --to-code $mod+r exec $menu
 
 # windows
-bindsym $mod+q kill
-bindsym $mod+Shift+f fullscreen
-bindsym $mod+v floating toggle
+bindsym --to-code $mod+q kill
+bindsym --to-code $mod+Shift+f fullscreen
+bindsym --to-code $mod+v floating toggle
 
 # leave sway (asks first)
-bindsym $mod+l exec swaynag -t warning -m 'exit sway?' -B 'yes, exit' 'swaymsg exit'
+bindsym --to-code $mod+l exec swaynag -t warning -m 'exit sway?' -B 'yes, exit' 'swaymsg exit'
 
 # screenshot of a region: saved and copied (scripts/screenshot)
-bindsym Print exec ~/.local/bin/screenshot
+bindsym --to-code Print exec ~/.local/bin/screenshot
 
 # reload this config after editing
-bindsym $mod+Shift+c reload
+bindsym --to-code $mod+Shift+c reload
 
 # drag a window with $mod + left mouse, resize it with $mod + right mouse
 floating_modifier $mod normal
 
 # focus with $mod + arrows, move the window with $mod + Shift + arrows
-bindsym $mod+Left focus left
-bindsym $mod+Down focus down
-bindsym $mod+Up focus up
-bindsym $mod+Right focus right
-bindsym $mod+Shift+Left move left
-bindsym $mod+Shift+Down move down
-bindsym $mod+Shift+Up move up
-bindsym $mod+Shift+Right move right
+bindsym --to-code $mod+Left focus left
+bindsym --to-code $mod+Down focus down
+bindsym --to-code $mod+Up focus up
+bindsym --to-code $mod+Right focus right
+bindsym --to-code $mod+Shift+Left move left
+bindsym --to-code $mod+Shift+Down move down
+bindsym --to-code $mod+Shift+Up move up
+bindsym --to-code $mod+Shift+Right move right
 
 # volume keys (laptop); 5% is the step, -l 1.0 the max (100%)
-bindsym XF86AudioRaiseVolume exec wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+
-bindsym XF86AudioLowerVolume exec wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
-bindsym XF86AudioMute exec wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+bindsym --to-code XF86AudioRaiseVolume exec wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+
+bindsym --to-code XF86AudioLowerVolume exec wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+bindsym --to-code XF86AudioMute exec wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
