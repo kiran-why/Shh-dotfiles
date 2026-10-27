@@ -174,11 +174,20 @@ install_packages() {
     done
 }
 
+# in_arch PKG: is PKG in Arch [extra]? asks archlinux.org, because before
+# enable_arch_repos pacman does not know that repo
+in_arch() {
+    curl -s -m 10 "https://archlinux.org/packages/search/json/?name=$1&repo=Extra" |
+        grep -q '"pkgname"'
+}
+
 # --check: does every package exist? installs nothing
 check_packages() {
     step "checking package names"
 
-    local tag pkg desc missing=0
+    local tag pkg desc missing=0 arch_on=1
+    grep -q '^\[extra\]' /etc/pacman.conf || arch_on=0
+
     while IFS=, read -r tag pkg desc; do
         if [ "$tag" = "A" ] && ! command -v "$aur_helper" >/dev/null; then
             warn "skipped (no $aur_helper yet): $pkg"
@@ -187,7 +196,14 @@ check_packages() {
         case "$tag" in
             A) "$aur_helper" -Si "$pkg" >/dev/null 2>&1 ;;
             *) pacman -Si "$pkg" >/dev/null 2>&1 ;;
-        esac && ok "$pkg" || { warn "not found: $pkg"; missing=$((missing + 1)); }
+        esac && { ok "$pkg"; continue; }
+
+        if [ "$tag" != "A" ] && [ "$arch_on" = 0 ] && in_arch "$pkg"; then
+            ok "$pkg (arch [extra], install.sh enables it)"
+        else
+            warn "not found: $pkg"
+            missing=$((missing + 1))
+        fi
     done <<EOF
 $(package_lines)
 EOF
