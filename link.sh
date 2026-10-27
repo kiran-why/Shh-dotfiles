@@ -37,8 +37,8 @@ usage() {
 
 # link SRC DST: make DST a symlink to SRC, backing up whatever is in the way
 link() {
-    local src=$1
-    local dst=$2
+    local src="$1"
+    local dst="$2"
 
     [ -e "$src" ] || error "source not found: $src"
 
@@ -65,8 +65,8 @@ link() {
 
 # link_dir FROM TO: link every entry of FROM (hidden ones too) into TO
 link_dir() {
-    local from=$1
-    local to=$2
+    local from="$1"
+    local to="$2"
     local src
 
     for src in "$from"/.[!.]* "$from"/*; do
