@@ -18,6 +18,7 @@
 
 # desktop
 ,sway,tiling wayland compositor (includes swaybar and swaymsg)
+,firefox,browser (Super+B)
 
 # wayland tools
 # no swayidle: on Artix it depends on the elogind daemon
@@ -34,11 +35,11 @@
 # sound
 ,pipewire,sound server
 ,wireplumber,pipewire session manager
-,pipewire-pulse,pulseaudio compatibility (for ncpamixer)
+,pipewire-pulse,PulseAudio programs (firefox and others) play through pipewire
 ,pipewire-alsa,ALSA programs play through pipewire
-A,ncpamixer,audio mixer (TUI)
 
 # network
 ,iwd,wifi daemon
 ,iwd-s6,iwd service for s6
+,dbus-s6,dbus service for s6 (iwd needs it; services.txt)
 ,openresolv,DNS config for iwd (no systemd-resolved)
