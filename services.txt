@@ -6,3 +6,4 @@ seatd
 dbus
 iwd
 dhcpcd-srv
+dhcpcd-log
