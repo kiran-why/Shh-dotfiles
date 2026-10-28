@@ -231,25 +231,12 @@ install_packages() {
 # ▀▄ ▄▀  █  █▀█    █   █  █ █▀▀█ █        █ ▀ █ █▀▀█ █    █▀▀█  █  █ ▀▄█ █▀▀   ▀▀▄ 
 #   ▀   ▀▀▀ ▀  ▀   ▀    ▀▀  ▀  ▀ ▀▀▀▀     ▀   ▀ ▀  ▀  ▀▀▀ ▀  ▀ ▀▀▀ ▀   ▀ ▀▀▀▀ ▀▀▀  
 
-# check if running inside vmware
-is_vmware() {
-    local f val
-    for f in /sys/devices/virtual/dmi/id/product_name /sys/devices/virtual/dmi/id/sys_vendor; do
-        [ -r "$f" ] || continue
-        val="$(cat "$f" 2>/dev/null | tr '[:upper:]' '[:lower:]')"
-        case "$val" in
-            *vmware*) return 0 ;;
-        esac
-    done
-    return 1
-}
-
-# auto-install vmware clipboard tools if in vmware
+# auto-install vmware clipboard tools if in vmware (VM check: scripts/vm)
 # https://github.com/krisztianfekete/clipway
 vmware_clipboard() {
     step "VMware clipboard support"
 
-    if ! is_vmware; then
+    if [ "$(sh "$dots_path/scripts/vm" 2>/dev/null)" != vmware ]; then
         info "not running in VMware, skipping"
         return 0
     fi
@@ -274,6 +261,26 @@ vmware_clipboard() {
 # ▄▀▀▀ ▄▀▀▄ █▄  █ █▀▀▀ ▀█▀ ▄▀▀▀ █  █ █▀▀▄ ▄▀▀▄ ▀▀█▀▀ ▀█▀ ▄▀▀▄ █▄  █ 
 # █    █  █ █ ▀▄█ █▀▀   █  █ ▀█ █  █ █▀█  █▀▀█   █    █  █  █ █ ▀▄█ 
 #  ▀▀▀  ▀▀  ▀   ▀ ▀    ▀▀▀  ▀▀▀  ▀▀  ▀  ▀ ▀  ▀   ▀   ▀▀▀  ▀▀  ▀   ▀ 
+
+# before enable_services: s6 live install starts iwd and dhcpcd right away
+configure_network() {
+    step "network settings"
+
+    # iwd gets IP addresses itself, DNS goes to openresolv
+    sudo mkdir -p /etc/iwd
+    write_root /etc/iwd/main.conf \
+        "$(printf '[General]\nEnableNetworkConfiguration=true\n\n[Network]\nNameResolvingService=resolvconf')"
+    info "iwd: built-in DHCP, DNS via resolvconf"
+
+    # dhcpcd: wired only, so it doesn't fight iwd over wifi
+    if ! grep -q '^denyinterfaces wlan' /etc/dhcpcd.conf 2>/dev/null; then
+        echo 'denyinterfaces wlan*' | sudo tee -a /etc/dhcpcd.conf >/dev/null ||
+            error "cannot write /etc/dhcpcd.conf"
+    fi
+    info "dhcpcd: wired only"
+
+    ok "done"
+}
 
 # Enable the services listed in services.txt.
 # s6: enable (draft) -> commit -> live install; services start at boot.
@@ -302,19 +309,6 @@ configure_system() {
         sudo chsh -s "$(command -v zsh)" "$USER"
         info "login shell: zsh"
     fi
-
-    # iwd gets IP addresses itself, DNS goes to openresolv
-    sudo mkdir -p /etc/iwd
-    write_root /etc/iwd/main.conf \
-        "$(printf '[General]\nEnableNetworkConfiguration=true\n\n[Network]\nNameResolvingService=resolvconf')"
-    info "iwd: built-in DHCP, DNS via resolvconf"
-
-    # dhcpcd: wired only, so it doesn't fight iwd over wifi
-    if ! grep -q '^denyinterfaces wlan' /etc/dhcpcd.conf 2>/dev/null; then
-        echo 'denyinterfaces wlan*' | sudo tee -a /etc/dhcpcd.conf >/dev/null ||
-            error "cannot write /etc/dhcpcd.conf"
-    fi
-    info "dhcpcd: wired only"
 
     # XDG_RUNTIME_DIR at login, sway won't start without it (elogind did it before)
     if ! grep -q pam_rundir /etc/pam.d/system-login; then
@@ -370,6 +364,7 @@ enable_arch_repos
 install_aur_helper
 vmware_clipboard
 install_packages
+configure_network
 enable_services
 configure_system
 link_dotfiles
