@@ -5,11 +5,11 @@ Black and white ASCII art, 2560x1440. `scripts/wallpaper` sets the newest one;
 
 | file | what |
 |---|---|
-| `1.jpg` | Death Star made of formulas |
-| `2.jpg` | tree with planets |
-| `3.jpg` | skull with horns |
-| `4.jpg` | girl, half face |
-| `5.jpg` | hands from The Creation of Adam |
+| `1.jpg` |
+| `2.jpg` |
+| `3.jpg` | 
+| `4.jpg` | 
+| `5.jpg` | 
 
 Found on the internet, the authors are unknown. These pictures are **not**
 covered by the MIT license of this repo: they belong to their authors.
