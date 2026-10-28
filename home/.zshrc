@@ -1,34 +1,46 @@
-# ~/.zshrc - every new terminal: prompt, history, completion, keys,
-# suggestions, highlighting, fastfetch
+# ASCII : https://patorjk.com/software/taag/#p=display&f=Linguaholic+Mini+Block&t=SHH-DOTFILES&x=none&v=4&h=4&w=80&we=false
 
-# prompt: an empty line, the folder, then "<artix icon> :" (red after an error).
-# %F{N} = color N of foot.ini (15 white, 1 red), %~ = current folder.
-# the TTY has no nerd font, so no icon there
+#  ▄       ▄▀   ▄▄▄▄  ▄▄▄ █▄▄  ▄ ▄▄  ▄▄▄ 
+# ▀ ▀▄▀  ▄▀      ▄▀  ▀▀▄▄ █  █ █▀   █    
+#       ▀     ▀ ▀▀▀▀ ▀▀▀  ▀  ▀ ▀     ▀▀▀   
+# Zsh configuration.  
+
+
+# █▀▀▄ █▀▀▄ ▄▀▀▄ █▄ ▄█ █▀▀▄ ▀▀█▀▀ 
+# █▀▀  █▀█  █  █ █ ▀ █ █▀▀    █   
+# ▀    ▀  ▀  ▀▀  ▀   ▀ ▀      ▀   
+                                
 if [ "$TERM" = linux ]; then
     PROMPT=$'\n%F{15}%~%f\n%(?.%F{15}.%F{1}):%f '
 else
     PROMPT=$'\n%F{15}%~%f\n%F{15}%f %(?.%F{15}.%F{1}):%f '
 fi
 
-# history; a command typed with a space in front is not saved
+# ▄▀▀▀ █  █ █▀▀▀ █    █    
+#  ▀▀▄ █▀▀█ █▀▀  █    █    
+# ▀▀▀  ▀  ▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀          
+
+# HISTORY
 mkdir -p ~/.local/state/zsh
 HISTFILE=~/.local/state/zsh/history
 HISTSIZE=10000
 SAVEHIST=10000
 setopt SHARE_HISTORY HIST_IGNORE_ALL_DUPS HIST_IGNORE_SPACE
 
-# Tab completion; second Tab shows a list, small letters match capitals
+# COMPLETION                                                    
 mkdir -p ~/.cache/zsh
 autoload -Uz compinit
 compinit -d ~/.cache/zsh/zcompdump
 zstyle ':completion:*' menu select
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 
-# keys (foot and the TTY send some of them differently, so both are bound)
+# KEYBINDS                                   
 bindkey -e
+
 # Ctrl+Left / Ctrl+Right: by words
 bindkey '^[[1;5D' backward-word
 bindkey '^[[1;5C' forward-word
+
 # Home / End / Delete
 bindkey '^[[H' beginning-of-line
 bindkey '^[OH' beginning-of-line
@@ -37,6 +49,7 @@ bindkey '^[[F' end-of-line
 bindkey '^[OF' end-of-line
 bindkey '^[[4~' end-of-line
 bindkey '^[[3~' delete-char
+
 # Up / Down: history, only commands that start like the typed text
 autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
 zle -N up-line-or-beginning-search
@@ -51,7 +64,11 @@ if command -v broot >/dev/null; then
     eval "$(broot --print-shell-function zsh)"
 fi
 
-# plugins (packages/common.csv); not on the TTY, its colors aren't ours
+# █▀▀▄ █    █  █ ▄▀▀▀ ▀█▀ █▄  █ ▄▀▀▀ 
+# █▀▀  █    █  █ █ ▀█  █  █ ▀▄█  ▀▀▄ 
+# ▀    ▀▀▀▀  ▀▀   ▀▀▀ ▀▀▀ ▀   ▀ ▀▀▀  
+
+# (packages/common.csv); not on the TTY, its colors aren't ours
 plugins=/usr/share/zsh/plugins
 [ "$TERM" = linux ] && plugins=/nonexistent
 
@@ -73,7 +90,8 @@ if [ -r "$plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]; then
 fi
 unset plugins style
 
-# system info in every new foot window (not on the TTY)
+# Fastfetch
+# Show system info when a new terminal window opens.
 if [ "$TERM" = foot ] && command -v fastfetch >/dev/null; then
     fastfetch
 fi
