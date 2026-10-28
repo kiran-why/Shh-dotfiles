@@ -10,6 +10,9 @@
 # █▀▀  █▀█  █  █ █ ▀ █ █▀▀    █   
 # ▀    ▀  ▀  ▀▀  ▀   ▀ ▀      ▀   
                                 
+# an empty line, the folder, then "<artix icon> :" (red after an error).
+# %F{N} = color N of foot.ini (15 white, 1 red), %~ = current folder.
+# the TTY has no nerd font, so no icon there
 if [ "$TERM" = linux ]; then
     PROMPT=$'\n%F{15}%~%f\n%(?.%F{15}.%F{1}):%f '
 else
@@ -21,6 +24,7 @@ fi
 # ▀▀▀  ▀  ▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀          
 
 # HISTORY
+# a command typed with a space in front is not saved
 mkdir -p ~/.local/state/zsh
 HISTFILE=~/.local/state/zsh/history
 HISTSIZE=10000
@@ -28,6 +32,7 @@ SAVEHIST=10000
 setopt SHARE_HISTORY HIST_IGNORE_ALL_DUPS HIST_IGNORE_SPACE
 
 # COMPLETION                                                    
+# second Tab shows a list, small letters match capitals
 mkdir -p ~/.cache/zsh
 autoload -Uz compinit
 compinit -d ~/.cache/zsh/zcompdump
@@ -35,6 +40,7 @@ zstyle ':completion:*' menu select
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 
 # KEYBINDS                                   
+# foot and the TTY send some of them differently, so both are bound
 bindkey -e
 
 # Ctrl+Left / Ctrl+Right: by words

@@ -5,5 +5,5 @@ seatd
 # iwd needs dbus
 dbus
 iwd
-dhcpcd-srv
-dhcpcd-log
+# wired network (wifi is iwd's)
+dhcpcd

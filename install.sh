@@ -6,6 +6,7 @@
 # ▀ ▀  ▀ ▀▀▀    ▀▀  ▀▀▀▀ ▀ ▀ ▀ ▀▀▀  ▀  ▀                                       
 # Set up a fresh Artix (s6) system with these dotfiles.
 # Run as your user: sh install.sh. Use --check to check package names only.
+# Safe to run again. Steps are in MAIN at the bottom.
 
 set -eu
 
@@ -33,6 +34,7 @@ stamp=$(date +%Y%m%d-%H%M%S)
 # █▀▀█ █▀▀  █    █▀▀  █▀▀  █▀█   ▀▀▄ 
 # ▀  ▀ ▀▀▀▀ ▀▀▀▀ ▀    ▀▀▀▀ ▀  ▀ ▀▀▀  
 
+# read_list FILE: lines that are not empty and not comments
 read_list() {
     grep -v '^[[:space:]]*#' "$1" | grep -v '^[[:space:]]*$' || true
 }
@@ -45,7 +47,8 @@ is_installed() {
     pacman -Qq "$1" >/dev/null 2>&1
 }
 
-# Back up the old file if its contents differ.
+# write_root FILE TEXT: put TEXT into FILE as root. An old FILE with other
+# text is renamed to FILE.bak-DATE first; the same text is left alone
 write_root() {
     local file="$1"
     local text="$2"
@@ -273,6 +276,8 @@ vmware_clipboard() {
 #  ▀▀▀  ▀▀  ▀   ▀ ▀    ▀▀▀  ▀▀▀  ▀▀  ▀  ▀ ▀  ▀   ▀   ▀▀▀  ▀▀  ▀   ▀ 
 
 # Enable the services listed in services.txt.
+# s6: enable (draft) -> commit -> live install; services start at boot.
+# a one-time "unable to chdir to <svc>-srv" right after it is harmless
 enable_services() {
     step "s6 services from services.txt"
 
@@ -303,6 +308,13 @@ configure_system() {
     write_root /etc/iwd/main.conf \
         "$(printf '[General]\nEnableNetworkConfiguration=true\n\n[Network]\nNameResolvingService=resolvconf')"
     info "iwd: built-in DHCP, DNS via resolvconf"
+
+    # dhcpcd: wired only, so it doesn't fight iwd over wifi
+    if ! grep -q '^denyinterfaces wlan' /etc/dhcpcd.conf 2>/dev/null; then
+        echo 'denyinterfaces wlan*' | sudo tee -a /etc/dhcpcd.conf >/dev/null ||
+            error "cannot write /etc/dhcpcd.conf"
+    fi
+    info "dhcpcd: wired only"
 
     # XDG_RUNTIME_DIR at login, sway won't start without it (elogind did it before)
     if ! grep -q pam_rundir /etc/pam.d/system-login; then

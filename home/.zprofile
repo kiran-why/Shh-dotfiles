@@ -6,6 +6,7 @@
 #                    ▀                                                       
 # Start Sway on login.
 # Other TTYs stay as normal consoles.
+# no "set -e" here: an error must never kill the login shell
 
 
 # ▄▀▀▀ █▀▀▀ ▀▀█▀▀ ▀▀█▀▀ ▀█▀ █▄  █ ▄▀▀▀ ▄▀▀▀ 
@@ -61,6 +62,9 @@ fi
 if [ -z "${WAYLAND_DISPLAY:-}" ] && [ "$(tty)" = "/dev/tty1" ]; then
     mkdir -p "$(dirname "$wm_log")"
 
+    # dbus-run-session: a session D-Bus for pipewire and mako.
+    # a normal exit from sway logs you out; if sway fails you stay here
+    # and see the end of its log
     if dbus-run-session sway >"$wm_log" 2>&1; then
         exit
     fi
