@@ -17,11 +17,29 @@
 <p align="center"><strong>Quiet, minimal Wayland setup for Artix Linux (s6). No useless GUI.</strong></p>
 
 <p align="center">
+<a href="#-stack">🧱 Stack</a> •
 <a href="#-installation">📦 Installation</a> •
 <a href="#-updating">🔄 Updating</a> •
+<a href="#-layout">📁 Layout</a> •
 <a href="#-showcase">📸 Showcase</a> •
 <a href="#-keybinds">🎹 Keybinds</a>
 </p>
+
+## 🧱 Stack
+
+| | |
+|---|---|
+| Distro / Init | Artix Linux, s6 (no systemd) |
+| Login | Plain TTY, no display manager; sway starts on tty1 |
+| Seat | seatd + pam_rundir (no elogind) |
+| Desktop | sway + swaybar, no XWayland |
+| Shell / Terminal / Editor | zsh / foot / neovim |
+| Launcher, Menus | foot + fzf (own scripts) |
+| Files | broot |
+| Notifications | mako |
+| Sound | PipeWire + WirePlumber |
+| Network | iwd (wifi), dhcpcd (wired), openresolv |
+| Font | JetBrains Mono Nerd Font |
 
 ## 📦 Installation
 
@@ -40,6 +58,12 @@ sh install.sh
 Reboot and log in on **tty1**: sway starts by itself. Other ttys (`Ctrl+Alt+F2` ...)
 stay plain consoles for rescue.
 
+`install.sh` checks the system, adds the Arch `[extra]` repo and `yay`, installs
+`packages/common.csv`, enables the s6 services from `services.txt`, sets a few system
+options and links the configs with `link.sh`. It is safe to run again, and nothing is
+ever deleted: a file in the way is renamed to `name.bak-DATE`.
+`sh install.sh --check` only checks that every package exists.
+
 ## 🔄 Updating
 
 To update Shh, you will need to pull the latest changes from GitHub by running the following commands:
@@ -49,6 +73,20 @@ cd ~/Shh-dotfiles
 git pull
 sh ./install.sh
 ```
+
+## 📁 Layout
+
+```
+install.sh link.sh lib.sh   installer, symlinks, shared messages
+packages/common.csv         packages: tag,package,description (empty tag = pacman, A = AUR)
+services.txt                s6 services
+config/     ->  ~/.config/     sway, swaybar, foot, fastfetch, broot, nvim, mako
+home/       ->  ~/             .zprofile .zshrc
+scripts/    ->  ~/.local/bin/  launcher, volume, wifi, sound, wallpaper, screenshot, autotile, vm
+wallpapers/ ->  ~/wallpapers/  the newest picture here is the wallpaper
+```
+
+The configs in `$HOME` are links to the repo: to change something, edit the file here.
 
 ## 📸 Showcase
 
@@ -76,8 +114,15 @@ sh ./install.sh
 | `Super + S` | Show / Hide Scratchpad |
 | `Super + Shift + S` | Send Window to Scratchpad |
 | `Super + L` | Leave the Desktop |
+| `Super + Shift + C` | Reload Config and Wallpaper |
+| `Volume Keys` | Volume Up / Down / Mute |
 | `Print` | Screenshot of a Region, Saved to `~/pictures/screenshots` and Copied |
 | `Alt + Shift` | Switch Keyboard Layout (`US` / `RU`) |
+
+**Bar:** click wifi for the network menu, click the volume for the sound menu, scroll on it to change it.
+
+**zsh:** `Tab` completes, `→` accepts the gray suggestion, `↑` / `↓` search the history by what
+you typed, `Ctrl + ←` / `→` jump by words.
 
 ## ⚠️ Known issues
 
@@ -92,13 +137,13 @@ Ideas taken from [LARBS](https://github.com/LukeSmithxyz/LARBS) (installer) and
 ## 📄 License
 
 <p>
-  <a href="https://mit-license.org/">
+  <a href="LICENSE">
     <img src="https://github.com/user-attachments/assets/4136c1c7-7715-41d5-b626-38d8cf55305c" alt="MIT License" width="100">
   </a>
 </p>
 
 
-Shh-dotfiles is [Free Software](https://en.wikipedia.org/wiki/Free_software): You can use, study, share and modify it at your will. The app can be redistributed and/or modified under the terms of the [MIT License](https://mit-license.org/).
+Shh-dotfiles is [Free Software](https://en.wikipedia.org/wiki/Free_software): You can use, study, share and modify it at your will. The dotfiles can be redistributed and/or modified under the terms of the [MIT License](LICENSE).
 
 <div align="right">
 <table><td>
