@@ -10,4 +10,4 @@ exec ~/.local/bin/sound
 exec mako
 
 # VMware shared clipboard (Wayland) - only runs if tools are present and in VMware
-exec_always sh -c 'grep -qi vmware /sys/devices/virtual/dmi/id/product_name 2>/dev/null || grep -qi vmware /sys/devices/virtual/dmi/id/sys_vendor 2>/dev/null || exit; command -v vmtoolsd >/dev/null || exit; [ -d "$HOME/.local/lib/clipway" ] || exit; env -u DISPLAY XDG_SESSION_TYPE=wayland vmtoolsd -n vmusr --plugin-path "$HOME/.local/lib/clipway" >/dev/null 2>&1 &'
+exec_always sh -c 'grep -qi vmware /sys/devices/virtual/dmi/id/product_name 2>/dev/null || grep -qi vmware /sys/devices/virtual/dmi/id/sys_vendor 2>/dev/null || exit; command -v vmtoolsd >/dev/null 2>&1 || exit; mkdir -p "$HOME/.local/lib/clipway"; env -u DISPLAY XDG_SESSION_TYPE=wayland vmtoolsd -n vmusr --plugin-path "$HOME/.local/lib/clipway" >/dev/null 2>&1 &'
