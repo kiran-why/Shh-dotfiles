@@ -1,42 +1,29 @@
+<p id="start-of-content"> </p>
+
 ```
-                  █▄        █▄                  ▄█▀          ▄█▀    ▄█▀█▄ ▄▀▀▄  ▄█▀
-                  █▓▌       █▓▌                ▐▓█▄         ▐▓█▄▄  █▓▌  █▌▌■▀▐▌▐▓█
-            ▄▄██▄▐▓▓█░▄▓▄  ▐▓▓█░▄▓▄        ▄▓▄░▀▓▓▌  ▄▓██▄  ▀▓▓▌  ▐▓▓▄  ▀ ▀■▓▀ ▐▓▓▌      ▄▄█▄▄    ▄▄██▄
-           ▓▓  ▀▀▐▒▒ ▀ ▀██ ▐▒▒ ▀ ▀██      ██▀ ▀ ▒▒  ▓▓▀  ▀▓ ▐▒▒    ▒▒▌▀█▄  ▄▄▓▀▐▒▒      ▓█▀ ▀▓▓  ▓▓  ▀▀
-            ▀▀▀▄  ░░▌   ▐▓▌ ░░▌   ▐▓▌    ▐▓▌    ░░▌▐▒▌   ▐▓▌ ░░▌  ▐░░  ░   ▐▓▓  ░░▌    ▐▒▌  ▄▒▀   ▀▀▀▄
-         ▐█▌  ░█░ ██▓  ▄██  ██▓  ▄██      ██▄  ▐██ ▐░░▄ ▄▒▒  ▐██  ██▌       ▒▒▌ ▐██   ▄ ▀░░▀   ▐█▌  ░█░
-          █░▄██▀  ▐█▌  █▀   ▐█▌  █▀        ▀░█▄██▌  ▀█░█░▀    █░▀▀░█       ▐░░   █░█▄█▀  ▀█▄  ▄ █░▄██▀
-           ▀▀░     ▀    ▀    ▀    ▀           ▀▀▀      ▀     ▀      ▀      ██▀    ▀▀▀       ▀▀   ▀▀░
-                                                                           ▀▄
-         
-                                    // quiet  // minimal  // no useless GUI
+                █▄        █▄                  ▄█▀          ▄█▀    ▄█▀█▄ ▄▀▀▄  ▄█▀
+                █▓▌       █▓▌                ▐▓█▄         ▐▓█▄▄  █▓▌  █▌▌■▀▐▌▐▓█
+          ▄▄██▄▐▓▓█░▄▓▄  ▐▓▓█░▄▓▄        ▄▓▄░▀▓▓▌  ▄▓██▄  ▀▓▓▌  ▐▓▓▄  ▀ ▀■▓▀ ▐▓▓▌      ▄▄█▄▄    ▄▄██▄
+         ▓▓  ▀▀▐▒▒ ▀ ▀██ ▐▒▒ ▀ ▀██      ██▀ ▀ ▒▒  ▓▓▀  ▀▓ ▐▒▒    ▒▒▌▀█▄  ▄▄▓▀▐▒▒      ▓█▀ ▀▓▓  ▓▓  ▀▀
+          ▀▀▀▄  ░░▌   ▐▓▌ ░░▌   ▐▓▌    ▐▓▌    ░░▌▐▒▌   ▐▓▌ ░░▌  ▐░░  ░   ▐▓▓  ░░▌    ▐▒▌  ▄▒▀   ▀▀▀▄
+       ▐█▌  ░█░ ██▓  ▄██  ██▓  ▄██      ██▄  ▐██ ▐░░▄ ▄▒▒  ▐██  ██▌       ▒▒▌ ▐██   ▄ ▀░░▀   ▐█▌  ░█░
+        █░▄██▀  ▐█▌  █▀   ▐█▌  █▀        ▀░█▄██▌  ▀█░█░▀    █░▀▀░█       ▐░░   █░█▄█▀  ▀█▄  ▄ █░▄██▀
+         ▀▀░     ▀    ▀    ▀    ▀           ▀▀▀      ▀     ▀      ▀      ██▀    ▀▀▀       ▀▀   ▀▀░
+                                                                         ▀▄
+       
+                                  // quiet  // minimal  // no useless GUI
 ```
 
-![desktop](docs/screenshot.jpg)
+<p align="center"><strong>Quiet, minimal Wayland setup for Artix Linux (s6). No useless GUI.</strong></p>
 
-> **🚧 Work in progress.** The installer sets up a fresh system from start to finish;
-> configs are still being polished.
+<p align="center">
+<a href="#-installation">📦 Installation</a> •
+<a href="#-updating">🔄 Updating</a> •
+<a href="#-showcase">📸 Showcase</a> •
+<a href="#-keybinds">🎹 Keybinds</a>
+</p>
 
-Dotfiles and an installer for **Artix Linux with the s6 init system**: no useless GUI.
-
-## Stack
-
-| | |
-|---|---|
-| distro / init | Artix Linux, s6 (no systemd) |
-| login | plain TTY, no display manager; sway starts on tty1 |
-| seat | seatd + pam_rundir (no elogind) |
-| desktop | sway + swaybar, no XWayland |
-| shell / terminal / editor | zsh / foot / neovim |
-| launcher, menus | foot + fzf (own scripts) |
-| files | broot (a tree) |
-| notifications | mako |
-| sound | PipeWire + WirePlumber |
-| network | iwd + openresolv |
-| AUR | yay |
-| font | JetBrains Mono Nerd Font |
-
-## Install
+## 📦 Installation
 
 Start from a fresh **Artix base install with s6** (pick `seatd-s6`, not elogind), a user
 in the `wheel` group and a working internet connection. Then, as that user (**not root**):
@@ -53,62 +40,68 @@ sh install.sh
 Reboot and log in on **tty1**: sway starts by itself. Other ttys (`Ctrl+Alt+F2` ...)
 stay plain consoles for rescue.
 
-`install.sh` checks the system, adds the Arch `[extra]` repo and `yay`, installs
-`packages/common.csv`, enables the s6 services from `services.txt`, sets a few system
-options and links the configs with `link.sh`. It is safe to run again, and nothing is
-ever deleted: a file in the way is renamed to `name.bak-DATE`.
-`sh install.sh --check` only checks that every package exists.
+## 🔄 Updating
 
-## Layout
+To update Shh, you will need to pull the latest changes from GitHub by running the following commands:
 
-```
-install.sh link.sh lib.sh   installer, symlinks, shared messages
-packages/common.csv         packages: tag,package,description (empty tag = pacman, A = AUR)
-services.txt                s6 services
-config/     ->  ~/.config/  sway, swaybar, foot, fastfetch, broot, nvim, mako
-home/       ->  ~/          .zprofile .zshrc
-scripts/    ->  ~/.local/bin/  launcher, volume, wifi, sound, wallpaper, screenshot, autotile
-wallpapers/ ->  ~/wallpapers   the newest picture here is the wallpaper (authors: wallpapers/README.md)
+```bash
+cd ~/Shh-dotfiles
+git pull
+sh ./install.sh
 ```
 
-To change something, edit the file in the repo: the configs in `$HOME` are links to it.
+## 📸 Showcase
 
-## Keys
+<img width="1290" height="730" alt="image(2)" src="https://github.com/user-attachments/assets/5c10c6bd-413b-4a90-8860-a3befe76d147" />
+
+
+## 🎹 Keybinds
 
 `Super` is the Windows key.
 
-| keys | action |
+| Keys | Action |
 |---|---|
-| `Super + T` | terminal (foot) |
-| `Super + B` | browser |
-| `Super + F` | files (broot) |
-| `Super + R` | launcher |
-| `Super + Q` | close window |
-| `Super + Shift + F` | fullscreen |
-| `Super + V` | float / tile |
-| `Super + arrows` | move focus |
-| `Super + Shift + arrows` | move window |
-| `Super + mouse` | drag (left) / resize (right) a window |
-| `Super + 1 … 0` | go to workspace |
-| `Super + Shift + 1 … 0` | send window to workspace |
-| `Super + S` | show / hide scratchpad |
-| `Super + Shift + S` | send window to scratchpad |
-| `Super + L` | leave the desktop |
-| `Print` | screenshot of a region, saved to `~/pictures/screenshots` and copied |
-| `Alt + Shift` | switch keyboard layout (us / ru) |
+| `Super + T` | Terminal (foot) |
+| `Super + B` | Browser |
+| `Super + F` | Files (broot) |
+| `Super + R` | Launcher |
+| `Super + Q` | Close Window |
+| `Super + Shift + F` | Fullscreen |
+| `Super + V` | Float / Tile |
+| `Super + Arrows` | Move Focus |
+| `Super + Shift + Arrows` | Move Window |
+| `Super + Mouse` | Drag (Left) / Resize (Right) a Window |
+| `Super + 1 … 0` | Go to Workspace |
+| `Super + Shift + 1 … 0` | Send Window to Workspace |
+| `Super + S` | Show / Hide Scratchpad |
+| `Super + Shift + S` | Send Window to Scratchpad |
+| `Super + L` | Leave the Desktop |
+| `Print` | Screenshot of a Region, Saved to `~/pictures/screenshots` and Copied |
+| `Alt + Shift` | Switch Keyboard Layout (`US` / `RU`) |
 
-On the bar: click wifi for the network menu, click the volume for the sound menu,
-scroll on the volume to change it.
+## ⚠️ Known issues
 
-In zsh: `Tab` completes, `→` accepts the gray suggestion, `↑` / `↓` search the history
-by what you typed, `Ctrl + ←` / `→` jump by words.
+- No NVIDIA support (yet)
 
-## Known issues / not done yet
-
-- no NVIDIA support (yet)
-- wired network needs its own DHCP client: iwd only sets up wifi
-
-## Thanks
+## 🖇️ Thanks
 
 Ideas taken from [LARBS](https://github.com/LukeSmithxyz/LARBS) (installer) and
 [holman/dotfiles](https://github.com/holman/dotfiles) (symlinks).
+
+
+## 📄 License
+
+<p>
+  <a href="https://mit-license.org/">
+    <img src="https://github.com/user-attachments/assets/4136c1c7-7715-41d5-b626-38d8cf55305c" alt="MIT License" width="100">
+  </a>
+</p>
+
+
+Shh-dotfiles is [Free Software](https://en.wikipedia.org/wiki/Free_software): You can use, study, share and modify it at your will. The app can be redistributed and/or modified under the terms of the [MIT License](https://mit-license.org/).
+
+<div align="right">
+<table><td>
+<a href="#start-of-content">↥ Scroll to top</a>
+</td></table>
+</div>

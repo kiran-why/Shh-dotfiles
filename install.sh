@@ -1,11 +1,17 @@
 #!/bin/sh
-# install.sh - set up a fresh Artix (s6) system with these dotfiles
-# run as your user, not root:  sh install.sh  (or --check: only check
-# package names). Safe to run again. Steps are in MAIN at the bottom
+# ASCII : https://patorjk.com/software/taag/#p=display&f=Linguaholic+Mini+Block&t=SHH-DOTFILES&x=none&v=4&h=4&w=80&we=false
+
+# ▀ ▄▄▄   ▄▄▄ ▄█▄   ▄▄▄  █ █    ▄▄▄ █▄▄  
+# █ █  █ ▀▀▄▄  █   █  █  █ █   ▀▀▄▄ █  █ 
+# ▀ ▀  ▀ ▀▀▀    ▀▀  ▀▀▀▀ ▀ ▀ ▀ ▀▀▀  ▀  ▀                                       
+# Set up a fresh Artix (s6) system with these dotfiles.
+# Run as your user: sh install.sh. Use --check to check package names only.
 
 set -eu
 
-### SETTINGS ###
+# ▄▀▀▀ █▀▀▀ ▀▀█▀▀ ▀▀█▀▀ ▀█▀ █▄  █ ▄▀▀▀ ▄▀▀▀ 
+#  ▀▀▄ █▀▀    █     █    █  █ ▀▄█ █ ▀█  ▀▀▄ 
+# ▀▀▀  ▀▀▀▀   ▀     ▀   ▀▀▀ ▀   ▀  ▀▀▀ ▀▀▀  
 
 dots_path=$(cd "$(dirname "$0")" && pwd -P)
 
@@ -14,18 +20,19 @@ packages_file="$packages_dir/common.csv"
 services_file="$dots_path/services.txt"
 aur_helper="yay"
 
-# temporary passwordless sudo, removed on exit (see enable_nopasswd)
+# Temporary sudo rule, removed when the script exits. (see enable_nopasswd)
 sudoers_tmp="/etc/sudoers.d/dotfiles-temp"
 
-# suffix for backups of replaced system files, same as link.sh
+# Used to name backup files. same as link.sh
 stamp=$(date +%Y%m%d-%H%M%S)
 
 [ -f "$dots_path/lib.sh" ] || { echo "lib.sh not found in $dots_path" >&2; exit 1; }
 . "$dots_path/lib.sh"
 
-### HELPERS ###
+# █  █ █▀▀▀ █    █▀▀▄ █▀▀▀ █▀▀▄ ▄▀▀▀ 
+# █▀▀█ █▀▀  █    █▀▀  █▀▀  █▀█   ▀▀▄ 
+# ▀  ▀ ▀▀▀▀ ▀▀▀▀ ▀    ▀▀▀▀ ▀  ▀ ▀▀▀  
 
-# read_list FILE: lines that are not empty and not comments
 read_list() {
     grep -v '^[[:space:]]*#' "$1" | grep -v '^[[:space:]]*$' || true
 }
@@ -38,8 +45,7 @@ is_installed() {
     pacman -Qq "$1" >/dev/null 2>&1
 }
 
-# write_root FILE TEXT: put TEXT into FILE as root. An old FILE with other
-# text is renamed to FILE.bak-DATE first; the same text is left alone
+# Back up the old file if its contents differ.
 write_root() {
     local file="$1"
     local text="$2"
@@ -53,7 +59,9 @@ write_root() {
     printf '%s\n' "$text" | sudo tee "$file" >/dev/null || error "cannot write $file"
 }
 
-### STEPS ###
+# ▄▀▀▀ █  █ █▀▀▀ ▄▀▀▀ █ ▄▀ ▄▀▀▀ 
+# █    █▀▀█ █▀▀  █    █▀▄   ▀▀▄ 
+#  ▀▀▀ ▀  ▀ ▀▀▀▀  ▀▀▀ ▀  ▀ ▀▀▀  
 
 check_system() {
     step "checking the system"
@@ -82,6 +90,48 @@ check_system() {
 
     ok "artix + s6, internet, sudo"
 }
+
+# in_arch PKG: is PKG in Arch [extra]? asks archlinux.org, because before
+# enable_arch_repos pacman does not know that repo
+in_arch() {
+    curl -s -m 10 "https://archlinux.org/packages/search/json/?name=$1&repo=Extra" |
+        grep -q '"pkgname"'
+}
+
+# --check: does every package exist? installs nothing
+check_packages() {
+    step "checking package names"
+
+    local tag pkg desc missing=0 arch_on=1
+    grep -q '^\[extra\]' /etc/pacman.conf || arch_on=0
+
+    while IFS=, read -r tag pkg desc; do
+        if [ "$tag" = "A" ] && ! command -v "$aur_helper" >/dev/null; then
+            warn "skipped (no $aur_helper yet): $pkg"
+            continue
+        fi
+        case "$tag" in
+            A) "$aur_helper" -Si "$pkg" >/dev/null 2>&1 ;;
+            *) pacman -Si "$pkg" >/dev/null 2>&1 ;;
+        esac && { ok "$pkg"; continue; }
+
+        if [ "$tag" != "A" ] && [ "$arch_on" = 0 ] && in_arch "$pkg"; then
+            ok "$pkg (arch [extra], install.sh enables it)"
+        else
+            warn "not found: $pkg"
+            missing=$((missing + 1))
+        fi
+    done <<EOF
+$(package_lines)
+EOF
+
+    [ "$missing" -eq 0 ] || error "$missing package(s) not found"
+    ok "all packages exist"
+}
+
+# ▀█▀ █▄  █ ▄▀▀▀ ▀▀█▀▀ ▄▀▀▄ █    █    
+#  █  █ ▀▄█  ▀▀▄   █   █▀▀█ █    █    
+# ▀▀▀ ▀   ▀ ▀▀▀    ▀   ▀  ▀ ▀▀▀▀ ▀▀▀▀ 
 
 # AUR builds would ask for the password again and again (trick from LARBS)
 enable_nopasswd() {
@@ -174,46 +224,55 @@ install_packages() {
     done
 }
 
-# in_arch PKG: is PKG in Arch [extra]? asks archlinux.org, because before
-# enable_arch_repos pacman does not know that repo
-in_arch() {
-    curl -s -m 10 "https://archlinux.org/packages/search/json/?name=$1&repo=Extra" |
-        grep -q '"pkgname"'
+# █   █ ▀█▀ █▀▀▄ ▀▀█▀▀ █  █ ▄▀▀▄ █        █▄ ▄█ ▄▀▀▄ ▄▀▀▀ █  █ ▀█▀ █▄  █ █▀▀▀ ▄▀▀▀ 
+# ▀▄ ▄▀  █  █▀█    █   █  █ █▀▀█ █        █ ▀ █ █▀▀█ █    █▀▀█  █  █ ▀▄█ █▀▀   ▀▀▄ 
+#   ▀   ▀▀▀ ▀  ▀   ▀    ▀▀  ▀  ▀ ▀▀▀▀     ▀   ▀ ▀  ▀  ▀▀▀ ▀  ▀ ▀▀▀ ▀   ▀ ▀▀▀▀ ▀▀▀  
+
+# check if running inside vmware
+is_vmware() {
+    local f val
+    for f in /sys/devices/virtual/dmi/id/product_name /sys/devices/virtual/dmi/id/sys_vendor; do
+        [ -r "$f" ] || continue
+        val="$(cat "$f" 2>/dev/null | tr '[:upper:]' '[:lower:]')"
+        case "$val" in
+            *vmware*) return 0 ;;
+        esac
+    done
+    return 1
 }
 
-# --check: does every package exist? installs nothing
-check_packages() {
-    step "checking package names"
+# auto-install vmware clipboard tools if in vmware
+# https://github.com/krisztianfekete/clipway
+vmware_clipboard() {
+    step "VMware clipboard support"
 
-    local tag pkg desc missing=0 arch_on=1
-    grep -q '^\[extra\]' /etc/pacman.conf || arch_on=0
+    if ! is_vmware; then
+        info "not running in VMware, skipping"
+        return 0
+    fi
 
-    while IFS=, read -r tag pkg desc; do
-        if [ "$tag" = "A" ] && ! command -v "$aur_helper" >/dev/null; then
-            warn "skipped (no $aur_helper yet): $pkg"
-            continue
-        fi
-        case "$tag" in
-            A) "$aur_helper" -Si "$pkg" >/dev/null 2>&1 ;;
-            *) pacman -Si "$pkg" >/dev/null 2>&1 ;;
-        esac && { ok "$pkg"; continue; }
+    if command -v vmtoolsd >/dev/null 2>&1 && is_installed open-vm-tools-clipway; then
+        ok "already present"
+        return 0
+    fi
 
-        if [ "$tag" != "A" ] && [ "$arch_on" = 0 ] && in_arch "$pkg"; then
-            ok "$pkg (arch [extra], install.sh enables it)"
-        else
-            warn "not found: $pkg"
-            missing=$((missing + 1))
-        fi
-    done <<EOF
-$(package_lines)
-EOF
+    local log="$HOME/.local/state/shh/aur-open-vm-tools-clipway.log"
+    mkdir -p "$(dirname "$log")"
 
-    [ "$missing" -eq 0 ] || error "$missing package(s) not found"
-    ok "all packages exist"
+    info "VMware detected, installing open-vm-tools-clipway (building from AUR)..."
+    info "This might take some time so don't panic!"
+    if "$aur_helper" -S --needed --noconfirm open-vm-tools-clipway </dev/null >"$log" 2>&1; then
+        ok "open-vm-tools-clipway installed"
+    else
+        warn "failed to install open-vm-tools-clipway (optional) - see $log"
+    fi
 }
 
-# s6: enable (draft) -> commit -> live install; services start at boot.
-# a one-time "unable to chdir to <svc>-srv" right after it is harmless
+# ▄▀▀▀ ▄▀▀▄ █▄  █ █▀▀▀ ▀█▀ ▄▀▀▀ █  █ █▀▀▄ ▄▀▀▄ ▀▀█▀▀ ▀█▀ ▄▀▀▄ █▄  █ 
+# █    █  █ █ ▀▄█ █▀▀   █  █ ▀█ █  █ █▀█  █▀▀█   █    █  █  █ █ ▀▄█ 
+#  ▀▀▀  ▀▀  ▀   ▀ ▀    ▀▀▀  ▀▀▀  ▀▀  ▀  ▀ ▀  ▀   ▀   ▀▀▀  ▀▀  ▀   ▀ 
+
+# Enable the services listed in services.txt.
 enable_services() {
     step "s6 services from services.txt"
 
@@ -263,13 +322,15 @@ link_dotfiles() {
     DOTS_NO_LOGO=1 sh "$dots_path/link.sh"
 }
 
+# █▄ ▄█ ▄▀▀▄ ▀█▀ █▄  █ 
+# █ ▀ █ █▀▀█  █  █ ▀▄█ 
+# ▀   ▀ ▀  ▀ ▀▀▀ ▀   ▀ 
+
 usage() {
     echo "usage: $0 [--check] [-h | --help]"
     echo "  --check     only check that all packages exist, install nothing"
     echo "  -h, --help  show this help"
 }
-
-### MAIN ###
 
 check_only=0
 
@@ -295,6 +356,7 @@ enable_nopasswd
 tweak_pacman
 enable_arch_repos
 install_aur_helper
+vmware_clipboard
 install_packages
 enable_services
 configure_system
