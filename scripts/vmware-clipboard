@@ -1,0 +1,20 @@
+#!/bin/sh
+# vmware-clipboard - shared clipboard with the host in VMware (open-vm-tools-clipway)
+# run by sway on start and reload; does nothing outside VMware or without the tools
+# https://github.com/krisztianfekete/clipway
+
+set -eu
+
+[ "$("$HOME/.local/bin/vm" 2>/dev/null)" = vmware ] || exit 0
+command -v vmtoolsd >/dev/null || exit 0
+
+# a plugin dir with only the clipboard plugin
+plugins="$HOME/.local/lib/clipway"
+mkdir -p "$plugins"
+ln -sf /usr/lib/open-vm-tools/plugins/vmusr/libdndcp.so "$plugins/libdndcp.so"
+
+# already running (sway reload)
+pgrep -u "$(id -u)" -x vmtoolsd >/dev/null && exit 0
+
+env -u DISPLAY XDG_SESSION_TYPE=wayland \
+    vmtoolsd -n vmusr --plugin-path "$plugins" >/dev/null 2>&1 &

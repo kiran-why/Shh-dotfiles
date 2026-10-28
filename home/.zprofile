@@ -26,31 +26,9 @@ esac
 # ▀▄ ▄▀  █  █▀█    █   █  █ █▀▀█ █        █ ▀ █ █▀▀█ █    █▀▀█  █  █ ▀▄█ █▀▀   ▀▀▄ 
 #   ▀   ▀▀▀ ▀  ▀   ▀    ▀▀  ▀  ▀ ▀▀▀▀     ▀   ▀ ▀  ▀  ▀▀▀ ▀  ▀ ▀▀▀ ▀   ▀ ▀▀▀▀ ▀▀▀  
 
-# Auto-detect VMs and disable hardware cursors if needed (workaround for invisible cursor)
-if [ -z "${WLR_NO_HARDWARE_CURSORS:-}" ]; then
-    _isvm=0
-
-    # Check DMI info
-    for _f in /sys/devices/virtual/dmi/id/sys_vendor /sys/devices/virtual/dmi/id/product_name /sys/devices/virtual/dmi/id/board_name; do
-        [ -r "$_f" ] || continue
-        if grep -qiE '(vmware|virtualbox|innotek|oracle|qemu|kvm|hyper-v|microsoft corporation)' "$_f"; then
-            _isvm=1
-            break
-        fi
-    done
-
-    # Check hypervisor type as fallback
-    if [ "$_isvm" -eq 0 ] && [ -r /sys/hypervisor/type ]; then
-        grep -qiE '(vmware|xen|kvm)' /sys/hypervisor/type && _isvm=1
-    fi
-
-    # Check for vmware kernel module as fallback
-    if [ "$_isvm" -eq 0 ] && [ -r /proc/modules ]; then
-        grep -q '^vmwgfx ' /proc/modules && _isvm=1
-    fi
-
-    [ "$_isvm" -eq 1 ] && export WLR_NO_HARDWARE_CURSORS=1
-    unset _isvm _f
+# in a VM the hardware cursor is often invisible: draw it in software (scripts/vm)
+if [ -z "${WLR_NO_HARDWARE_CURSORS:-}" ] && "$HOME/.local/bin/vm" >/dev/null 2>&1; then
+    export WLR_NO_HARDWARE_CURSORS=1
 fi
 
 # ▄▀▀▀ █   █ ▄▀▀▄ ▀▄ ▄▀ 
