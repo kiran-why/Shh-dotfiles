@@ -241,9 +241,15 @@ configure_system() {
 
     # iwd gets IP addresses itself, DNS goes to openresolv
     sudo mkdir -p /etc/iwd
+    
+    # Network configuration
     write_root /etc/iwd/main.conf \
-        "$(printf '[General]\nEnableNetworkConfiguration=true\n\n[Network]\nNameResolvingService=resolvconf')"
-    info "iwd: built-in DHCP, DNS via resolvconf"
+        "$(cat "$dots_path/config/network/iwd/main.conf")"
+
+    write_root /etc/dhcpcd.conf \
+        "$(cat "$dots_path/config/network/dhcpcd/dhcpcd.conf")"
+
+    info "network: iwd for Wi-Fi, dhcpcd for Ethernet, resolvconf for DNS"
 
     # XDG_RUNTIME_DIR at login, sway won't start without it (elogind did it before)
     if ! grep -q pam_rundir /etc/pam.d/system-login; then

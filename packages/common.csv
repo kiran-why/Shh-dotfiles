@@ -41,5 +41,7 @@
 # network
 ,iwd,wifi daemon
 ,iwd-s6,iwd service for s6
+,dhcpcd,DHCP client for wired and wireless network interfaces
+,dhcpcd-s6,dhcpcd service for s6
 ,dbus-s6,dbus service for s6 (iwd needs it; services.txt)
 ,openresolv,DNS config for iwd (no systemd-resolved)
