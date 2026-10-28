@@ -260,6 +260,7 @@ vmware_clipboard() {
     mkdir -p "$(dirname "$log")"
 
     info "VMware detected, installing open-vm-tools-clipway (building from AUR)..."
+    info "This might take some time so don't panic!"
     if "$aur_helper" -S --needed --noconfirm open-vm-tools-clipway </dev/null >"$log" 2>&1; then
         ok "open-vm-tools-clipway installed"
     else
