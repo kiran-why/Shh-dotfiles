@@ -256,8 +256,15 @@ vmware_clipboard() {
         return 0
     fi
 
-    info "VMware detected, installing open-vm-tools-clipway..."
-    "$aur_helper" -S --needed --noconfirm open-vm-tools-clipway </dev/null || warn "failed to install open-vm-tools-clipway (optional)"
+    local log="$HOME/.local/state/shh/aur-open-vm-tools-clipway.log"
+    mkdir -p "$(dirname "$log")"
+
+    info "VMware detected, installing open-vm-tools-clipway (building from AUR)..."
+    if "$aur_helper" -S --needed --noconfirm open-vm-tools-clipway </dev/null >"$log" 2>&1; then
+        ok "open-vm-tools-clipway installed"
+    else
+        warn "failed to install open-vm-tools-clipway (optional) - see $log"
+    fi
 }
 
 # ▄▀▀▀ ▄▀▀▄ █▄  █ █▀▀▀ ▀█▀ ▄▀▀▀ █  █ █▀▀▄ ▄▀▀▄ ▀▀█▀▀ ▀█▀ ▄▀▀▄ █▄  █ 
