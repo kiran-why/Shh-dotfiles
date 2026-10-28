@@ -5,3 +5,4 @@ seatd
 # iwd needs dbus
 dbus
 iwd
+dhcpcd-srv
