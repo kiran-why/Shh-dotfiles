@@ -1,0 +1,55 @@
+#!/bin/sh
+# hardware - what the dotfiles run on, one word per line:
+#   in a VM: vmware, virtualbox, qemu, hyperv or xen
+#   on real hardware, one line per graphics card: amd, intel, nvidia (GTX 16xx,
+#   RTX and newer), nvidia-580xx (GTX 750 ... 10xx), nvidia-legacy (older)
+# fails when nothing is found. Used by .zprofile, vmware-clipboard and
+# install.sh (it installs packages/WORD.csv for every word)
+
+set -eu
+
+dmi=/sys/devices/virtual/dmi/id
+id=$(cat "$dmi/sys_vendor" "$dmi/product_name" "$dmi/board_name" 2>/dev/null |
+    tr '[:upper:]' '[:lower:]')
+
+case "$id" in
+    *vmware*)                         echo vmware;     exit 0 ;;
+    *virtualbox*|*innotek*|*oracle*)  echo virtualbox; exit 0 ;;
+    *qemu*|*kvm*)                     echo qemu;       exit 0 ;;
+    # hyper-v: product_name "Virtual Machine" (sys_vendor is also on real Surface laptops)
+    *"virtual machine"*)              echo hyperv;     exit 0 ;;
+esac
+
+# xen does not always show up in DMI
+if [ -r /sys/hypervisor/type ]; then
+    cat /sys/hypervisor/type
+    exit 0
+fi
+
+# nvidia_driver DEVICE: which driver an NVIDIA card needs, by its PCI device id
+# (from pci.ids: Turing and newer start at 0x1e00, Maxwell at 0x1340)
+nvidia_driver() {
+    if [ $(($1)) -ge $((0x1e00)) ]; then
+        echo nvidia
+    elif [ $(($1)) -ge $((0x1340)) ]; then
+        echo nvidia-580xx
+    else
+        echo nvidia-legacy
+    fi
+}
+
+# graphics cards: PCI devices of class 0x03 (display controller)
+gpus=$(for dev in /sys/bus/pci/devices/*; do
+    case "$(cat "$dev/class" 2>/dev/null)" in
+        0x03*) ;;
+        *) continue ;;
+    esac
+    case "$(cat "$dev/vendor")" in
+        0x1002) echo amd ;;
+        0x8086) echo intel ;;
+        0x10de) nvidia_driver "$(cat "$dev/device")" ;;
+    esac
+done | sort -u)
+
+[ -n "$gpus" ] || exit 1
+echo "$gpus"

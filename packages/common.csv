@@ -1,6 +1,7 @@
-# packages/common.csv - what install.sh installs
+# packages/common.csv - what install.sh installs on every machine
 # tag,package,description: empty tag = pacman, A = AUR (yay).
 # add a line to install one more; check names with  sh install.sh --check
+# graphics drivers: packages/CARD.csv, picked by scripts/hardware
 
 # system: seatd instead of elogind
 ,seatd-s6,seatd service for s6: screen and input for sway without root (no elogind)
@@ -18,6 +19,7 @@
 
 # desktop
 ,sway,tiling wayland compositor (includes swaybar and swaymsg)
+,mesa,OpenGL for sway on every graphics card and in a VM
 ,firefox,browser (Super+B)
 
 # wayland tools

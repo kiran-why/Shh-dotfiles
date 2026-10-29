@@ -26,10 +26,17 @@ esac
 # ▀▄ ▄▀  █  █▀█    █   █  █ █▀▀█ █        █ ▀ █ █▀▀█ █    █▀▀█  █  █ ▀▄█ █▀▀   ▀▀▄ 
 #   ▀   ▀▀▀ ▀  ▀   ▀    ▀▀  ▀  ▀ ▀▀▀▀     ▀   ▀ ▀  ▀  ▀▀▀ ▀  ▀ ▀▀▀ ▀   ▀ ▀▀▀▀ ▀▀▀  
 
-# in a VM the hardware cursor is often invisible: draw it in software (scripts/vm)
-if [ -z "${WLR_NO_HARDWARE_CURSORS:-}" ] && "$HOME/.local/bin/vm" >/dev/null 2>&1; then
-    export WLR_NO_HARDWARE_CURSORS=1
-fi
+# a VM type or the graphics cards (scripts/hardware)
+hardware=$("$HOME/.local/bin/hardware" 2>/dev/null)
+
+case "$hardware" in
+    # in a VM the hardware cursor is often invisible: draw it in software
+    vmware|virtualbox|qemu|hyperv|xen)
+        [ -n "${WLR_NO_HARDWARE_CURSORS:-}" ] || export WLR_NO_HARDWARE_CURSORS=1 ;;
+    # sway works on the NVIDIA driver but shows a "not supported" bar; this hides it
+    *nvidia*)
+        export SWAY_UNSUPPORTED_GPU=true ;;
+esac
 
 # ▄▀▀▀ █   █ ▄▀▀▄ ▀▄ ▄▀ 
 #  ▀▀▄ █▄▀▄█ █▀▀█   █   

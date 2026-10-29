@@ -59,7 +59,7 @@ Reboot and log in on **tty1**: sway starts by itself. Other ttys (`Ctrl+Alt+F2` 
 stay plain consoles for rescue.
 
 `install.sh` checks the system, adds the Arch `[extra]` repo and `yay`, installs
-`packages/common.csv`, enables the s6 services from `services.txt`, sets a few system
+`packages/common.csv` and the drivers for your graphics card, enables the s6 services from `services.txt`, sets a few system
 options and links the configs with `link.sh`. It is safe to run again, and nothing is
 ever deleted: a file in the way is renamed to `name.bak-DATE`.
 `sh install.sh --check` only checks that every package exists.
@@ -79,10 +79,11 @@ sh ./install.sh
 ```
 install.sh link.sh lib.sh   installer, symlinks, shared messages
 packages/common.csv         packages: tag,package,description (empty tag = pacman, A = AUR)
+packages/CARD.csv           graphics drivers: amd, intel, nvidia, nvidia-580xx
 services.txt                s6 services
 config/     ->  ~/.config/     sway, swaybar, foot, fastfetch, broot, nvim, mako
 home/       ->  ~/             .zprofile .zshrc
-scripts/    ->  ~/.local/bin/  launcher, volume, wifi, sound, wallpaper, screenshot, autotile, vm
+scripts/    ->  ~/.local/bin/  launcher, volume, wifi, sound, wallpaper, screenshot, autotile, hardware
 wallpapers/ ->  ~/wallpapers/  the newest picture here is the wallpaper
 ```
 
@@ -126,7 +127,9 @@ you typed, `Ctrl + ←` / `→` jump by words.
 
 ## ⚠️ Known issues
 
-- No NVIDIA support (yet)
+- NVIDIA is untested (no hardware). GTX 6xx / 7xx and older get no NVIDIA driver and run on nouveau
+- Black screen after boot on NVIDIA: remove `kms` from `HOOKS` in `/etc/mkinitcpio.conf`, then
+  `sudo mkinitcpio -P` (from the Arch wiki)
 
 ## 🖇️ Thanks
 

@@ -5,7 +5,7 @@
 
 set -eu
 
-[ "$("$HOME/.local/bin/vm" 2>/dev/null)" = vmware ] || exit 0
+[ "$("$HOME/.local/bin/hardware" 2>/dev/null)" = vmware ] || exit 0
 command -v vmtoolsd >/dev/null || exit 0
 
 # a plugin dir with only the clipboard plugin

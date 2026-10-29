@@ -30,6 +30,9 @@ stamp=$(date +%Y%m%d-%H%M%S)
 [ -f "$dots_path/lib.sh" ] || { echo "lib.sh not found in $dots_path" >&2; exit 1; }
 . "$dots_path/lib.sh"
 
+# a VM type or the graphics cards, one per line (scripts/hardware)
+hardware=$(sh "$dots_path/scripts/hardware" 2>/dev/null || true)
+
 # █  █ █▀▀▀ █    █▀▀▄ █▀▀▀ █▀▀▄ ▄▀▀▀ 
 # █▀▀█ █▀▀  █    █▀▀  █▀▀  █▀█   ▀▀▄ 
 # ▀  ▀ ▀▀▀▀ ▀▀▀▀ ▀    ▀▀▀▀ ▀  ▀ ▀▀▀  
@@ -39,8 +42,21 @@ read_list() {
     grep -v '^[[:space:]]*#' "$1" | grep -v '^[[:space:]]*$' || true
 }
 
+# common.csv + packages/CARD.csv for every graphics card found
 package_lines() {
+    local hw
     read_list "$packages_file"
+    for hw in $hardware; do
+        [ ! -f "$packages_dir/$hw.csv" ] || read_list "$packages_dir/$hw.csv"
+    done
+}
+
+# every list, not only this machine's: --check finds typos anywhere
+all_package_lines() {
+    local list
+    for list in "$packages_dir"/*.csv; do
+        read_list "$list"
+    done
 }
 
 is_installed() {
@@ -125,7 +141,7 @@ check_packages() {
             missing=$((missing + 1))
         fi
     done <<EOF
-$(package_lines)
+$(all_package_lines)
 EOF
 
     [ "$missing" -eq 0 ] || error "$missing package(s) not found"
@@ -231,12 +247,12 @@ install_packages() {
 # ▀▄ ▄▀  █  █▀█    █   █  █ █▀▀█ █        █ ▀ █ █▀▀█ █    █▀▀█  █  █ ▀▄█ █▀▀   ▀▀▄ 
 #   ▀   ▀▀▀ ▀  ▀   ▀    ▀▀  ▀  ▀ ▀▀▀▀     ▀   ▀ ▀  ▀  ▀▀▀ ▀  ▀ ▀▀▀ ▀   ▀ ▀▀▀▀ ▀▀▀  
 
-# auto-install vmware clipboard tools if in vmware (VM check: scripts/vm)
+# auto-install vmware clipboard tools if in vmware (VM check: scripts/hardware)
 # https://github.com/krisztianfekete/clipway
 vmware_clipboard() {
     step "VMware clipboard support"
 
-    if [ "$(sh "$dots_path/scripts/vm" 2>/dev/null)" != vmware ]; then
+    if [ "$hardware" != vmware ]; then
         info "not running in VMware, skipping"
         return 0
     fi
@@ -261,6 +277,32 @@ vmware_clipboard() {
 # ▄▀▀▀ ▄▀▀▄ █▄  █ █▀▀▀ ▀█▀ ▄▀▀▀ █  █ █▀▀▄ ▄▀▀▄ ▀▀█▀▀ ▀█▀ ▄▀▀▄ █▄  █ 
 # █    █  █ █ ▀▄█ █▀▀   █  █ ▀█ █  █ █▀█  █▀▀█   █    █  █  █ █ ▀▄█ 
 #  ▀▀▀  ▀▀  ▀   ▀ ▀    ▀▀▀  ▀▀▀  ▀▀  ▀  ▀ ▀  ▀   ▀   ▀▀▀  ▀▀  ▀   ▀ 
+
+# the drivers come from packages/CARD.csv; here only the settings they need
+configure_gpu() {
+    step "graphics"
+
+    if [ -z "$hardware" ]; then
+        warn "no graphics card found, only mesa is installed"
+        return 0
+    fi
+
+    local hw
+    for hw in $hardware; do
+        case "$hw" in
+            nvidia|nvidia-580xx)
+                # sway needs kernel modesetting; the 580xx driver has it off by default
+                write_root /etc/modprobe.d/nvidia-modeset.conf "options nvidia_drm modeset=1"
+                info "$hw: kernel modesetting on (after reboot)" ;;
+            nvidia-legacy)
+                warn "this NVIDIA card is too old for the NVIDIA driver, nouveau (mesa) runs it" ;;
+            *)
+                info "$hw: nothing to set" ;;
+        esac
+    done
+
+    ok "done"
+}
 
 # before enable_services: s6 live install starts iwd and dhcpcd right away
 configure_network() {
@@ -364,6 +406,7 @@ enable_arch_repos
 install_aur_helper
 vmware_clipboard
 install_packages
+configure_gpu
 configure_network
 enable_services
 configure_system

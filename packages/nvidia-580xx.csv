@@ -1,0 +1,6 @@
+# packages/nvidia-580xx.csv - older NVIDIA: GTX 750 ... GTX 10xx (scripts/hardware prints "nvidia-580xx")
+# same format as common.csv. nvidia-open does not support these cards
+
+,nvidia-580xx-dkms,NVIDIA kernel driver for older cards (dkms builds it for your kernel)
+,nvidia-580xx-utils,NVIDIA OpenGL and Vulkan libraries and tools (580xx)
+,linux-headers,kernel headers: dkms needs them to build the driver (stock linux kernel)
