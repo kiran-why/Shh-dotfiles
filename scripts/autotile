@@ -1,12 +1,10 @@
 #!/bin/sh
-# autotile - split windows like hyprland's dwindle layout
-# a new window halves the focused one along its longer side
-# (wide -> left/right, tall -> top/bottom). Started once by sway (sway/look),
-# ends with sway. Needs jq
+# autotile - hyprland-like dwindle: a new window halves the focused one
+# along its longer side. Started once by sway (sway/look)
 
 set -eu
 
-# finds the focused tiled window and its parent, prints
+# the focused window and its parent:
 # "id type fullscreen width height parent_layout siblings"
 focused='
 [.. | objects | select(.nodes? and any(.nodes[]; .focused))]
@@ -28,7 +26,7 @@ while read -r change; do
     set -- $info
     id=$1 type=$2 fullscreen=$3 width=$4 height=$5 layout=$6 siblings=$7
 
-    # leave alone: floating, fullscreen, stacked and tabbed windows
+    # leave floating, fullscreen, stacked and tabbed windows alone
     [ "$type" = con ] && [ "$fullscreen" -eq 0 ] || continue
     case "$layout" in
         stacked|tabbed) continue ;;
@@ -40,7 +38,6 @@ while read -r change; do
         split=splith
     fi
 
-    # already split that way and alone: nothing to do
     if [ "$siblings" -eq 1 ] && [ "$layout" = "$split" ]; then
         continue
     fi

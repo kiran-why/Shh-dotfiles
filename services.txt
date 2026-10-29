@@ -1,5 +1,4 @@
-# services.txt - s6 services install.sh enables at boot
-# one per line; the matching *-s6 package must be in packages/common.csv
+# services.txt - s6 services started at boot; each *-s6 package is in common.csv
 
 seatd
 # iwd needs dbus
@@ -7,5 +6,5 @@ dbus
 iwd
 # wired network (wifi is iwd's)
 dhcpcd
-# bluetooth, needs dbus; idle on a machine without an adapter
+# bluetooth, needs dbus
 bluetoothd

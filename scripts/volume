@@ -1,35 +1,26 @@
 #!/bin/sh
 # volume - sound menu: louder, quieter, mute, output device, mic mute
-# opened by a click on the volume icon in swaybar (window size in sway/rules).
-# Esc closes it.
-# volume up | down | mute: no menu, for the volume keys; shows the level
-# in a notification
+# opened from the volume icon in swaybar.
+# volume up | down | mute: no menu, for the volume keys, shows the level
 
 set -eu
 
 out=@DEFAULT_AUDIO_SINK@
 mic=@DEFAULT_AUDIO_SOURCE@
-# volume step and the highest volume (1.0 = 100%)
+# the step and the max (1.0 = 100%)
 step=5%
 max=1.0
 
-# same look as scripts/launcher
-colors='fg:7,fg+:15,bg+:0,hl:15:underline,hl+:15:underline'
-colors="$colors,info:8,border:8,label:15,prompt:15,pointer:15,query:15"
-colors="$colors,separator:8,spinner:8,gutter:-1,header:7"
-
 menu() {
-    fzf --layout=reverse --border=sharp --info=hidden --prompt='> ' \
-        --pointer='▌' --no-scrollbar --highlight-line --color="$colors" "$@"
+    fzf --info=hidden "$@"
 }
 
-# wpctl prints harmless "RTKit error" lines (no rtkit installed);
-# they would mess up the menu, so its errors are hidden
+# wpctl prints harmless "RTKit error" lines that would mess up the menu
 wp() {
     wpctl "$@" 2>/dev/null
 }
 
-# line PERCENT: ━━━━━───── like on the bar
+# line PERCENT: ━━━━━─────
 line() {
     local full=$((($1 + 5) / 10)) i=0 text=''
     [ "$full" -gt 10 ] && full=10
@@ -40,7 +31,7 @@ line() {
     printf '%s' "$text"
 }
 
-# the top of the menu: volume and the name of the output
+# the volume and the output name
 now() {
     local vol pct icon name
     vol=$(wp get-volume "$out") || { echo 'no sound: pipewire is not running'; return; }
@@ -50,7 +41,7 @@ now() {
     printf '%s %s %s%%\n%s' "$icon" "$(line "$pct")" "$pct" "$name"
 }
 
-# list the outputs (pw-dump + jq), pick one, make it the default
+# pick an output and make it the default
 pick_output() {
     local id
     id=$(pw-dump 2>/dev/null | jq -r '.[]
@@ -64,8 +55,7 @@ pick_output() {
     fi
 }
 
-# the level as a notification; the same tag makes mako replace the old one
-# instead of stacking them. -t: shown for 1.5 s
+# the same tag makes mako replace the last one instead of stacking them
 notify_level() {
     local text
     text=$(now)
@@ -79,7 +69,7 @@ case "${1:-}" in
     mute) wp set-mute "$out" toggle; notify_level; exit 0 ;;
 esac
 
-# pos: the line the cursor starts on, so it stays where it was
+# pos keeps the cursor on the last picked line
 pos=1
 while :; do
     pick=$(printf '%s\n' louder quieter mute 'output device' 'mic mute' |

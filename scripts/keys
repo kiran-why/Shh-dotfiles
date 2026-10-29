@@ -1,16 +1,14 @@
 #!/bin/sh
-# keys - every sway key, read from the config files, searchable with fzf
-# opened by $mod+/ in a floating foot window (size in sway/rules).
-# a new bindsym shows up here by itself. Esc closes it
+# keys - all sway keys from the config files, searchable ($mod+/)
+# a new bindsym shows up here by itself
 
 set -eu
 
-# keys are read from sway/keybinds and sway/workspaces;
 # not swaymsg -t get_config: it returns only the main file, without includes
 sway_dir="${XDG_CONFIG_HOME:-$HOME/.config}/sway"
 
-# one line per key: KEY  ACTION  description in gray.
-# the description is the first comment line above the key, up to an empty line
+# "KEY  ACTION  description"; the description is the first comment line
+# of the block above the key, in gray
 list() {
     awk '
         /^[[:space:]]*$/ { desc = ""; next }
@@ -20,19 +18,18 @@ list() {
         }
         $1 == "bindsym" {
             i = 2
-            while ($i ~ /^--/) i++    # skip flags like --to-code
+            while ($i ~ /^--/) i++
             key = $i
             cmd = $(i + 1)
             for (j = i + 2; j <= NF; j++) cmd = cmd " " $j
 
             gsub(/\$mod/, "Super", key)
             sub(/^exec /, "", cmd)
-            sub(/^foot --app-id=[^ ]* /, "", cmd)    # menus in their own window
+            sub(/^foot --app-id=[^ ]* /, "", cmd)
             gsub(/~\/\.local\/bin\//, "", cmd)
             d = desc
             gsub(/\$mod/, "Super", d)
 
-            # \033[90m = gray (color 8 in foot.ini)
             printf "%-22s %s", key, cmd
             if (d != "") printf "  \033[90m%s\033[0m", d
             printf "\n"
@@ -40,19 +37,5 @@ list() {
     ' "$@"
 }
 
-# same look as scripts/launcher
-colors='fg:7,fg+:15,bg+:0,hl:15:underline,hl+:15:underline'
-colors="$colors,info:8,border:8,label:15,prompt:15,pointer:15,query:15"
-colors="$colors,separator:8,spinner:8,gutter:-1"
-
-list "$sway_dir/keybinds" "$sway_dir/workspaces" | fzf \
-    --ansi \
-    --layout=reverse \
-    --border=sharp \
-    --border-label=' keys ' \
-    --info=inline-right \
-    --prompt='> ' \
-    --pointer='▌' \
-    --no-scrollbar \
-    --highlight-line \
-    --color="$colors" >/dev/null || true
+list "$sway_dir/keybinds" "$sway_dir/workspaces" |
+    fzf --ansi --border-label=' keys ' >/dev/null || true

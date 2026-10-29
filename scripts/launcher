@@ -1,15 +1,14 @@
 #!/bin/sh
-# launcher - pick a program from $PATH with fzf and start it
-# opened by $mod+r in a floating foot window (size in sway/rules).
-# console programs (htop, nvim) get their own foot window, its app id is
-# the program name, so menus (wifi, volume, keys) float by their sway/rules
+# launcher - pick a program from $PATH and start it ($mod+r)
+# console programs open in their own foot, app id = program name,
+# so menus like wifi and keys float by their sway/rules
 
 set -eu
 
-# not listed: sway and other scripts start these, a second copy would clash
+# started by sway or other scripts, a second copy would clash
 hidden='autotile sound hardware wallpaper vmware-clipboard'
 
-# programs: every executable file in $PATH, without duplicates
+# every executable in $PATH, without duplicates
 programs() {
     local IFS=: dir f
     for dir in $PATH; do
@@ -22,11 +21,10 @@ programs() {
     done | sort -u
 }
 
-# is_gui CMD: a .desktop file runs CMD and has no Terminal=true.
-# no .desktop at all = console program
+# is_gui CMD: some .desktop file runs CMD without Terminal=true
 is_gui() {
     local cmd="$1" f
-    set --  # the .desktop files that exist; awk stops on a missing one
+    set --
     for f in /usr/share/applications/*.desktop \
              "$HOME"/.local/share/applications/*.desktop; do
         [ -f "$f" ] || continue
@@ -47,22 +45,7 @@ is_gui() {
     ' "$@"
 }
 
-# colors are numbers of the foot palette (foot.ini): 7 text, 15 white,
-# 8 gray, 0 dark gray. Same look in scripts/volume and scripts/wifi
-colors='fg:7,fg+:15,bg+:0,hl:15:underline,hl+:15:underline'
-colors="$colors,info:8,border:8,label:15,prompt:15,pointer:15,query:15"
-colors="$colors,separator:8,spinner:8,gutter:-1"
-
-cmd=$(programs | fzf \
-    --layout=reverse \
-    --border=sharp \
-    --border-label=' run ' \
-    --info=inline-right \
-    --prompt='> ' \
-    --pointer='▌' \
-    --no-scrollbar \
-    --highlight-line \
-    --color="$colors") || exit 0
+cmd=$(programs | fzf --border-label=' run ') || exit 0
 
 if is_gui "$cmd"; then
     swaymsg exec "$cmd" >/dev/null

@@ -1,27 +1,24 @@
 #!/bin/sh
-# record - record the screen to ~/videos/recordings; run it again to stop
-# bound to Shift+Print in sway. Drag for a region, click a screen for all
-# of it, Esc cancels. A red dot on the bar while it records (click = stop).
+# record - record the screen to ~/videos/recordings, run again to stop
+# Shift+Print: drag for a region, click a screen for all of it, Esc cancels.
 # no sound for now
 
 set -eu
 
-# change the folder or the file name format here
 dir="$HOME/videos/recordings"
 file="$dir/$(date +%Y-%m-%d_%H-%M-%S).mp4"
 
-# already recording: stop it. SIGINT lets wf-recorder finish the file;
-# the run that started it shows the "saved" notification
+# already recording: SIGINT lets wf-recorder finish the file,
+# the first run then shows "saved"
 if pgrep -x wf-recorder >/dev/null; then
     pkill -INT -x wf-recorder
     exit 0
 fi
 
-# same look as scripts/screenshot; -o: a click picks a whole screen
+# -o: a click picks a whole screen
 geometry=$(slurp -o -b '#00000080' -c '#e6e6e6ff' -w 1 </dev/null) || exit 0
 
 mkdir -p "$dir"
-# runs until it is stopped
 if wf-recorder -g "$geometry" -f "$file" </dev/null >/dev/null 2>&1; then
     notify-send -a record 'recording saved' "${file##*/}"
 else

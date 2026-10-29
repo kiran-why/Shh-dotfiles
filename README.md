@@ -84,7 +84,7 @@ install.sh link.sh lib.sh   installer, symlinks, shared messages
 packages/common.csv         packages: tag,package,description (empty tag = pacman, A = AUR)
 packages/CARD.csv           graphics drivers: amd, intel, nvidia, nvidia-580xx
 services.txt                s6 services
-config/     ->  ~/.config/     sway, swaybar, foot, fastfetch, broot, nvim, mako, cliphist
+config/     ->  ~/.config/     sway, swaybar, foot, fzf (the look of all menus), fastfetch, broot, nvim, mako, cliphist
 home/       ->  ~/             .zprofile .zshrc
 scripts/    ->  ~/.local/bin/  shh, launcher, keys, clipboard, volume, wifi, bluetooth, sound, wallpaper, screenshot, record, autotile, screen, hardware
 wallpapers/ ->  ~/wallpapers/  the newest picture here is the wallpaper

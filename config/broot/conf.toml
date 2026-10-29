@@ -1,8 +1,7 @@
-# ~/.config/broot/conf.toml - file manager as a tree (Super+F, or br in zsh)
-# skin: "foreground background attributes"; ansi(N) = color N of foot.ini
-# (0 dark gray, 1 red, 7 text, 8 gray, 15 white), gray(0..23) = black..white.
+# ~/.config/broot/conf.toml - file manager as a tree ($mod+f, br in zsh)
+# skin: "foreground background attributes", ansi(N) = foot.ini color N.
 # every key is listed: a missing one falls back to a colorful default.
-# launcher/refused tells broot not to offer installing br (.zshrc has it)
+# launcher/refused: broot won't offer to install br (.zshrc has it)
 
 show_selection_mark = true
 

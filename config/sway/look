@@ -1,10 +1,10 @@
 # ~/.config/sway/look - wallpaper, borders, gaps, colors
 
-# wallpaper: the newest picture in ~/wallpapers, black if none (scripts/wallpaper)
+# black until scripts/wallpaper sets the newest picture from ~/wallpapers
 output * bg $black solid_color
 exec_always ~/.local/bin/wallpaper
 
-# border width in px; gaps between windows
+# border width and gaps in px
 default_border pixel 2
 default_floating_border pixel 2
 gaps inner 0
@@ -12,7 +12,6 @@ gaps inner 0
 # hyprland-like splits (scripts/autotile)
 exec ~/.local/bin/autotile
 
-# colors come from sway/colors
 # class                 border  backgr. text    indicator child_border
 client.focused          $white  $white  $black  $white    $white
 client.focused_inactive $dark   $black  $gray   $dark     $dark

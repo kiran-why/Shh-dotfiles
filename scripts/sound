@@ -1,6 +1,6 @@
 #!/bin/sh
-# sound - start PipeWire for the sway session, stop it when sway exits
-# started once by sway (sway/programs). No systemd, so nobody else does it
+# sound - start PipeWire with sway and stop it when sway exits
+# (no systemd to do it for us)
 
 set -eu
 
@@ -12,7 +12,7 @@ done
 pipewire &
 pipewire_pid=$!
 
-# wait up to 5 s for pipewire's socket; errors go to ~/.local/state/shh/wm.log
+# wait up to 5 s for the socket; errors land in ~/.local/state/shh/wm.log
 socket="$XDG_RUNTIME_DIR/pipewire-0"
 tries=0
 until [ -S "$socket" ]; do
@@ -29,6 +29,6 @@ wireplumber_pid=$!
 pipewire-pulse &
 pulse_pid=$!
 
-# blocks until sway exits (or crashes), then stops all three
+# blocks until sway exits
 swaymsg -t subscribe '["shutdown"]' >/dev/null 2>&1 || true
 kill "$pulse_pid" "$wireplumber_pid" "$pipewire_pid" 2>/dev/null || true

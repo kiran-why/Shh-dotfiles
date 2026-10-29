@@ -1,10 +1,8 @@
 #!/bin/sh
-# hardware - what the dotfiles run on, one word per line:
-#   in a VM: vmware, virtualbox, qemu, hyperv or xen
-#   on real hardware, one line per graphics card: amd, intel, nvidia (GTX 16xx,
-#   RTX and newer), nvidia-580xx (GTX 750 ... 10xx), nvidia-legacy (older)
-# fails when nothing is found. Used by .zprofile, vmware-clipboard and
-# install.sh (it installs packages/WORD.csv for every word)
+# hardware - what we run on, one word per line: the VM type (vmware,
+# virtualbox, qemu, hyperv, xen) or each graphics card: amd, intel,
+# nvidia (GTX 16xx, RTX+), nvidia-580xx (GTX 750-10xx), nvidia-legacy.
+# fails when nothing is found. install.sh installs packages/WORD.csv
 
 set -eu
 
@@ -26,8 +24,7 @@ if [ -r /sys/hypervisor/type ]; then
     exit 0
 fi
 
-# nvidia_driver DEVICE: which driver an NVIDIA card needs, by its PCI device id
-# (from pci.ids: Turing and newer start at 0x1e00, Maxwell at 0x1340)
+# nvidia_driver DEVICE: by PCI id (pci.ids: Turing+ from 0x1e00, Maxwell from 0x1340)
 nvidia_driver() {
     if [ $(($1)) -ge $((0x1e00)) ]; then
         echo nvidia
@@ -38,7 +35,7 @@ nvidia_driver() {
     fi
 }
 
-# graphics cards: PCI devices of class 0x03 (display controller)
+# PCI class 0x03 = display controller
 gpus=$(for dev in /sys/bus/pci/devices/*; do
     case "$(cat "$dev/class" 2>/dev/null)" in
         0x03*) ;;

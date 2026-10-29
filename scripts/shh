@@ -1,11 +1,10 @@
 #!/bin/sh
-# shh - look after the dotfiles: update them, or check that all is in place
+# shh - look after the dotfiles: update them or check that all is in place
 # usage: shh update | doctor | help
 
 set -eu
 
-# the repo: ~/.local/bin/shh is a link to REPO/scripts/shh.
-# if the configs ever become copies instead of links, this has to change
+# ~/.local/bin/shh is a link into the repo; change this if configs become copies
 self=$(readlink -f "$0")
 dots_path=$(cd "$(dirname "$self")/.." && pwd -P)
 
@@ -26,7 +25,7 @@ update() {
     git -C "$dots_path" pull --ff-only ||
         error "git pull failed (local changes? see git -C $dots_path status)"
 
-    # exec: install.sh takes over, the old copy of shh is not read any more
+    # exec: git pull may have replaced this very file
     exec sh "$dots_path/install.sh"
 }
 
@@ -40,7 +39,7 @@ bad() {
     problems=$((problems + 1))
 }
 
-# every part of each service (iwd = iwd-srv + iwd-log) must be up
+# every part of each service must be up (iwd = iwd-srv + iwd-log)
 check_services() {
     step "s6 services (services.txt)"
 
@@ -67,7 +66,7 @@ check_services() {
     done
 }
 
-# our links (into the repo) that point to nothing, e.g. after a rename
+# broken links into the repo, e.g. after a rename
 check_links() {
     step "links"
 
@@ -85,7 +84,7 @@ EOF
     [ "$found" = 1 ] || ok "no broken links"
 }
 
-# common.csv + packages/CARD.csv for this machine (as install.sh)
+# common.csv + packages/CARD.csv, like install.sh
 check_packages() {
     step "packages"
 
@@ -95,8 +94,7 @@ check_packages() {
         [ ! -f "$list" ] || read_list "$list" | cut -d, -f2
     done)
 
-    # pacman -T prints the ones that are not installed;
-    # $names without quotes: one argument per package
+    # pacman -T prints the missing ones
     missing=$(pacman -T $names || true)
 
     for pkg in $missing; do
@@ -105,7 +103,7 @@ check_packages() {
     [ -n "$missing" ] || ok "all $(printf '%s\n' "$names" | wc -l) packages installed"
 }
 
-# what sway needs without elogind: XDG_RUNTIME_DIR and the groups
+# what sway needs without elogind
 check_session() {
     step "session"
 
@@ -115,7 +113,7 @@ check_session() {
         bad "XDG_RUNTIME_DIR is not set (pam_rundir in /etc/pam.d/system-login)"
     fi
 
-    # id -nG USER: groups in /etc/group; id -nG: groups of this login
+    # id -nG USER: /etc/group; id -nG: this login (needs a relogin to change)
     local user group
     user=$(id -un)
     for group in seat audio; do

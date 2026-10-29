@@ -21,10 +21,10 @@ packages_file="$packages_dir/common.csv"
 services_file="$dots_path/services.txt"
 aur_helper="yay"
 
-# Temporary sudo rule, removed when the script exits. (see enable_nopasswd)
+# temporary sudo rule (enable_nopasswd)
 sudoers_tmp="/etc/sudoers.d/dotfiles-temp"
 
-# Used to name backup files. same as link.sh
+# for backup names, like link.sh
 stamp=$(date +%Y%m%d-%H%M%S)
 
 [ -f "$dots_path/lib.sh" ] || { echo "lib.sh not found in $dots_path" >&2; exit 1; }
@@ -36,8 +36,6 @@ hardware=$(sh "$dots_path/scripts/hardware" 2>/dev/null || true)
 # █  █ █▀▀▀ █    █▀▀▄ █▀▀▀ █▀▀▄ ▄▀▀▀ 
 # █▀▀█ █▀▀  █    █▀▀  █▀▀  █▀█   ▀▀▄ 
 # ▀  ▀ ▀▀▀▀ ▀▀▀▀ ▀    ▀▀▀▀ ▀  ▀ ▀▀▀  
-
-# (read_list is in lib.sh)
 
 # common.csv + packages/CARD.csv for every graphics card found
 package_lines() {
@@ -99,16 +97,14 @@ check_system() {
         error "replace elogind-s6 with seatd-s6, then run install.sh again"
     fi
 
-    # https, not ping: ICMP is often blocked, pacman needs https anyway
-    # (curl comes with pacman)
+    # https, not ping: ICMP is often blocked
     curl -s -o /dev/null -m 10 https://artixlinux.org ||
         error "no internet connection"
 
     ok "artix + s6, internet, sudo"
 }
 
-# in_arch PKG: is PKG in Arch [extra]? asks archlinux.org, because before
-# enable_arch_repos pacman does not know that repo
+# in_arch PKG: is PKG in Arch [extra]? pacman can't tell before enable_arch_repos
 in_arch() {
     curl -s -m 10 "https://archlinux.org/packages/search/json/?name=$1&repo=Extra" |
         grep -q '"pkgname"'
@@ -311,8 +307,7 @@ configure_network() {
         "$(printf '[General]\nEnableNetworkConfiguration=true\n\n[Network]\nNameResolvingService=resolvconf')"
     info "iwd: built-in DHCP, DNS via resolvconf"
 
-    # dhcpcd: wired only, so it doesn't fight iwd over wifi.
-    # wl* = wlan0 (iwd's name) and wlp1s0 (the name before iwd or without it)
+    # dhcpcd: wired only, wifi is iwd's (wl* = wlan0, wlp1s0 ...)
     if ! grep -q '^denyinterfaces wl\*$' /etc/dhcpcd.conf 2>/dev/null; then
         echo 'denyinterfaces wl*' | sudo tee -a /etc/dhcpcd.conf >/dev/null ||
             error "cannot write /etc/dhcpcd.conf"
@@ -333,9 +328,8 @@ configure_network() {
     ok "done"
 }
 
-# Enable the services listed in services.txt.
-# s6: enable (draft) -> commit -> live install; services start at boot.
-# a one-time "unable to chdir to <svc>-srv" right after it is harmless
+# services.txt: enable -> commit -> live install, they start at boot.
+# a one-time "unable to chdir to <svc>-srv" after it is harmless
 enable_services() {
     step "s6 services from services.txt"
 

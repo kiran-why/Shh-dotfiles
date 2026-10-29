@@ -1,7 +1,6 @@
-# packages/common.csv - what install.sh installs on every machine
+# packages/common.csv - installed on every machine (drivers: packages/CARD.csv)
 # tag,package,description: empty tag = pacman, A = AUR (yay).
-# add a line to install one more; check names with  sh install.sh --check
-# graphics drivers: packages/CARD.csv, picked by scripts/hardware
+# check names: sh install.sh --check
 
 # system: seatd instead of elogind
 ,seatd-s6,seatd service for s6: screen and input for sway without root (no elogind)

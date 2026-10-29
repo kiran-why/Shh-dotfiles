@@ -1,27 +1,17 @@
 #!/bin/sh
 # clipboard - clipboard history (cliphist): pick an old copy to copy it again
-# opened by $mod+c in a floating foot window (size in sway/rules).
-# Enter copies, Ctrl+D deletes one, the first line clears all. Esc closes it.
+# $mod+c. Enter copies, Ctrl+D deletes one, the first line clears all.
 # the history size is in ~/.config/cliphist/config
 
 set -eu
 
-# same look as scripts/launcher
-colors='fg:7,fg+:15,bg+:0,hl:15:underline,hl+:15:underline'
-colors="$colors,info:8,border:8,label:15,prompt:15,pointer:15,query:15"
-colors="$colors,separator:8,spinner:8,gutter:-1,header:7"
-
-# cliphist lines are "id<TAB>preview": only the preview shows.
-# --no-sort keeps the newest on top; --expect prints the key first
+# cliphist lines are "id<TAB>preview", newest first; --expect prints the key first
 menu() {
-    fzf --layout=reverse --border=sharp --border-label=' clipboard ' \
-        --info=inline-right --prompt='> ' --pointer='▌' --no-scrollbar \
-        --highlight-line --color="$colors" --no-sort \
-        --delimiter='\t' --with-nth=2.. --expect=ctrl-d \
-        --header='enter: copy   ctrl-d: delete'
+    fzf --border-label=' clipboard ' --header='enter: copy   ctrl-d: delete' \
+        --no-sort --delimiter='\t' --with-nth=2.. --expect=ctrl-d
 }
 
-# the tab in front: an empty id, so it can't be a cliphist line
+# empty id, so it can't be a cliphist line
 clear_all='	clear history'
 
 while :; do

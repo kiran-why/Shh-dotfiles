@@ -1,7 +1,6 @@
 #!/bin/sh
-# wallpaper - the newest picture in ~/wallpapers becomes the wallpaper
-# run by sway at start and on reload: drop a png/jpg there, press $mod+Shift+c.
-# no pictures -> plain black
+# wallpaper - the newest picture in ~/wallpapers, black if none
+# runs on every sway reload ($mod+Shift+c)
 
 set -eu
 
@@ -10,7 +9,7 @@ dir="$HOME/wallpapers"
 pic=$(ls -t "$dir"/*.png "$dir"/*.PNG "$dir"/*.jpg "$dir"/*.JPG \
     "$dir"/*.jpeg "$dir"/*.JPEG 2>/dev/null | head -n 1) || true
 
-# fill: cover the screen, keep proportions (also: fit, center, stretch, tile)
+# fill keeps proportions (also: fit, center, stretch, tile)
 if [ -n "$pic" ]; then
     swaymsg "output * bg \"$pic\" fill #000000" >/dev/null
 else

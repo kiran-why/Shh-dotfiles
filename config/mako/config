@@ -7,15 +7,14 @@ text-color=#e6e6e6
 border-color=#5a5a5a
 border-size=2
 padding=10
-# the gap to the screen edge
+# gap to the screen edge
 margin=10
 width=350
-# top right, under the bar
 anchor=top-right
-# a notification goes away after 5 s (in milliseconds)
+# in milliseconds
 default-timeout=5000
 
-# critical ones: red border, stay until clicked
+# critical: red border, stays until clicked
 [urgency=critical]
 border-color=#d7263d
 default-timeout=0

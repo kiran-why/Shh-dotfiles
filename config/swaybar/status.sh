@@ -1,9 +1,7 @@
 #!/bin/sh
 # ~/.config/swaybar/status.sh - the right side of swaybar:
-#   red dot while recording, network (ethernet or wifi), bluetooth (only with
-#   an adapter), volume, clock, battery (laptops only)
-# clicks: red dot -> stop recording, network -> wifi menu,
-#   bluetooth -> bluetooth menu, volume -> volume menu, wheel on volume -> +/- 5%
+# recording dot, network, bluetooth, volume, clock, battery.
+# clicks open the menus, the wheel on the volume changes it
 
 # no "set -e": one failed check must not kill the bar
 set -u
@@ -13,22 +11,21 @@ white='#e6e6e6'
 gray='#5a5a5a'
 red='#d7263d'
 
-# block NAME TEXT COLOR; 20 = the gap between blocks in px
+# block NAME TEXT COLOR; 20 = gap between blocks in px
 block() {
     printf '{"name":"%s","full_text":"%s","color":"%s","markup":"pango","separator":false,"separator_block_width":20}' \
         "$1" "$2" "$3"
 }
 
-# a red dot while scripts/record runs wf-recorder
+# while scripts/record runs
 rec() {
     pgrep -x wf-recorder >/dev/null || return 0
     block rec '● rec' "$red"
     printf ','
 }
 
-# ethernet icon if a cable is up, else wifi icon if wifi is up, else crossed
-# out gray wifi. A cable = a real card ("device") that is not wireless;
-# tunnels (happ-xray) and bridges have no "device"
+# cable, else wifi, else crossed out gray wifi.
+# tunnels and bridges have no "device", so they don't count as a cable
 net() {
     local dev wired=0 wifi=0
     for dev in /sys/class/net/*; do
@@ -48,7 +45,7 @@ net() {
     fi
 }
 
-# line PERCENT: ━━━━━─────, 10 parts, the empty part gray
+# line PERCENT: ━━━━━─────, the empty part gray
 line() {
     local full=$((($1 + 5) / 10)) i=0 on='' off=''
     [ "$full" -gt 10 ] && full=10
@@ -59,7 +56,7 @@ line() {
     printf "%s<span foreground='%s'>%s</span>" "$on" "$gray" "$off"
 }
 
-# volume of the default output; gray when muted or no pipewire
+# gray when muted or no pipewire
 vol() {
     local out pct
     if ! out=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null); then
@@ -73,8 +70,7 @@ vol() {
     esac
 }
 
-# bluetooth: only if an adapter exists (/sys/class/bluetooth/hci0).
-# white when a device is connected: the kernel adds hci0:N for each connection
+# only with an adapter; white when connected (the kernel adds hci0:N per connection)
 blue() {
     local d hci=0
     for d in /sys/class/bluetooth/hci*; do
@@ -92,12 +88,10 @@ clock() {
     block clock "$(date +'%d.%m  %H:%M')" "$white"
 }
 
-# set when the low battery notification was shown, so it shows only once;
-# removed on charging or above 10%. XDG_RUNTIME_DIR is emptied on every boot
+# the low battery notification shows once per discharge
 low_flag="${XDG_RUNTIME_DIR:-/tmp}/shh-battery-low"
 
-# battery: only if /sys/class/power_supply/BAT* exists (so not on a desktop).
-# red alert icon and a critical notification at 10% or less when not charging
+# laptops only; red and a notification at 10% or less
 bat() {
     local b cap status icon color low
     for b in /sys/class/power_supply/BAT*; do
@@ -113,7 +107,7 @@ bat() {
             color=$red
             low=1
         else
-            # icons from empty to full, one per 10%
+            # empty to full, one per 10%
             set -- 󰂎 󰁺 󰁻 󰁼 󰁽 󰁾 󰁿 󰂀 󰂁 󰂂 󰁹
             shift $((($cap + 5) / 10))
             icon=$1
@@ -132,7 +126,6 @@ bat() {
     done
 }
 
-# update every second
 status_loop() {
     while :; do
         printf '[%s%s%s,%s,%s%s],\n' "$(rec)" "$(net)" "$(blue)" "$(vol)" "$(clock)" "$(bat)"
@@ -142,13 +135,12 @@ status_loop() {
 
 printf '{"version":1,"click_events":true}\n[\n'
 
-# stop the loop when the bar closes
 status_loop &
 loop_pid=$!
 trap 'kill "$loop_pid" 2>/dev/null' EXIT
 trap 'exit' INT TERM
 
-# clicks come as JSON lines; buttons: 1 left, 4/5 wheel up/down
+# clicks: button 1 left, 4/5 wheel
 while read -r click; do
     what=$(printf '%s\n' "${click#,}" | jq -r '"\(.name) \(.button)"' 2>/dev/null) || continue
     case "$what" in

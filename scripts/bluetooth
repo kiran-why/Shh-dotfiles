@@ -1,41 +1,33 @@
 #!/bin/sh
-# bluetooth - bluetooth menu: power, pair a new device, paired devices
-# (connect / disconnect), unpair a device
-# opened by a click on the bluetooth icon in swaybar (window size in sway/rules).
-# Esc goes back, Esc in the main menu closes it.
-# pairing has no PIN prompt: a keyboard that asks for one, pair in bluetoothctl
+# bluetooth - power, pair a new device, connect / disconnect, unpair
+# opened from the bluetooth icon in swaybar. Esc goes back.
+# no PIN prompt: pair a keyboard that asks for one in bluetoothctl
 
 set -eu
 
-# how long "pair a new device" looks for devices, in seconds
+# how long to look for new devices, in seconds
 scan_time=8
 
-# same look as scripts/launcher
-colors='fg:7,fg+:15,bg+:0,hl:15:underline,hl+:15:underline'
-colors="$colors,info:8,border:8,label:15,prompt:15,pointer:15,query:15"
-colors="$colors,separator:8,spinner:8,gutter:-1,header:7"
-
 menu() {
-    fzf --layout=reverse --border=sharp --info=hidden --prompt='> ' \
-        --pointer='▌' --no-scrollbar --highlight-line --color="$colors" "$@"
+    fzf --info=hidden "$@"
 }
 
-# a device menu: lines "label<TAB>address<TAB>name", only the label shows
+# lines are "label<TAB>address<TAB>name", only the label shows
 device_menu() {
     menu --delimiter='\t' --with-nth=1 "$@"
 }
 
-# bluetoothctl colors some lines; this removes the color codes
+# bluetoothctl colors some lines
 plain() {
     sed 's/\x1b\[[0-9;]*m//g'
 }
 
-# timeout: bluetoothctl waits forever if bluetoothd hangs
+# bluetoothctl waits forever if bluetoothd hangs
 bt() {
     timeout 30 bluetoothctl "$@"
 }
 
-# say TEXT: show it in the window until Enter
+# say TEXT: show it until Enter
 say() {
     echo "$1, press Enter"
     read -r _
@@ -52,12 +44,12 @@ if ! pgrep -x bluetoothd >/dev/null; then
     exit 1
 fi
 
-# devices [FILTER]: "address name" per line; FILTER = Paired, Connected
+# devices [Paired | Connected]: "address name" lines
 devices() {
     bt devices "$@" | plain | sed -n 's/^Device \([0-9A-F:]*\) \(.*\)/\1 \2/p'
 }
 
-# has ADDRESS LIST: is the address one of the lines of LIST
+# has ADDRESS LIST: is the address in the list
 has() {
     printf '%s\n' "$2" | grep -qxF "$1"
 }
@@ -66,7 +58,7 @@ powered() {
     [ "$(bt show | plain | sed -n 's/^[[:space:]]*Powered: //p')" = yes ]
 }
 
-# the top of the menu: power and the connected devices
+# power and the connected devices
 now() {
     local names
     if ! powered; then
@@ -78,7 +70,7 @@ now() {
     printf '󰂯 on\nconnected: %s' "${names:-nothing}"
 }
 
-# paired_lines: the paired devices for device_menu, connected ones marked
+# paired devices for device_menu, connected ones marked
 paired_lines() {
     local connected mac name state
     connected=$(devices Connected | cut -d' ' -f1)
@@ -99,7 +91,7 @@ connect() {
     fi
 }
 
-# look for devices nearby, pick one that is not paired yet, pair and connect
+# scan, pick a new device, pair and connect it
 pair_new() {
     local paired pick mac name
     while :; do
@@ -127,7 +119,7 @@ pair_new() {
     done
 }
 
-# pick a paired device: connected -> disconnect, else connect
+# connected -> disconnect, else connect
 paired_menu() {
     local pick mac name
     pick=$(paired_lines |
@@ -140,7 +132,7 @@ paired_menu() {
     esac
 }
 
-# pick a paired device and forget it (pair it again to use it)
+# forget a paired device
 unpair_menu() {
     local pick mac name
     pick=$(paired_lines |
@@ -154,7 +146,7 @@ unpair_menu() {
     fi
 }
 
-# pos: the line the cursor starts on, so it stays where it was
+# pos keeps the cursor on the last picked line
 pos=1
 while :; do
     if powered; then toggle='power off'; else toggle='power on'; fi

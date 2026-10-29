@@ -2,15 +2,15 @@
 
 set $term foot
 set $browser firefox
-# app-id: floats in the middle like the launcher (size in sway/rules)
+# floats like the launcher (sway/rules)
 set $files foot --app-id=files broot
 set $menu foot --app-id=launcher ~/.local/bin/launcher
 
-# exec: once per session (exec_always would also run on every reload)
+# exec: once per session, exec_always: also on every reload
 exec ~/.local/bin/sound
 exec mako
-# clipboard history: every copy goes to cliphist (menu: scripts/clipboard)
+# clipboard history (scripts/clipboard)
 exec wl-paste --watch cliphist store
 
-# shared clipboard in VMware, does nothing elsewhere (scripts/vmware-clipboard)
+# shared clipboard in VMware (scripts/vmware-clipboard)
 exec_always ~/.local/bin/vmware-clipboard

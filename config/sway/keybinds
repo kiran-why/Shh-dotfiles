@@ -1,7 +1,6 @@
 # ~/.config/sway/keybinds - keys for programs and windows
-# workspace keys live in workspaces; every key is listed in README
-# --to-code: works on the ru layout too; --no-repeat: a held or stuck key
-# runs the command once (only volume up / down repeat)
+# workspace keys are in workspaces, all keys are in README.
+# --to-code: works on the ru layout; --no-repeat: a stuck key runs it once
 
 # Mod4 = the Windows key
 set $mod Mod4

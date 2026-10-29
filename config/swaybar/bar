@@ -1,5 +1,4 @@
-# ~/.config/swaybar/bar - the bar, included by sway/config
-# workspace circles on the left, status.sh on the right
+# ~/.config/swaybar/bar - workspaces on the left, status.sh on the right
 
 bar {
     position top

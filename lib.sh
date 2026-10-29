@@ -42,8 +42,7 @@ error() {
 
 ### LISTS ###
 
-# read_list FILE: lines that are not empty and not comments
-# (packages/*.csv, services.txt)
+# read_list FILE: lines without empty ones and comments
 read_list() {
     grep -v '^[[:space:]]*#' "$1" | grep -v '^[[:space:]]*$' || true
 }

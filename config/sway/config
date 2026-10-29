@@ -1,12 +1,6 @@
-# ~/.config/sway/config - Shh... dotfiles
-# the quiet one: plain tiling, plain bar
-#
-# this file only loads the others, one topic per file, from this folder;
-# the bar lives in ~/.config/swaybar (swaybar has no config of its own,
-# sway reads its bar { } block and hands it over).
-# order matters: colors and programs first, everything after can use them;
-# $mod is set in keybinds, before workspaces
-# reload after editing: $mod+Shift+c
+# ~/.config/sway/config - Shh... dotfiles: plain tiling, plain bar
+# loads the other files, one topic each. Order matters: colors and
+# programs first, $mod (keybinds) before workspaces. Reload: $mod+Shift+c
 
 include ~/.config/sway/colors
 include ~/.config/sway/programs

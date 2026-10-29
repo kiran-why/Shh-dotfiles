@@ -1,7 +1,7 @@
 # ~/.config/sway/workspaces - workspace keys
 
-# $mod+N to switch, $mod+Shift+N to send the window there (0 = workspace 10).
-# names are "N:●": the bar hides the number and shows only what is after ":"
+# $mod+N to switch, $mod+Shift+N to send the window there (0 = 10).
+# the bar shows only what is after ":"
 bindsym --to-code --no-repeat $mod+1 workspace number 1:●
 bindsym --to-code --no-repeat $mod+2 workspace number 2:●
 bindsym --to-code --no-repeat $mod+3 workspace number 3:●

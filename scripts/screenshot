@@ -1,11 +1,9 @@
 #!/bin/sh
-# screenshot - select a region, save it to ~/pictures/screenshots and copy it
-# bound to Print in sway; Esc cancels.
-# screenshot full: all screens at once, no selecting (Ctrl+Print)
+# screenshot - save a region to ~/pictures/screenshots and copy it (Print)
+# screenshot full: all screens, no selecting (Ctrl+Print)
 
 set -eu
 
-# change the folder or the file name format here
 dir="$HOME/pictures/screenshots"
 file="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
 
@@ -13,8 +11,8 @@ mkdir -p "$dir"
 if [ "${1:-}" = full ]; then
     grim "$file"
 else
-    # -b dimmed background, -c border color, -w border width.
-    # </dev/null: otherwise slurp waits for a list of boxes on stdin
+    # -b dim, -c border color, -w border width; without </dev/null slurp
+    # waits for boxes on stdin
     geometry=$(slurp -b '#00000080' -c '#e6e6e6ff' -w 1 </dev/null) || exit 0
     grim -g "$geometry" "$file"
 fi

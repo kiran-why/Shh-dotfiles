@@ -10,9 +10,8 @@
 # █▀▀  █▀█  █  █ █ ▀ █ █▀▀    █   
 # ▀    ▀  ▀  ▀▀  ▀   ▀ ▀      ▀   
                                 
-# an empty line, the folder, then "<artix icon> :" (red after an error).
-# %F{N} = color N of foot.ini (15 white, 1 red), %~ = current folder.
-# the TTY has no nerd font, so no icon there
+# the folder, then "<artix icon> :" (red after an error); %F{N} = foot.ini color.
+# no icon on the TTY: no nerd font there
 if [ "$TERM" = linux ]; then
     PROMPT=$'\n%F{15}%~%f\n%(?.%F{15}.%F{1}):%f '
 else
@@ -23,24 +22,21 @@ fi
 #  ▀▀▄ █▀▀█ █▀▀  █    █    
 # ▀▀▀  ▀  ▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀          
 
-# HISTORY
-# a command typed with a space in front is not saved
+# HISTORY (a command with a space in front is not saved)
 mkdir -p ~/.local/state/zsh
 HISTFILE=~/.local/state/zsh/history
 HISTSIZE=10000
 SAVEHIST=10000
 setopt SHARE_HISTORY HIST_IGNORE_ALL_DUPS HIST_IGNORE_SPACE
 
-# COMPLETION                                                    
-# second Tab shows a list, small letters match capitals
+# COMPLETION: a menu on the second Tab, case-insensitive
 mkdir -p ~/.cache/zsh
 autoload -Uz compinit
 compinit -d ~/.cache/zsh/zcompdump
 zstyle ':completion:*' menu select
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 
-# KEYBINDS                                   
-# foot and the TTY send some of them differently, so both are bound
+# KEYBINDS: foot and the TTY send some keys differently, both are bound
 bindkey -e
 
 # Ctrl+Left / Ctrl+Right: by words
@@ -56,7 +52,7 @@ bindkey '^[OF' end-of-line
 bindkey '^[[4~' end-of-line
 bindkey '^[[3~' delete-char
 
-# Up / Down: history, only commands that start like the typed text
+# Up / Down: history that starts like the typed text
 autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
 zle -N up-line-or-beginning-search
 zle -N down-line-or-beginning-search
@@ -65,7 +61,7 @@ bindkey '^[OA' up-line-or-beginning-search
 bindkey '^[[B' down-line-or-beginning-search
 bindkey '^[OB' down-line-or-beginning-search
 
-# br: broot that can cd into the folder you pick (Alt+Enter)
+# br: broot that can cd into the picked folder (Alt+Enter)
 if command -v broot >/dev/null; then
     eval "$(broot --print-shell-function zsh)"
 fi
@@ -74,18 +70,17 @@ fi
 # █▀▀  █    █  █ █ ▀█  █  █ ▀▄█  ▀▀▄ 
 # ▀    ▀▀▀▀  ▀▀   ▀▀▀ ▀▀▀ ▀   ▀ ▀▀▀  
 
-# (packages/common.csv); not on the TTY, its colors aren't ours
+# not on the TTY, its colors aren't ours
 plugins=/usr/share/zsh/plugins
 [ "$TERM" = linux ] && plugins=/nonexistent
 
-# gray suggestion from the history while typing, Right or End accepts it
+# gray suggestion from the history, Right or End accepts it
 if [ -r "$plugins/zsh-autosuggestions/zsh-autosuggestions.zsh" ]; then
     ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
     source "$plugins/zsh-autosuggestions/zsh-autosuggestions.zsh"
 fi
 
-# highlighting: known commands plain white, unknown ones gray + underlined.
-# must be loaded last
+# known commands plain, unknown ones gray underlined; must load last
 if [ -r "$plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]; then
     source "$plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
     typeset -A ZSH_HIGHLIGHT_STYLES
@@ -96,8 +91,7 @@ if [ -r "$plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]; then
 fi
 unset plugins style
 
-# Fastfetch
-# Show system info when a new terminal window opens.
+# system info in every new foot window
 if [ "$TERM" = foot ] && command -v fastfetch >/dev/null; then
     fastfetch
 fi
