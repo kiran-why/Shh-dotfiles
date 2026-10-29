@@ -20,6 +20,7 @@
 <a href="#stack">Stack</a> •
 <a href="#installation">Installation</a> •
 <a href="#updating">Updating</a> •
+<a href="#uninstalling">Uninstalling</a> •
 <a href="#layout">Layout</a> •
 <a href="#showcase">Showcase</a> •
 <a href="#keybinds">Keybinds</a> •
@@ -78,6 +79,16 @@ shh color d7263d ff0000    # change a color in every config (the palette: config
 
 `install.sh` also updates the whole system (`pacman -Syu`): on Arch-based systems new packages
 must not be installed on top of an outdated system.
+
+## Uninstalling
+
+```sh
+shh uninstall -n    # show what would be done
+shh uninstall       # remove the links, put your old files (name.bak-DATE) back
+```
+
+Packages, services and `/etc` are left alone: `link.sh` prints what `install.sh` changed
+and how to undo it by hand. `shh uninstall` is `sh link.sh --uninstall`. Removing `seatd` or `pam_rundir` breaks the login to sway.
 
 ## Layout
 

@@ -1,6 +1,6 @@
 #!/bin/sh
-# shh - look after the dotfiles: update them, check that all is in place, change a color
-# usage: shh update | doctor | color OLD NEW | help
+# shh - look after the dotfiles: update, check, change a color, uninstall
+# usage: shh update | doctor | color OLD NEW | uninstall [-n] | help
 
 set -eu
 
@@ -16,6 +16,7 @@ usage() {
     echo "  update   git pull, then install.sh (it updates the system and links the configs)"
     echo "  doctor   check services, links, packages and the session"
     echo "  color OLD NEW  change a color in every config, e.g. shh color d7263d ff0000"
+    echo "  uninstall [-n] remove the links, put the old files back (-n: only show)"
     echo "  help     show this help"
 }
 
@@ -174,6 +175,7 @@ case "${1:-}" in
     update)         update ;;
     doctor)         doctor ;;
     color)          shift; color "$@" ;;
+    uninstall)      shift; exec sh "$dots_path/link.sh" --uninstall "$@" ;;
     help|-h|--help) usage ;;
     "")             usage >&2; exit 1 ;;
     *)              usage >&2; error "unknown command: $1" ;;
