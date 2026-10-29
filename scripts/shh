@@ -1,4 +1,9 @@
 #!/bin/sh
+# ASCII : https://patorjk.com/software/taag/#p=display&f=Linguaholic+Mini+Block&t=SHH-DOTFILES&x=none&v=4&h=4&w=80&we=false
+
+#  ▄▄▄ █▄▄  █▄▄  
+# ▀▀▄▄ █  █ █  █ 
+# ▀▀▀  ▀  ▀ ▀  ▀ 
 # shh - look after the dotfiles: update, check, change a color, uninstall
 # usage: shh update | doctor | color OLD NEW | uninstall [-n] | help
 
@@ -22,7 +27,9 @@ usage() {
     echo "  help     show this help"
 }
 
-### UPDATE ###
+# █  █ █▀▀▄ █▀▀▄ ▄▀▀▄ ▀▀█▀▀ █▀▀▀ 
+# █  █ █▀▀  █  █ █▀▀█   █   █▀▀  
+#  ▀▀  ▀    ▀▀▀  ▀  ▀   ▀   ▀▀▀▀ 
 
 update() {
     local repo tmp
@@ -44,7 +51,9 @@ update() {
     sh "$tmp/install.sh"
 }
 
-### DOCTOR ###
+# █▀▀▄ ▄▀▀▄ ▄▀▀▀ ▀▀█▀▀ ▄▀▀▄ █▀▀▄ 
+# █  █ █  █ █      █   █  █ █▀█  
+# ▀▀▀   ▀▀   ▀▀▀   ▀    ▀▀  ▀  ▀ 
 
 problems=0
 
@@ -148,7 +157,9 @@ doctor() {
     ok "all good"
 }
 
-### COLOR ###
+# ▄▀▀▀ ▄▀▀▄ █    ▄▀▀▄ █▀▀▄ 
+# █    █  █ █    █  █ █▀█  
+#  ▀▀▀  ▀▀  ▀▀▀▀  ▀▀  ▀  ▀ 
 
 # the palette lives in each program's own config; config/foot/foot.ini lists it.
 # Edits the installed files: with --link that is the repo, with copies
@@ -184,7 +195,9 @@ color() {
     info "to see it: Super+Shift+C (sway, bar), makoctl reload, new foot and nvim windows"
 }
 
-### MAIN ###
+# █▄ ▄█ ▄▀▀▄ ▀█▀ █▄  █ 
+# █ ▀ █ █▀▀█  █  █ ▀▄█ 
+# ▀   ▀ ▀  ▀ ▀▀▀ ▀   ▀ 
 
 [ "$(id -u)" -ne 0 ] || error "do not run as root, run as your user"
 

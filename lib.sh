@@ -1,7 +1,14 @@
+# ASCII : https://patorjk.com/software/taag/#p=display&f=Linguaholic+Mini+Block&t=SHH-DOTFILES&x=none&v=4&h=4&w=80&we=false
+
+# █ ▀ █▄▄     ▄▄▄ █▄▄  
+# █ █ █  █   ▀▀▄▄ █  █ 
+# ▀ ▀ ▀▀▀  ▀ ▀▀▀  ▀  ▀ 
 # lib.sh - colors, messages, lists and the logo for install.sh, link.sh and shh
 # not run on its own: loaded with  . "$dots_path/lib.sh"
 
-### COLORS ###
+# ▄▀▀▀ ▄▀▀▄ █    ▄▀▀▄ █▀▀▄ ▄▀▀▀ 
+# █    █  █ █    █  █ █▀█   ▀▀▄ 
+#  ▀▀▀  ▀▀  ▀▀▀▀  ▀▀  ▀  ▀ ▀▀▀  
 
 # white and red only; no colors when the output is not a terminal
 if [ -t 1 ]; then
@@ -13,7 +20,9 @@ else
     red='' white='' dim='' reset=''
 fi
 
-### MESSAGES ###
+# █▄ ▄█ █▀▀▀ ▄▀▀▀ ▄▀▀▀ ▄▀▀▄ ▄▀▀▀ █▀▀▀ ▄▀▀▀ 
+# █ ▀ █ █▀▀   ▀▀▄  ▀▀▄ █▀▀█ █ ▀█ █▀▀   ▀▀▄ 
+# ▀   ▀ ▀▀▀▀ ▀▀▀  ▀▀▀  ▀  ▀  ▀▀▀ ▀▀▀▀ ▀▀▀  
 
 # symbols in front of messages; plain ascii on the TTY (its font lacks ✓ ✗)
 case "${TERM:-}" in
@@ -40,14 +49,18 @@ error() {
     exit 1
 }
 
-### LISTS ###
+# █    ▀█▀ ▄▀▀▀ ▀▀█▀▀ ▄▀▀▀ 
+# █     █   ▀▀▄   █    ▀▀▄ 
+# ▀▀▀▀ ▀▀▀ ▀▀▀    ▀   ▀▀▀  
 
 # read_list FILE: lines without empty ones and comments
 read_list() {
     grep -v '^[[:space:]]*#' "$1" | grep -v '^[[:space:]]*$' || true
 }
 
-### LOGO ###
+# █    ▄▀▀▄ ▄▀▀▀ ▄▀▀▄ 
+# █    █  █ █ ▀█ █  █ 
+# ▀▀▀▀  ▀▀   ▀▀▀  ▀▀  
 
 # the big logo needs 94 columns, a narrower terminal gets the small one
 logo() {

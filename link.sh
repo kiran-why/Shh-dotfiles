@@ -1,4 +1,9 @@
 #!/bin/sh
+# ASCII : https://patorjk.com/software/taag/#p=display&f=Linguaholic+Mini+Block&t=SHH-DOTFILES&x=none&v=4&h=4&w=80&we=false
+
+# █ ▀ ▄▄▄  █  ▄    ▄▄▄ █▄▄  
+# █ █ █  █ █▄█    ▀▀▄▄ █  █ 
+# ▀ ▀ ▀  ▀ ▀  ▀ ▀ ▀▀▀  ▀  ▀ 
 # link.sh - put the repo into $HOME: copies, or symlinks with --link
 #   config/ -> ~/.config   home/ -> ~   scripts/ -> ~/.local/bin
 #   wallpapers/ -> ~/wallpapers   lib.sh link.sh services.txt packages/ -> ~/.local/share/shh
@@ -7,7 +12,9 @@
 
 set -eu
 
-### SETTINGS ###
+# ▄▀▀▀ █▀▀▀ ▀▀█▀▀ ▀▀█▀▀ ▀█▀ █▄  █ ▄▀▀▀ ▄▀▀▀ 
+#  ▀▀▄ █▀▀    █     █    █  █ ▀▄█ █ ▀█  ▀▀▄ 
+# ▀▀▀  ▀▀▀▀   ▀     ▀   ▀▀▀ ▀   ▀  ▀▀▀ ▀▀▀  
 
 # readlink -f: shh runs this file through ~/.local/share/shh/link.sh
 dots_path=$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)
@@ -43,7 +50,9 @@ usage() {
     echo "  -h, --help       show this help"
 }
 
-### FUNCTIONS ###
+# █▀▀▀ █  █ █▄  █ ▄▀▀▀ ▀▀█▀▀ ▀█▀ ▄▀▀▄ █▄  █ ▄▀▀▀ 
+# █▀▀  █  █ █ ▀▄█ █      █    █  █  █ █ ▀▄█  ▀▀▄ 
+# ▀     ▀▀  ▀   ▀  ▀▀▀   ▀   ▀▀▀  ▀▀  ▀   ▀ ▀▀▀  
 
 checksum() { sha256sum <"$1" | cut -d' ' -f1; }
 
@@ -241,7 +250,9 @@ install_all() {
     echo "done ($mode): $done_count put in place, $skipped already ok, $backups backed up"
 }
 
-### MAIN ###
+# █▄ ▄█ ▄▀▀▄ ▀█▀ █▄  █ 
+# █ ▀ █ █▀▀█  █  █ ▀▄█ 
+# ▀   ▀ ▀  ▀ ▀▀▀ ▀   ▀ 
 
 for arg in "$@"; do
     case "$arg" in
