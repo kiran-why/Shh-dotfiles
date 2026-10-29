@@ -57,6 +57,7 @@ sudo pacman -S git
 git clone https://github.com/kiran-why/Shh-dotfiles.git ~/Shh-dotfiles
 cd ~/Shh-dotfiles
 sh install.sh
+cd ~ && rm -rf ~/Shh-dotfiles    # optional: all is copied, shh update downloads it again
 ```
 
 
@@ -66,8 +67,7 @@ stay plain consoles for rescue.
 `install.sh` checks the system, adds the Arch `[extra]` repo and `yay`, installs
 `packages/common.csv` and the drivers for your graphics card, enables the s6 services from `services.txt`, sets a few system
 options and copies the configs with `link.sh`. It is safe to run again, and nothing is
-ever deleted: a file in the way is renamed to `name.bak-DATE`. After that the repo folder
-can be deleted.
+ever deleted: a file in the way is renamed to `name.bak-DATE`.
 `sh install.sh --check` only checks that every package exists.
 
 ## Updating
@@ -108,6 +108,7 @@ lib.sh link.sh services.txt packages/  ->  ~/.local/share/shh/  for shh
 What was installed is listed in `~/.local/state/shh/installed`.
 To work on the dotfiles, keep the repo and run `sh link.sh --link`: the files in `$HOME`
 become links to the repo, so an edit lands right in it, and `shh update` does a `git pull`.
+**Do not delete the repo then**: every link, `shh` too, points into it.
 `sh link.sh --copy` goes back to copies.
 
 ## Showcase

@@ -31,6 +31,9 @@ uninstall=0
 done_count=0
 skipped=0
 backups=0
+# for the lists at the end: our files updated, yours moved to .bak
+updated=''
+backed_up=''
 
 # copies by default; once installed with --link, it stays links
 mode=copy
@@ -86,12 +89,16 @@ ours() {
 put_aside() {
     if ours "$1"; then
         [ "$dry_run" = 1 ] || rm "$1" || error "cannot remove $1"
+        updated="$updated  $1
+"
         return
     fi
     local backup="$1.bak-$stamp"
     [ "$dry_run" = 1 ] || mv "$1" "$backup" || error "cannot back up $1"
     backup_msg "$1 -> $backup"
     backups=$((backups + 1))
+    backed_up="$backed_up  $1 -> $backup
+"
 }
 
 # install_file SRC DST: copy or link one file and add it to the list
@@ -248,6 +255,18 @@ install_all() {
 
     echo
     echo "done ($mode): $done_count put in place, $skipped already ok, $backups backed up"
+
+    # easy to miss in the long list above
+    if [ -n "$updated" ]; then
+        echo
+        info "updated from the repo:"
+        printf '%s' "$updated"
+    fi
+    if [ -n "$backed_up" ]; then
+        echo
+        warn "$backups file(s) replaced by the repo version, yours are kept as .bak:"
+        printf '%s' "$backed_up"
+    fi
 }
 
 # █▄ ▄█ ▄▀▀▄ ▀█▀ █▄  █ 
