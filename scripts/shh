@@ -1,6 +1,6 @@
 #!/bin/sh
-# shh - look after the dotfiles: update them or check that all is in place
-# usage: shh update | doctor | help
+# shh - look after the dotfiles: update them, check that all is in place, change a color
+# usage: shh update | doctor | color OLD NEW | help
 
 set -eu
 
@@ -15,6 +15,7 @@ usage() {
     echo "usage: shh COMMAND"
     echo "  update   git pull, then install.sh (it updates the system and links the configs)"
     echo "  doctor   check services, links, packages and the session"
+    echo "  color OLD NEW  change a color in every config, e.g. shh color d7263d ff0000"
     echo "  help     show this help"
 }
 
@@ -138,6 +139,33 @@ doctor() {
     ok "all good"
 }
 
+### COLOR ###
+
+# the palette lives in each program's own config; config/foot/foot.ini lists it
+color() {
+    [ "$#" -eq 2 ] || { usage >&2; exit 1; }
+
+    local old new files c
+    old=$(printf '%s' "${1#\#}" | tr 'A-F' 'a-f')
+    new=$(printf '%s' "${2#\#}" | tr 'A-F' 'a-f')
+    for c in "$old" "$new"; do
+        printf '%s' "$c" | grep -qx '[0-9a-f]\{6\}' || error "not a color: $c (6 hex digits, like e6e6e6)"
+    done
+
+    files=$(grep -rliI --exclude=shh -- "$old" "$dots_path/config" "$dots_path/scripts" || true)
+    [ -n "$files" ] || error "$old is not used in $dots_path"
+
+    # from now on both are one color: changing it later changes both
+    ! grep -rqiI --exclude=shh -- "$new" "$dots_path/config" "$dots_path/scripts" || warn "$new is already used too"
+
+    printf '%s
+' "$files" | while IFS= read -r f; do
+        sed -i "s/$old/$new/gI" "$f"
+        ok "${f#"$dots_path"/}"
+    done
+    info "to see it: Super+Shift+C (sway, bar), makoctl reload, new foot and nvim windows"
+}
+
 ### MAIN ###
 
 [ "$(id -u)" -ne 0 ] || error "do not run as root, run as your user"
@@ -145,6 +173,7 @@ doctor() {
 case "${1:-}" in
     update)         update ;;
     doctor)         doctor ;;
+    color)          shift; color "$@" ;;
     help|-h|--help) usage ;;
     "")             usage >&2; exit 1 ;;
     *)              usage >&2; error "unknown command: $1" ;;

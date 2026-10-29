@@ -73,6 +73,7 @@ ever deleted: a file in the way is renamed to `name.bak-DATE`.
 ```sh
 shh update    # git pull, then install.sh
 shh doctor    # are the services up, links whole, packages installed?
+shh color d7263d ff0000    # change a color in every config (the palette: config/foot/foot.ini)
 ```
 
 `install.sh` also updates the whole system (`pacman -Syu`): on Arch-based systems new packages
