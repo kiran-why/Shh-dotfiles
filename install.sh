@@ -320,6 +320,12 @@ configure_network() {
         echo 'denyinterfaces wl*' | sudo tee -a /etc/dhcpcd.conf >/dev/null ||
             error "cannot write /etc/dhcpcd.conf"
     fi
+    # the old rule from earlier installs, wl* above covers it
+    if grep -q '^denyinterfaces wlan\*$' /etc/dhcpcd.conf 2>/dev/null; then
+        sudo sed -i 's/^denyinterfaces wlan\*$/#&/' /etc/dhcpcd.conf ||
+            error "cannot edit /etc/dhcpcd.conf"
+        info "dhcpcd: commented out the old rule denyinterfaces wlan*"
+    fi
     info "dhcpcd: wired only"
 
     # an old install guide started dhcpcd from rc.local; the s6 service does it now
