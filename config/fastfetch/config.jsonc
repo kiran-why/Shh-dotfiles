@@ -30,9 +30,14 @@
         { "type": "initsystem", "key": "{#90}│{#37}  Init     {#90}│", "format": "{#90}│{#97} {name<34} {#90}│{#}" },
         { "type": "uptime",     "key": "{#90}│{#37}  Uptime   {#90}│", "format": "{#90}│{#97} {formatted<34} {#90}│{#}" },
         { "type": "packages",   "key": "{#90}│{#37}  Packages {#90}│", "format": "{#90}│{#97} {all<34} {#90}│{#}" },
+        // the widths count on "foot" and "zsh": fastfetch only runs in foot
+        { "type": "terminal",   "key": "{#90}│{#37}  Term     {#90}│", "format": "{#90}│{#97} {pretty-name} {version<29} {#90}│{#}" },
+        { "type": "shell",      "key": "{#90}│{#37}  Shell    {#90}│", "format": "{#90}│{#97} {pretty-name} {version<30} {#90}│{#}" },
         { "type": "cpu",        "key": "{#90}│{#37}  CPU      {#90}│", "format": "{#90}│{#97} {name<34} {#90}│{#}" },
         { "type": "gpu",        "key": "{#90}│{#37}  GPU      {#90}│", "format": "{#90}│{#97} {name<34} {#90}│{#}" },
         { "type": "memory",     "key": "{#90}│{#37}  RAM      {#90}│", "format": "{#90}│{#97} {used>10} / {total<21} {#90}│{#}" },
+        { "type": "disk", "folders": "/",
+                                "key": "{#90}│{#37}  Disk     {#90}│", "format": "{#90}│{#97} {size-used>10} / {size-total<10} - {filesystem<8} {#90}│{#}" },
         { "type": "custom", "format": "{#90}└────────────┘ └────────────────────────────────────┘" }
     ]
 }

@@ -75,6 +75,9 @@ git pull
 sh ./install.sh
 ```
 
+`install.sh` also updates the whole system (`pacman -Syu`): on Arch-based systems new packages
+must not be installed on top of an outdated system.
+
 ## Layout
 
 ```

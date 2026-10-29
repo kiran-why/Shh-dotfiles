@@ -1,7 +1,7 @@
 #!/bin/sh
 # ~/.config/swaybar/status.sh - the right side of swaybar:
-#   wifi, volume, clock, battery (laptops only)
-# clicks: wifi -> wifi menu, volume -> volume menu, wheel on volume -> +/- 5%
+#   network (ethernet or wifi), volume, clock, battery (laptops only)
+# clicks: network -> wifi menu, volume -> volume menu, wheel on volume -> +/- 5%
 
 # no "set -e": one failed check must not kill the bar
 set -u
@@ -17,17 +17,26 @@ block() {
         "$1" "$2" "$3"
 }
 
-# white wifi icon if any network is up, crossed out gray if none
+# ethernet icon if a cable is up, else wifi icon if wifi is up, else crossed
+# out gray wifi. A cable = a real card ("device") that is not wireless;
+# tunnels (happ-xray) and bridges have no "device"
 net() {
-    local dev
+    local dev wired=0 wifi=0
     for dev in /sys/class/net/*; do
-        [ "${dev##*/}" = "lo" ] && continue
-        if [ "$(cat "$dev/operstate" 2>/dev/null)" = "up" ]; then
-            block net '󰖩' "$white"
-            return
+        [ "$(cat "$dev/operstate" 2>/dev/null)" = "up" ] || continue
+        if [ -d "$dev/wireless" ]; then
+            wifi=1
+        elif [ -e "$dev/device" ]; then
+            wired=1
         fi
     done
-    block net '󰖪' "$gray"
+    if [ "$wired" = 1 ]; then
+        block net '󰈀' "$white"
+    elif [ "$wifi" = 1 ]; then
+        block net '󰖩' "$white"
+    else
+        block net '󰖪' "$gray"
+    fi
 }
 
 # line PERCENT: ━━━━━─────, 10 parts, the empty part gray

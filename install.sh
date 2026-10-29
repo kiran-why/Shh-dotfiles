@@ -314,12 +314,18 @@ configure_network() {
         "$(printf '[General]\nEnableNetworkConfiguration=true\n\n[Network]\nNameResolvingService=resolvconf')"
     info "iwd: built-in DHCP, DNS via resolvconf"
 
-    # dhcpcd: wired only, so it doesn't fight iwd over wifi
-    if ! grep -q '^denyinterfaces wlan' /etc/dhcpcd.conf 2>/dev/null; then
-        echo 'denyinterfaces wlan*' | sudo tee -a /etc/dhcpcd.conf >/dev/null ||
+    # dhcpcd: wired only, so it doesn't fight iwd over wifi.
+    # wl* = wlan0 (iwd's name) and wlp1s0 (the name before iwd or without it)
+    if ! grep -q '^denyinterfaces wl\*$' /etc/dhcpcd.conf 2>/dev/null; then
+        echo 'denyinterfaces wl*' | sudo tee -a /etc/dhcpcd.conf >/dev/null ||
             error "cannot write /etc/dhcpcd.conf"
     fi
     info "dhcpcd: wired only"
+
+    # an old install guide started dhcpcd from rc.local; the s6 service does it now
+    if grep -q '^[[:space:]]*dhcpcd' /etc/s6/rc.local 2>/dev/null; then
+        warn "/etc/s6/rc.local starts dhcpcd too, comment that line out"
+    fi
 
     ok "done"
 }
