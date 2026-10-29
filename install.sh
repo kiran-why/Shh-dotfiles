@@ -369,7 +369,7 @@ configure_system() {
 }
 
 link_dotfiles() {
-    step "symlinks"
+    step "dotfiles"
     DOTS_NO_LOGO=1 sh "$dots_path/link.sh"
 }
 

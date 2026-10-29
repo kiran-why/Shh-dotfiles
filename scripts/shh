@@ -4,31 +4,44 @@
 
 set -eu
 
-# ~/.local/bin/shh is a link into the repo; change this if configs become copies
-self=$(readlink -f "$0")
-dots_path=$(cd "$(dirname "$self")/.." && pwd -P)
+# link.sh puts lib.sh, services.txt and packages/ here, so the repo can go
+share="$HOME/.local/share/shh"
+list="$HOME/.local/state/shh/installed"
+repo_url="https://github.com/kiran-why/Shh-dotfiles.git"
+tab=$(printf '\t')
 
-[ -f "$dots_path/lib.sh" ] || { echo "lib.sh not found in $dots_path" >&2; exit 1; }
-. "$dots_path/lib.sh"
+[ -f "$share/lib.sh" ] || { echo "lib.sh not found in $share, run sh link.sh from the repo" >&2; exit 1; }
+. "$share/lib.sh"
 
 usage() {
     echo "usage: shh COMMAND"
-    echo "  update   git pull, then install.sh (it updates the system and links the configs)"
-    echo "  doctor   check services, links, packages and the session"
+    echo "  update   install.sh from a fresh clone (it updates the system and the configs)"
+    echo "  doctor   check services, installed files, packages and the session"
     echo "  color OLD NEW  change a color in every config, e.g. shh color d7263d ff0000"
-    echo "  uninstall [-n] remove the links, put the old files back (-n: only show)"
+    echo "  uninstall [-n] remove what link.sh put in place, put the old files back (-n: only show)"
     echo "  help     show this help"
 }
 
 ### UPDATE ###
 
 update() {
-    step "updating the repo: $dots_path"
-    git -C "$dots_path" pull --ff-only ||
-        error "git pull failed (local changes? see git -C $dots_path status)"
+    local repo tmp
 
-    # exec: git pull may have replaced this very file
-    exec sh "$dots_path/install.sh"
+    # installed with --link: update the repo the links point to
+    if [ -L "$share/lib.sh" ]; then
+        repo=$(cd "$(dirname "$(readlink -f "$share/lib.sh")")" && pwd -P)
+        step "updating the repo: $repo"
+        git -C "$repo" pull --ff-only ||
+            error "git pull failed (local changes? see git -C $repo status)"
+        # exec: git pull may have replaced this very file
+        exec sh "$repo/install.sh"
+    fi
+
+    tmp=$(mktemp -d) || error "cannot make a temporary folder"
+    trap 'rm -rf "$tmp"' EXIT
+    step "downloading $repo_url"
+    git clone --depth 1 "$repo_url" "$tmp" || error "git clone failed"
+    sh "$tmp/install.sh"
 }
 
 ### DOCTOR ###
@@ -51,7 +64,7 @@ check_services() {
         return 0
     }
 
-    for svc in $(read_list "$dots_path/services.txt"); do
+    for svc in $(read_list "$share/services.txt"); do
         parts=$(s6-rc list "$svc" 2>/dev/null) || {
             bad "$svc: unknown to s6, run sh install.sh"
             continue
@@ -68,32 +81,27 @@ check_services() {
     done
 }
 
-# broken links into the repo, e.g. after a rename
-check_links() {
-    step "links"
+# every file from the list is there (a broken link counts as missing)
+check_files() {
+    step "files"
 
-    local link target found=0
-    while IFS= read -r link; do
-        [ -n "$link" ] || continue
-        target=$(readlink "$link")
-        case "$target" in
-            "$dots_path"/*) bad "broken: $link -> $target"; found=1 ;;
-        esac
-    done <<EOF
-$(find "$HOME" "$HOME/.config" "$HOME/.local/bin" -maxdepth 1 -xtype l 2>/dev/null || true)
-EOF
-
-    [ "$found" = 1 ] || ok "no broken links"
+    [ -f "$list" ] || { bad "no $list (sh link.sh)"; return 0; }
+    local k dst n=0 found=0
+    while IFS="$tab" read -r k dst; do
+        n=$((n + 1))
+        [ -e "$dst" ] || { bad "missing: $dst (sh link.sh)"; found=1; }
+    done <"$list"
+    [ "$found" = 1 ] || ok "all $n files in place"
 }
 
 # common.csv + packages/CARD.csv, like install.sh
 check_packages() {
     step "packages"
 
-    local hw list names missing pkg
-    names=$(for hw in common $(sh "$dots_path/scripts/hardware" 2>/dev/null || true); do
-        list="$dots_path/packages/$hw.csv"
-        [ ! -f "$list" ] || read_list "$list" | cut -d, -f2
+    local hw csv names missing pkg
+    names=$(for hw in common $(sh "$HOME/.local/bin/hardware" 2>/dev/null || true); do
+        csv="$share/packages/$hw.csv"
+        [ ! -f "$csv" ] || read_list "$csv" | cut -d, -f2
     done)
 
     # pacman -T prints the missing ones
@@ -131,7 +139,7 @@ check_session() {
 
 doctor() {
     check_services
-    check_links
+    check_files
     check_packages
     check_session
 
@@ -142,27 +150,36 @@ doctor() {
 
 ### COLOR ###
 
-# the palette lives in each program's own config; config/foot/foot.ini lists it
+# the palette lives in each program's own config; config/foot/foot.ini lists it.
+# Edits the installed files: with --link that is the repo, with copies
+# the next update puts the repo colors back (yours stay in .bak files)
 color() {
     [ "$#" -eq 2 ] || { usage >&2; exit 1; }
+    [ -f "$list" ] || error "no $list (sh link.sh)"
 
-    local old new files c
+    local old new files c k f
     old=$(printf '%s' "${1#\#}" | tr 'A-F' 'a-f')
     new=$(printf '%s' "${2#\#}" | tr 'A-F' 'a-f')
     for c in "$old" "$new"; do
         printf '%s' "$c" | grep -qx '[0-9a-f]\{6\}' || error "not a color: $c (6 hex digits, like e6e6e6)"
     done
 
-    files=$(grep -rliI --exclude=shh -- "$old" "$dots_path/config" "$dots_path/scripts" || true)
-    [ -n "$files" ] || error "$old is not used in $dots_path"
+    # configs and scripts; not shh itself (its help has a color in it)
+    files=$(while IFS="$tab" read -r k f; do
+        case "$f" in "$share"/*|*/shh) continue ;; esac
+        printf '%s\n' "$f"
+    done <"$list")
 
     # from now on both are one color: changing it later changes both
-    ! grep -rqiI --exclude=shh -- "$new" "$dots_path/config" "$dots_path/scripts" || warn "$new is already used too"
+    ! printf '%s\n' "$files" | xargs -r -d '\n' grep -qiI -- "$new" || warn "$new is already used too"
 
-    printf '%s
-' "$files" | while IFS= read -r f; do
-        sed -i "s/$old/$new/gI" "$f"
-        ok "${f#"$dots_path"/}"
+    files=$(printf '%s\n' "$files" | xargs -r -d '\n' grep -liI -- "$old" || true)
+    [ -n "$files" ] || error "$old is not used in the configs"
+
+    # --follow-symlinks: with --link, edit the repo file, keep the link
+    printf '%s\n' "$files" | while IFS= read -r f; do
+        sed -i --follow-symlinks "s/$old/$new/gI" "$f"
+        ok "$f"
     done
     info "to see it: Super+Shift+C (sway, bar), makoctl reload, new foot and nvim windows"
 }
@@ -175,7 +192,7 @@ case "${1:-}" in
     update)         update ;;
     doctor)         doctor ;;
     color)          shift; color "$@" ;;
-    uninstall)      shift; exec sh "$dots_path/link.sh" --uninstall "$@" ;;
+    uninstall)      shift; exec sh "$share/link.sh" --uninstall "$@" ;;
     help|-h|--help) usage ;;
     "")             usage >&2; exit 1 ;;
     *)              usage >&2; error "unknown command: $1" ;;

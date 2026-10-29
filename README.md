@@ -65,14 +65,15 @@ stay plain consoles for rescue.
 
 `install.sh` checks the system, adds the Arch `[extra]` repo and `yay`, installs
 `packages/common.csv` and the drivers for your graphics card, enables the s6 services from `services.txt`, sets a few system
-options and links the configs with `link.sh`. It is safe to run again, and nothing is
-ever deleted: a file in the way is renamed to `name.bak-DATE`.
+options and copies the configs with `link.sh`. It is safe to run again, and nothing is
+ever deleted: a file in the way is renamed to `name.bak-DATE`. After that the repo folder
+can be deleted.
 `sh install.sh --check` only checks that every package exists.
 
 ## Updating
 
 ```sh
-shh update    # git pull, then install.sh
+shh update    # install.sh from a fresh clone
 shh doctor    # are the services up, links whole, packages installed?
 shh color d7263d ff0000    # change a color in every config (the palette: config/foot/foot.ini)
 ```
@@ -84,16 +85,16 @@ must not be installed on top of an outdated system.
 
 ```sh
 shh uninstall -n    # show what would be done
-shh uninstall       # remove the links, put your old files (name.bak-DATE) back
+shh uninstall       # remove the dotfiles, put your old files (name.bak-DATE) back
 ```
 
 Packages, services and `/etc` are left alone: `link.sh` prints what `install.sh` changed
-and how to undo it by hand. `shh uninstall` is `sh link.sh --uninstall`. Removing `seatd` or `pam_rundir` breaks the login to sway.
+and how to undo it by hand. A config you changed after the install is kept. Removing `seatd` or `pam_rundir` breaks the login to sway.
 
 ## Layout
 
 ```
-install.sh link.sh lib.sh   installer, symlinks, shared messages
+install.sh link.sh lib.sh   installer, copies the files, shared messages
 packages/common.csv         packages: tag,package,description (empty tag = pacman, A = AUR)
 packages/CARD.csv           graphics drivers: amd, intel, nvidia, nvidia-580xx
 services.txt                s6 services
@@ -101,9 +102,13 @@ config/     ->  ~/.config/     sway, swaybar, foot, fzf (the look of all menus),
 home/       ->  ~/             .zprofile .zshrc
 scripts/    ->  ~/.local/bin/  shh, launcher, keys, clipboard, volume, wifi, bluetooth, sound, wallpaper, screenshot, record, autotile, screen, hardware
 wallpapers/ ->  ~/wallpapers/  the newest picture here is the wallpaper
+lib.sh link.sh services.txt packages/  ->  ~/.local/share/shh/  for shh
 ```
 
-The configs in `$HOME` are links to the repo: to change something, edit the file here.
+What was installed is listed in `~/.local/state/shh/installed`.
+To work on the dotfiles, keep the repo and run `sh link.sh --link`: the files in `$HOME`
+become links to the repo, so an edit lands right in it, and `shh update` does a `git pull`.
+`sh link.sh --copy` goes back to copies.
 
 ## Showcase
 

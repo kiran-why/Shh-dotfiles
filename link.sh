@@ -1,28 +1,38 @@
 #!/bin/sh
-# link.sh - symlink the repo into $HOME
+# link.sh - put the repo into $HOME: copies, or symlinks with --link
 #   config/NAME  -> ~/.config/NAME
 #   home/FILE    -> ~/FILE
 #   scripts/FILE -> ~/.local/bin/FILE
 #   wallpapers/  -> ~/wallpapers
-# usage: link.sh [-n | --dry-run] [-u | --uninstall]. Safe to run again:
-# anything in the way is renamed to NAME.bak-DATE, never deleted.
-# --uninstall removes only our links and puts the oldest NAME.bak-DATE back
+#   lib.sh link.sh services.txt packages/ -> ~/.local/share/shh (for shh)
+# Folders go file by file, so other files in them stay. Safe to run again:
+# a file that is not ours is renamed to NAME.bak-DATE, never deleted.
+# What is ours is listed in ~/.local/state/shh/installed.
+# usage: link.sh [-n] [--link] [-u], see usage below
 
 set -eu
 
 ### SETTINGS ###
 
-dots_path=$(cd "$(dirname "$0")" && pwd -P)
+# readlink -f: shh runs this file through ~/.local/share/shh/link.sh
+dots_path=$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)
 
 config_dir="$HOME/.config"
 bin_dir="$HOME/.local/bin"
+share_dir="$HOME/.local/share/shh"
+list="$HOME/.local/state/shh/installed"
 
 stamp=$(date +%Y%m%d-%H%M%S)
+tab=$(printf '\t')
 dry_run=0
 uninstall=0
-linked=0
+done_count=0
 skipped=0
 backups=0
+
+# copies by default; once installed with --link, it stays links
+mode=copy
+[ ! -L "$share_dir/lib.sh" ] || mode=link
 
 [ -f "$dots_path/lib.sh" ] || { echo "lib.sh not found in $dots_path" >&2; exit 1; }
 . "$dots_path/lib.sh"
@@ -30,66 +40,152 @@ backups=0
 backup_msg() { msg "$red" "$sym_bak" "$1"; }
 
 usage() {
-    echo "usage: $0 [-n | --dry-run] [-u | --uninstall] [-h | --help]"
+    echo "usage: $0 [-n | --dry-run] [--link | --copy] [-u | --uninstall] [-h | --help]"
     echo "  -n, --dry-run    show what would be done, change nothing"
-    echo "  -u, --uninstall  remove the links, put the old files back"
-    echo "  -h, --help     show this help"
+    echo "  --link           symlinks to the repo: edits land in it (for working on the dotfiles)"
+    echo "  --copy           copies, the repo can be deleted (the default)"
+    echo "  -u, --uninstall  remove what is ours, put the old files back"
+    echo "  -h, --help       show this help"
 }
 
 ### FUNCTIONS ###
 
-# link SRC DST: make DST a symlink to SRC, backing up whatever is in the way
-link() {
+checksum() { sha256sum <"$1" | cut -d' ' -f1; }
+
+# key SRC: what the list keeps for SRC: the link target or the hash of the copy
+key() {
+    if [ "$mode" = link ]; then echo "$1"; else checksum "$1"; fi
+}
+
+# same DST KEY: DST is still exactly what we put there
+same() {
+    if [ -L "$1" ]; then
+        [ "$(readlink "$1")" = "$2" ]
+    else
+        [ -f "$1" ] && [ "$(checksum "$1")" = "$2" ]
+    fi
+}
+
+# ours DST: we put DST there and nobody changed it, so no backup is needed.
+# A link into the repo is ours too: that is how link.sh worked before the list
+ours() {
+    local old
+    if [ -L "$1" ]; then
+        case "$(readlink "$1")" in "$dots_path"/*) return 0 ;; esac
+    fi
+    [ -f "$list" ] || return 1
+    old=$(awk -F "$tab" -v d="$1" '$2 == d { print $1; exit }' "$list")
+    [ -n "$old" ] && same "$1" "$old"
+}
+
+# put_aside DST: remove our old DST, rename anything else to DST.bak-DATE
+put_aside() {
+    if ours "$1"; then
+        [ "$dry_run" = 1 ] || rm "$1" || error "cannot remove $1"
+        return
+    fi
+    local backup="$1.bak-$stamp"
+    [ "$dry_run" = 1 ] || mv "$1" "$backup" || error "cannot back up $1"
+    backup_msg "$1 -> $backup"
+    backups=$((backups + 1))
+}
+
+# install_file SRC DST: copy or link one file and add it to the list
+install_file() {
     local src="$1"
     local dst="$2"
+    local k
+    k=$(key "$src")
+    printf '%s\t%s\n' "$k" "$dst" >>"$new_list"
 
-    [ -e "$src" ] || error "source not found: $src"
-    [ "$uninstall" = 0 ] || { remove_link "$src" "$dst"; return; }
-
-    if [ -L "$dst" ] && [ "$(readlink "$dst")" = "$src" ]; then
+    # already in place: the right link, or a copy with the same content
+    if { [ "$mode" = link ] && same "$dst" "$k"; } ||
+       { [ "$mode" = copy ] && [ ! -L "$dst" ] && same "$dst" "$k"; }; then
         ok "$dst"
         skipped=$((skipped + 1))
         return
     fi
 
     if [ -e "$dst" ] || [ -L "$dst" ]; then
-        local backup="$dst.bak-$stamp"
-        [ "$dry_run" = 1 ] || mv "$dst" "$backup" || error "cannot back up $dst"
-        backup_msg "$dst -> $backup"
-        backups=$((backups + 1))
+        put_aside "$dst"
     fi
-
     if [ "$dry_run" = 0 ]; then
         mkdir -p "$(dirname "$dst")" || error "cannot create $(dirname "$dst")"
-        ln -s "$src" "$dst" || error "cannot link $dst"
+        if [ "$mode" = link ]; then
+            ln -s "$src" "$dst" || error "cannot link $dst"
+        else
+            cp "$src" "$dst" || error "cannot copy $dst"
+        fi
     fi
-    info "$dst -> $src"
-    linked=$((linked + 1))
+    info "$dst"
+    done_count=$((done_count + 1))
 }
 
-# remove_link SRC DST: delete DST only if it is our link to SRC, then put
-# its oldest backup (the file from before the dotfiles) back
-remove_link() {
+# install_tree SRC DST: a file, or a folder file by file
+install_tree() {
     local src="$1"
     local dst="$2"
-    local bak
 
-    if [ ! -L "$dst" ] || [ "$(readlink "$dst")" != "$src" ]; then
+    [ -e "$src" ] || error "source not found: $src"
+    if [ ! -d "$src" ]; then
+        install_file "$src" "$dst"
+        return
+    fi
+
+    # a link or a file where our folder goes (old link.sh linked whole folders)
+    if [ -L "$dst" ] || { [ -e "$dst" ] && [ ! -d "$dst" ]; }; then
+        put_aside "$dst"
+    fi
+    install_entries "$src" "$dst"
+}
+
+# install_entries FROM TO: everything in FROM (hidden too) into TO; TO itself
+# is never moved, even if it is a link (~/.config can be one)
+install_entries() {
+    local f
+    for f in "$1"/.[!.]* "$1"/*; do
+        [ -e "$f" ] || continue
+        [ "${f##*/}" != ".gitkeep" ] || continue
+        install_tree "$f" "$2/${f##*/}"
+    done
+}
+
+# restore DST: put the oldest DST.bak-DATE (from before the dotfiles) back;
+# the date in the name sorts, so the first one is the oldest
+restore() {
+    local bak
+    for bak in "$1".bak-*; do
+        [ -e "$bak" ] || [ -L "$bak" ] || continue
+        [ "$dry_run" = 1 ] || mv "$bak" "$1" || error "cannot restore $bak"
+        backup_msg "$bak -> $1"
+        backups=$((backups + 1))
+        return
+    done
+}
+
+# remove_entry KEY DST: delete DST if it is still ours, then empty folders above it
+remove_entry() {
+    local dir="${2%/*}"
+
+    if [ ! -e "$2" ] && [ ! -L "$2" ]; then
+        skipped=$((skipped + 1))
+        return
+    fi
+    if ! same "$2" "$1"; then
+        warn "changed since install, kept: $2"
         skipped=$((skipped + 1))
         return
     fi
 
-    [ "$dry_run" = 1 ] || rm "$dst" || error "cannot remove $dst"
-    info "removed $dst"
-    linked=$((linked + 1))
+    [ "$dry_run" = 1 ] || rm "$2" || error "cannot remove $2"
+    info "removed $2"
+    done_count=$((done_count + 1))
+    restore "$2"
 
-    # the date in the name sorts, so the first one is the oldest
-    for bak in "$dst".bak-*; do
-        [ -e "$bak" ] || [ -L "$bak" ] || continue
-        [ "$dry_run" = 1 ] || mv "$bak" "$dst" || error "cannot restore $bak"
-        backup_msg "$bak -> $dst"
-        backups=$((backups + 1))
-        break
+    [ "$dry_run" = 0 ] || return 0
+    while [ "$dir" != "$HOME" ] && rmdir "$dir" 2>/dev/null; do
+        restore "$dir"
+        dir="${dir%/*}"
     done
 }
 
@@ -107,17 +203,47 @@ print_system() {
     echo "  without seatd or pam_rundir sway will not start"
 }
 
-# link_dir FROM TO: link every entry of FROM (hidden ones too) into TO
-link_dir() {
-    local from="$1"
-    local to="$2"
-    local src
+uninstall_all() {
+    [ -f "$list" ] || error "nothing to remove: no $list"
 
-    for src in "$from"/.[!.]* "$from"/*; do
-        [ -e "$src" ] || continue
-        [ "$(basename "$src")" != ".gitkeep" ] || continue
-        link "$src" "$to/$(basename "$src")"
+    local k dst
+    while IFS="$tab" read -r k dst; do
+        remove_entry "$k" "$dst"
+    done <"$list"
+    [ "$dry_run" = 1 ] || { rm "$list"; rmdir "${list%/*}" 2>/dev/null || true; }
+
+    echo
+    echo "done: $done_count removed, $backups restored, $skipped changed or not there"
+    print_system
+}
+
+install_all() {
+    [ -d "$dots_path/config" ] || error "run link.sh from the repo, not from $dots_path"
+
+    local f k dst
+    install_entries "$dots_path/config"  "$config_dir"
+    install_entries "$dots_path/home"    "$HOME"
+    install_entries "$dots_path/scripts" "$bin_dir"
+    install_tree "$dots_path/wallpapers" "$HOME/wallpapers"
+    for f in lib.sh link.sh services.txt packages; do
+        install_tree "$dots_path/$f" "$share_dir/$f"
     done
+
+    # files that left the repo since the last run
+    if [ -f "$list" ]; then
+        while IFS="$tab" read -r k dst; do
+            awk -F "$tab" -v d="$dst" '$2 == d { found = 1 } END { exit !found }' "$new_list" ||
+                remove_entry "$k" "$dst"
+        done <"$list"
+    fi
+
+    if [ "$dry_run" = 0 ]; then
+        mkdir -p "${list%/*}"
+        mv "$new_list" "$list"
+    fi
+
+    echo
+    echo "done ($mode): $done_count put in place, $skipped already ok, $backups backed up"
 }
 
 ### MAIN ###
@@ -125,6 +251,8 @@ link_dir() {
 for arg in "$@"; do
     case "$arg" in
         -n|--dry-run)   dry_run=1 ;;
+        --link)         mode=link ;;
+        --copy)         mode=copy ;;
         -u|--uninstall) uninstall=1 ;;
         -h|--help)      usage; exit 0 ;;
         *)              usage >&2; error "unknown option: $arg" ;;
@@ -138,17 +266,11 @@ done
 
 [ "$dry_run" = 0 ] || info "dry run: nothing will be changed"
 
-link_dir "$dots_path/config"  "$config_dir"
-link_dir "$dots_path/home"    "$HOME"
-link_dir "$dots_path/scripts" "$bin_dir"
+new_list=$(mktemp)
+trap 'rm -f "$new_list"' EXIT
 
-# the whole folder, so new pictures show up without running link.sh
-link "$dots_path/wallpapers" "$HOME/wallpapers"
-
-echo
-if [ "$uninstall" = 0 ]; then
-    echo "done: $linked linked, $skipped already ok, $backups backed up"
+if [ "$uninstall" = 1 ]; then
+    uninstall_all
 else
-    echo "done: $linked removed, $backups restored, $skipped not ours or not there"
-    print_system
+    install_all
 fi
