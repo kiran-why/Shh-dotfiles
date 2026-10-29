@@ -119,7 +119,10 @@ The configs in `$HOME` are links to the repo: to change something, edit the file
 | `Super + L` | Leave the Desktop |
 | `Super + Esc` | Screen Off / On |
 | `Super + Shift + C` | Reload Config and Wallpaper |
-| `Volume Keys` | Volume Up / Down / Mute |
+| `Volume Keys` | Volume Up / Down / Mute, Level in a Notification |
+| `Super + N` | Close the Notification |
+| `Super + Shift + N` | Close All Notifications |
+| `Super + Ctrl + N` | Bring Back the Last Notification |
 | `Print` | Screenshot of a Region, Saved to `~/pictures/screenshots` and Copied |
 | `Alt + Shift` | Switch Keyboard Layout (`US` / `RU`) |
 

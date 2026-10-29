@@ -1,7 +1,9 @@
 #!/bin/sh
 # volume - sound menu: louder, quieter, mute, output device, mic mute
 # opened by a click on the volume icon in swaybar (window size in sway/rules).
-# Esc closes it
+# Esc closes it.
+# volume up | down | mute: no menu, for the volume keys; shows the level
+# in a notification
 
 set -eu
 
@@ -61,6 +63,21 @@ pick_output() {
         wp set-default "$id"
     fi
 }
+
+# the level as a notification; the same tag makes mako replace the old one
+# instead of stacking them. -t: shown for 1.5 s
+notify_level() {
+    local text
+    text=$(now)
+    notify-send -a volume -t 1500 -h string:x-dunst-stack-tag:volume \
+        "$(printf '%s\n' "$text" | head -n 1)" "$(printf '%s\n' "$text" | sed -n 2p)"
+}
+
+case "${1:-}" in
+    up)   wp set-volume -l "$max" "$out" "$step+"; notify_level; exit 0 ;;
+    down) wp set-volume "$out" "$step-"; notify_level; exit 0 ;;
+    mute) wp set-mute "$out" toggle; notify_level; exit 0 ;;
+esac
 
 # pos: the line the cursor starts on, so it stays where it was
 pos=1

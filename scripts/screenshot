@@ -15,3 +15,4 @@ geometry=$(slurp -b '#00000080' -c '#e6e6e6ff' -w 1 </dev/null) || exit 0
 mkdir -p "$dir"
 grim -g "$geometry" "$file"
 wl-copy --type image/png <"$file"
+notify-send -a screenshot 'screenshot saved and copied' "${file##*/}"

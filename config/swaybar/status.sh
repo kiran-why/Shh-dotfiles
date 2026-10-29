@@ -69,26 +69,40 @@ clock() {
     block clock "$(date +'%d.%m  %H:%M')" "$white"
 }
 
+# set when the low battery notification was shown, so it shows only once;
+# removed on charging or above 10%. XDG_RUNTIME_DIR is emptied on every boot
+low_flag="${XDG_RUNTIME_DIR:-/tmp}/shh-battery-low"
+
 # battery: only if /sys/class/power_supply/BAT* exists (so not on a desktop).
-# red alert icon at 10% or less when not charging
+# red alert icon and a critical notification at 10% or less when not charging
 bat() {
-    local b cap status icon color
+    local b cap status icon color low
     for b in /sys/class/power_supply/BAT*; do
         [ -r "$b/capacity" ] || continue
         cap=$(cat "$b/capacity")
         status=$(cat "$b/status" 2>/dev/null)
         color=$white
+        low=0
         if [ "$status" = Charging ]; then
             icon='󰂄'
         elif [ "$cap" -le 10 ]; then
             icon='󰂃'
             color=$red
+            low=1
         else
             # icons from empty to full, one per 10%
             set -- 󰂎 󰁺 󰁻 󰁼 󰁽 󰁾 󰁿 󰂀 󰂁 󰂂 󰁹
             shift $((($cap + 5) / 10))
             icon=$1
         fi
+
+        if [ "$low" = 1 ] && [ ! -e "$low_flag" ]; then
+            notify-send -a battery -u critical 'battery low' "$cap%, plug in the charger" >/dev/null
+            : >"$low_flag"
+        elif [ "$low" = 0 ] && [ -e "$low_flag" ]; then
+            rm -f "$low_flag"
+        fi
+
         printf ','
         block bat "$icon $cap%" "$color"
         return

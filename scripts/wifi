@@ -69,8 +69,10 @@ while :; do
         *)
             # iwctl asks for the password here if the network is new
             if iwctl station "$dev" connect "$pick"; then
+                notify-send -a wifi 'wifi connected' "$pick" || true
                 exit 0
             fi
+            notify-send -a wifi 'wifi: could not connect' "$pick" || true
             echo 'could not connect, press Enter'
             read -r _
             ;;
