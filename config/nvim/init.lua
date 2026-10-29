@@ -1,4 +1,4 @@
--- ~/.config/nvim/init.lua - for now only the look: the built-in "quiet"
+-- ~/.config/nvim/init.lua - options, keys and the look: the built-in "quiet"
 -- colorscheme with its few colors made gray, red for errors
 
 vim.o.termguicolors = true
@@ -64,3 +64,25 @@ hl("DiagnosticOk", { fg = light })
 vim.o.number = true
 vim.o.cursorline = true
 vim.opt.fillchars = { eob = " " } -- no ~ after the end of file
+
+-- options (:help option-list)
+vim.o.relativenumber = true
+vim.o.expandtab = true -- spaces instead of tabs
+vim.o.shiftwidth = 4
+vim.o.tabstop = 4
+vim.o.ignorecase = true
+vim.o.smartcase = true -- a capital letter in the search makes it case-sensitive
+vim.o.clipboard = "unnamedplus" -- yank and paste go through wl-clipboard
+vim.o.undofile = true -- undo survives closing the file (~/.local/state/nvim/undo)
+
+-- keys: leader is Space (:help map-which-keys)
+vim.g.mapleader = " "
+local map = vim.keymap.set
+map("n", "<leader>w", "<cmd>write<cr>", { desc = "save" })
+map("n", "<leader>q", "<cmd>quit<cr>", { desc = "quit" })
+map("n", "<Esc>", "<cmd>nohlsearch<cr>", { desc = "clear search highlight" })
+-- Ctrl+h/j/k/l: move between split windows
+map("n", "<C-h>", "<C-w>h")
+map("n", "<C-j>", "<C-w>j")
+map("n", "<C-k>", "<C-w>k")
+map("n", "<C-l>", "<C-w>l")
