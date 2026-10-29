@@ -1,12 +1,15 @@
 # ~/.config/sway/programs - programs for the keys, and what starts with sway
 
-set $term foot
+# terminals are footclient windows of one foot server: a few MB each, not 25
+set $term footclient
 set $browser firefox
 # floats like the launcher (sway/rules)
-set $files foot --app-id=files broot
-set $menu foot --app-id=launcher ~/.local/bin/launcher
+set $files footclient --app-id=files broot
+set $menu footclient --app-id=launcher ~/.local/bin/launcher
 
 # exec: once per session, exec_always: also on every reload
+# a running server makes the new one quit; a crashed one is restarted on reload
+exec_always foot --server
 exec ~/.local/bin/sound
 exec mako
 # clipboard history (scripts/clipboard)

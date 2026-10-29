@@ -8,10 +8,15 @@ set -eu
 dir="$HOME/media/recordings"
 file="$dir/$(date +%Y-%m-%d_%H-%M-%S).mp4"
 
-# already recording: SIGINT lets wf-recorder finish the file,
+# redraw the bar now, not on its next second (status.sh)
+wake_bar() {
+    kill -USR1 "$(cat "${XDG_RUNTIME_DIR:-/tmp}/shh-bar.pid" 2>/dev/null)" 2>/dev/null || true
+}
+
+# already recording: wf-recorder finishes the file on TERM,
 # the first run then shows "saved"
 if pgrep -x wf-recorder >/dev/null; then
-    pkill -INT -x wf-recorder
+    pkill -TERM -x wf-recorder
     exit 0
 fi
 
@@ -19,8 +24,15 @@ fi
 geometry=$(slurp -o -b '#00000080' -c '#e6e6e6ff' -w 1 </dev/null) || exit 0
 
 mkdir -p "$dir"
-if wf-recorder -g "$geometry" -f "$file" </dev/null >/dev/null 2>&1; then
+# in the background, so the bar can show "● rec" right away
+wf-recorder -g "$geometry" -f "$file" </dev/null >/dev/null 2>&1 &
+rec_pid=$!
+sleep 0.2
+wake_bar
+
+if wait "$rec_pid"; then
     notify-send -a record 'recording saved' "${file##*/}"
 else
     notify-send -a record -u critical 'recording failed' 'run wf-recorder in a terminal to see why'
 fi
+wake_bar

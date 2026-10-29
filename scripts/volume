@@ -1,5 +1,5 @@
 #!/bin/sh
-# volume - sound menu: louder, quieter, mute, output device, mic mute
+# volume - sound menu: volume up / down, mute, input and output devices
 # opened from the volume icon in swaybar.
 # volume up | down | mute: no menu, for the volume keys, shows the level
 
@@ -20,6 +20,11 @@ wp() {
     wpctl "$@" 2>/dev/null
 }
 
+# redraw the bar now, not on its next second (status.sh)
+wake_bar() {
+    kill -USR1 "$(cat "${XDG_RUNTIME_DIR:-/tmp}/shh-bar.pid" 2>/dev/null)" 2>/dev/null || true
+}
+
 # line PERCENT: ━━━━━─────
 line() {
     local full=$((($1 + 5) / 10)) i=0 text=''
@@ -31,28 +36,54 @@ line() {
     printf '%s' "$text"
 }
 
-# the volume and the output name
+# name NODE: the device name people see
+name() {
+    wp inspect "$1" | sed -n 's/.*node\.description = "\(.*\)"/\1/p' | head -n 1
+}
+
+# default_id NODE: the id behind @DEFAULT_AUDIO_SINK@ / SOURCE@ ("id 45, type ...")
+default_id() {
+    wp inspect "$1" | sed -n '1s/^id \([0-9]*\),.*/\1/p'
+}
+
+# the level, then the output, then the input with its mute icon
 now() {
-    local vol pct icon name
+    local vol pct icon mic_icon
     vol=$(wp get-volume "$out") || { echo 'no sound: pipewire is not running'; return; }
     pct=$(echo "$vol" | awk '{printf "%.0f", $2 * 100}')
     case "$vol" in *MUTED*) icon='󰖁' ;; *) icon='󰕾' ;; esac
-    name=$(wp inspect "$out" | sed -n 's/.*node\.description = "\(.*\)"/\1/p' | head -n 1)
-    printf '%s %s %s%%\n%s' "$icon" "$(line "$pct")" "$pct" "$name"
+    case "$(wp get-volume "$mic" || true)" in *MUTED*) mic_icon='󰍭' ;; *) mic_icon='󰍬' ;; esac
+    printf '%s %s %s%%\nout: %s\nin:  %s %s' "$icon" "$(line "$pct")" "$pct" \
+        "$(name "$out")" "$mic_icon" "$(name "$mic" || true)"
 }
 
-# pick an output and make it the default
-pick_output() {
+# outputs first, then inputs; the current ones are marked
+pick_device() {
     local id
-    id=$(pw-dump 2>/dev/null | jq -r '.[]
-        | select(.type == "PipeWire:Interface:Node")
-        | select(.info.props["media.class"] == "Audio/Sink")
-        | "\(.id)\t\(.info.props["node.description"] // .info.props["node.name"])"' |
-        menu --border-label=' output ' --delimiter='\t' --with-nth=2 |
-        cut -f1)
+    id=$(pw-dump 2>/dev/null | jq -r --arg o "$(default_id "$out")" --arg i "$(default_id "$mic")" '
+        [.[] | select(.type == "PipeWire:Interface:Node")
+             | select(.info.props["media.class"] == "Audio/Sink" or .info.props["media.class"] == "Audio/Source")]
+        | sort_by(.info.props["media.class"] != "Audio/Sink")
+        | .[]
+        | (if .info.props["media.class"] == "Audio/Sink" then "out" else "in " end) as $kind
+        | (if (.id | tostring) == $o or (.id | tostring) == $i then "  (now)" else "" end) as $now
+        | "\(.id)\t\($kind)  \(.info.props["node.description"] // .info.props["node.name"])\($now)"' |
+        menu --border-label=' in/out devices ' --delimiter='\t' --with-nth=2 |
+        cut -f1) || return 0
     if [ -n "$id" ]; then
         wp set-default "$id"
     fi
+}
+
+# mute the sound or the mic, Esc goes back
+mute_menu() {
+    local pick
+    pick=$(printf '%s\n' 'mute volume' 'mute mic' |
+        menu --border-label=' mute ' --header="$(now)") || return 0
+    case "$pick" in
+        'mute volume') wp set-mute "$out" toggle ;;
+        'mute mic')    wp set-mute "$mic" toggle ;;
+    esac
 }
 
 # the same tag makes mako replace the last one instead of stacking them
@@ -64,21 +95,21 @@ notify_level() {
 }
 
 case "${1:-}" in
-    up)   wp set-volume -l "$max" "$out" "$step+"; notify_level; exit 0 ;;
-    down) wp set-volume "$out" "$step-"; notify_level; exit 0 ;;
-    mute) wp set-mute "$out" toggle; notify_level; exit 0 ;;
+    up)   wp set-volume -l "$max" "$out" "$step+"; wake_bar; notify_level; exit 0 ;;
+    down) wp set-volume "$out" "$step-"; wake_bar; notify_level; exit 0 ;;
+    mute) wp set-mute "$out" toggle; wake_bar; notify_level; exit 0 ;;
 esac
 
 # pos keeps the cursor on the last picked line
 pos=1
 while :; do
-    pick=$(printf '%s\n' louder quieter mute 'output device' 'mic mute' |
+    pick=$(printf '%s\n' '(+) volume' '(-) volume' mute 'in/out devices' |
         menu --border-label=' volume ' --header="$(now)" --bind="load:pos($pos)") || exit 0
     case "$pick" in
-        louder) pos=1; wp set-volume -l "$max" "$out" "$step+" ;;
-        quieter) pos=2; wp set-volume "$out" "$step-" ;;
-        mute) pos=3; wp set-mute "$out" toggle ;;
-        'output device') pos=4; pick_output ;;
-        'mic mute') pos=5; wp set-mute "$mic" toggle ;;
+        '(+) volume')     pos=1; wp set-volume -l "$max" "$out" "$step+" ;;
+        '(-) volume')     pos=2; wp set-volume "$out" "$step-" ;;
+        mute)             pos=3; mute_menu ;;
+        'in/out devices') pos=4; pick_device ;;
     esac
+    wake_bar
 done

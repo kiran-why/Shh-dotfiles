@@ -32,10 +32,10 @@ bindsym --to-code --no-repeat Shift+Print exec ~/.local/bin/record
 bindsym --to-code --no-repeat $mod+Escape exec ~/.local/bin/screen
 
 # clipboard history (scripts/clipboard)
-bindsym --to-code --no-repeat $mod+c exec foot --app-id=clipboard ~/.local/bin/clipboard
+bindsym --to-code --no-repeat $mod+c exec footclient --app-id=clipboard ~/.local/bin/clipboard
 
 # list of all keys, searchable (scripts/keys)
-bindsym --to-code --no-repeat $mod+slash exec foot --app-id=keys ~/.local/bin/keys
+bindsym --to-code --no-repeat $mod+slash exec footclient --app-id=keys ~/.local/bin/keys
 
 # reload this config after editing
 bindsym --to-code --no-repeat $mod+Shift+c reload

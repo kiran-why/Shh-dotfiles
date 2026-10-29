@@ -25,7 +25,7 @@ list() {
 
             gsub(/\$mod/, "Super", key)
             sub(/^exec /, "", cmd)
-            sub(/^foot --app-id=[^ ]* /, "", cmd)
+            sub(/^foot(client)? --app-id=[^ ]* /, "", cmd)
             gsub(/~\/\.local\/bin\//, "", cmd)
             d = desc
             gsub(/\$mod/, "Super", d)

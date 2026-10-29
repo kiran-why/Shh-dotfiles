@@ -50,5 +50,5 @@ cmd=$(programs | fzf --border-label=' run ') || exit 0
 if is_gui "$cmd"; then
     swaymsg exec "$cmd" >/dev/null
 else
-    swaymsg exec "foot --app-id=$cmd $cmd" >/dev/null
+    swaymsg exec "footclient --app-id=$cmd $cmd" >/dev/null
 fi

@@ -128,10 +128,18 @@ bat() {
     done
 }
 
+# scripts wake the loop with USR1 to redraw now (record, volume);
+# the pid file is written after the trap, so an early signal can't kill it
+bar_pid="${XDG_RUNTIME_DIR:-/tmp}/shh-bar.pid"
+
 status_loop() {
+    trap : USR1
+    sh -c 'echo "$PPID"' >"$bar_pid"
     while :; do
         printf '[%s%s%s,%s,%s%s],\n' "$(rec)" "$(net)" "$(blue)" "$(vol)" "$(clock)" "$(bat)"
-        sleep 1
+        # wait, unlike sleep, returns at once on a signal
+        sleep 1 &
+        wait $! || kill $! 2>/dev/null
     done
 }
 
@@ -139,18 +147,21 @@ printf '{"version":1,"click_events":true}\n[\n'
 
 status_loop &
 loop_pid=$!
-trap 'kill "$loop_pid" 2>/dev/null' EXIT
+# on a reload the new bar may have written its pid already
+trap 'kill "$loop_pid" 2>/dev/null
+      [ "$(cat "$bar_pid" 2>/dev/null)" != "$loop_pid" ] || rm -f "$bar_pid"' EXIT
 trap 'exit' INT TERM
 
 # clicks: button 1 left, 4/5 wheel
 while read -r click; do
     what=$(printf '%s\n' "${click#,}" | jq -r '"\(.name) \(.button)"' 2>/dev/null) || continue
     case "$what" in
-        "rec 1") pkill -INT -x wf-recorder ;;
-        "net 1") swaymsg exec 'foot --app-id=wifi ~/.local/bin/wifi' >/dev/null ;;
-        "blue 1") swaymsg exec 'foot --app-id=bluetooth ~/.local/bin/bluetooth' >/dev/null ;;
-        "vol 1") swaymsg exec 'foot --app-id=volume ~/.local/bin/volume' >/dev/null ;;
+        "rec 1") pkill -TERM -x wf-recorder ;;
+        "net 1") swaymsg exec 'footclient --app-id=wifi ~/.local/bin/wifi' >/dev/null ;;
+        "blue 1") swaymsg exec 'footclient --app-id=bluetooth ~/.local/bin/bluetooth' >/dev/null ;;
+        "vol 1") swaymsg exec 'footclient --app-id=volume ~/.local/bin/volume' >/dev/null ;;
         "vol 4") wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+ 2>/dev/null ;;
         "vol 5") wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- 2>/dev/null ;;
     esac
+    kill -USR1 "$loop_pid" 2>/dev/null
 done
