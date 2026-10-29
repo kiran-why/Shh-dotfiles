@@ -87,7 +87,7 @@ packages/CARD.csv           graphics drivers: amd, intel, nvidia, nvidia-580xx
 services.txt                s6 services
 config/     ->  ~/.config/     sway, swaybar, foot, fastfetch, broot, nvim, mako
 home/       ->  ~/             .zprofile .zshrc
-scripts/    ->  ~/.local/bin/  launcher, volume, wifi, sound, wallpaper, screenshot, autotile, hardware
+scripts/    ->  ~/.local/bin/  launcher, volume, wifi, sound, wallpaper, screenshot, autotile, screen, hardware
 wallpapers/ ->  ~/wallpapers/  the newest picture here is the wallpaper
 ```
 
@@ -119,6 +119,7 @@ The configs in `$HOME` are links to the repo: to change something, edit the file
 | `Super + S` | Show / Hide Scratchpad |
 | `Super + Shift + S` | Send Window to Scratchpad |
 | `Super + L` | Leave the Desktop |
+| `Super + Esc` | Screen Off / On |
 | `Super + Shift + C` | Reload Config and Wallpaper |
 | `Volume Keys` | Volume Up / Down / Mute |
 | `Print` | Screenshot of a Region, Saved to `~/pictures/screenshots` and Copied |

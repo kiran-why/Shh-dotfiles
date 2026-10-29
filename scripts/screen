@@ -1,0 +1,13 @@
+#!/bin/sh
+# screen - turn the screens off, or back on if they are off (Super+Escape)
+# sway can't "toggle" all outputs at once, so this checks first.
+# moving the mouse doesn't wake them: press the key again
+
+set -eu
+
+# is any screen on? ("power" in swaymsg -t get_outputs)
+if swaymsg -t get_outputs | jq -e 'any(.[]; .power)' >/dev/null; then
+    swaymsg 'output * power off' >/dev/null
+else
+    swaymsg 'output * power on' >/dev/null
+fi
