@@ -64,22 +64,32 @@ cd ~ && rm -rf ~/Shh-dotfiles    # optional: all is copied, shh update downloads
 Reboot and log in on **tty1**: sway starts by itself. Other ttys (`Ctrl+Alt+F2` ...)
 stay plain consoles for rescue.
 
+<details>
+<summary>What install.sh does</summary>
+
 `install.sh` checks the system, adds the Arch `[extra]` repo and `yay`, installs
 `packages/common.csv` and the drivers for your graphics card, enables the s6 services from `services.txt`, sets a few system
-options and copies the configs with `link.sh`. It is safe to run again, and nothing is
-ever deleted: a file in the way is renamed to `name.bak-DATE`.
+options and copies the configs with `link.sh`. It is safe to run again: a file you changed (or one that was there before)
+is never deleted, it goes to `name.bak-DATE`, and the list of them is printed at the end.
 `sh install.sh --check` only checks that every package exists.
+
+</details>
 
 ## Updating
 
 ```sh
 shh update    # install.sh from a fresh clone
-shh doctor    # are the services up, links whole, packages installed?
+shh doctor    # are the services up, files in place, packages installed?
 shh color d7263d ff0000    # change a color in every config (the palette: config/foot/foot.ini)
 ```
 
+<details>
+<summary>Why it updates the whole system</summary>
+
 `install.sh` also updates the whole system (`pacman -Syu`): on Arch-based systems new packages
 must not be installed on top of an outdated system.
+
+</details>
 
 ## Uninstalling
 
@@ -88,8 +98,13 @@ shh uninstall -n    # show what would be done
 shh uninstall       # remove the dotfiles, put your old files (name.bak-DATE) back
 ```
 
+<details>
+<summary>What stays</summary>
+
 Packages, services and `/etc` are left alone: `link.sh` prints what `install.sh` changed
 and how to undo it by hand. A config you changed after the install is kept. Removing `seatd` or `pam_rundir` breaks the login to sway.
+
+</details>
 
 ## Layout
 
@@ -105,11 +120,16 @@ wallpapers/ ->  ~/wallpapers/  the newest picture here is the wallpaper
 lib.sh link.sh services.txt packages/  ->  ~/.local/share/shh/  for shh
 ```
 
+<details>
+<summary>Copies or links (for working on the dotfiles)</summary>
+
 What was installed is listed in `~/.local/state/shh/installed`.
 To work on the dotfiles, keep the repo and run `sh link.sh --link`: the files in `$HOME`
 become links to the repo, so an edit lands right in it, and `shh update` does a `git pull`.
 **Do not delete the repo then**: every link, `shh` too, points into it.
 `sh link.sh --copy` goes back to copies.
+
+</details>
 
 ## Showcase
 
