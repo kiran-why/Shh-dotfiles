@@ -24,6 +24,9 @@ bindsym --to-code Print exec ~/.local/bin/screenshot
 # screens off / on (scripts/screen)
 bindsym --to-code $mod+Escape exec ~/.local/bin/screen
 
+# list of all keys, searchable (scripts/keys)
+bindsym --to-code $mod+slash exec foot --app-id=keys ~/.local/bin/keys
+
 # reload this config after editing
 bindsym --to-code $mod+Shift+c reload
 

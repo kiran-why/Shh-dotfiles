@@ -108,6 +108,7 @@ The configs in `$HOME` are links to the repo: to change something, edit the file
 | `Super + B` | Browser |
 | `Super + F` | Files (broot) |
 | `Super + R` | Launcher |
+| `Super + /` | List of All Keys (search) |
 | `Super + Q` | Close Window |
 | `Super + Shift + F` | Fullscreen |
 | `Super + V` | Float / Tile |
