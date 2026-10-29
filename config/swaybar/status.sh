@@ -1,9 +1,9 @@
 #!/bin/sh
 # ~/.config/swaybar/status.sh - the right side of swaybar:
-#   network (ethernet or wifi), bluetooth (only with an adapter), volume,
-#   clock, battery (laptops only)
-# clicks: network -> wifi menu, bluetooth -> bluetooth menu,
-#   volume -> volume menu, wheel on volume -> +/- 5%
+#   red dot while recording, network (ethernet or wifi), bluetooth (only with
+#   an adapter), volume, clock, battery (laptops only)
+# clicks: red dot -> stop recording, network -> wifi menu,
+#   bluetooth -> bluetooth menu, volume -> volume menu, wheel on volume -> +/- 5%
 
 # no "set -e": one failed check must not kill the bar
 set -u
@@ -17,6 +17,13 @@ red='#d7263d'
 block() {
     printf '{"name":"%s","full_text":"%s","color":"%s","markup":"pango","separator":false,"separator_block_width":20}' \
         "$1" "$2" "$3"
+}
+
+# a red dot while scripts/record runs wf-recorder
+rec() {
+    pgrep -x wf-recorder >/dev/null || return 0
+    block rec '● rec' "$red"
+    printf ','
 }
 
 # ethernet icon if a cable is up, else wifi icon if wifi is up, else crossed
@@ -128,7 +135,7 @@ bat() {
 # update every second
 status_loop() {
     while :; do
-        printf '[%s%s,%s,%s%s],\n' "$(net)" "$(blue)" "$(vol)" "$(clock)" "$(bat)"
+        printf '[%s%s%s,%s,%s%s],\n' "$(rec)" "$(net)" "$(blue)" "$(vol)" "$(clock)" "$(bat)"
         sleep 1
     done
 }
@@ -145,6 +152,7 @@ trap 'exit' INT TERM
 while read -r click; do
     what=$(printf '%s\n' "${click#,}" | jq -r '"\(.name) \(.button)"' 2>/dev/null) || continue
     case "$what" in
+        "rec 1") pkill -INT -x wf-recorder ;;
         "net 1") swaymsg exec 'foot --app-id=wifi ~/.local/bin/wifi' >/dev/null ;;
         "blue 1") swaymsg exec 'foot --app-id=bluetooth ~/.local/bin/bluetooth' >/dev/null ;;
         "vol 1") swaymsg exec 'foot --app-id=volume ~/.local/bin/volume' >/dev/null ;;

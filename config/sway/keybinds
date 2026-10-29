@@ -23,6 +23,12 @@ bindsym --to-code --no-repeat $mod+l exec swaynag -t warning -m 'exit sway?' -B 
 # screenshot of a region: saved and copied (scripts/screenshot)
 bindsym --to-code --no-repeat Print exec ~/.local/bin/screenshot
 
+# screenshot of all screens
+bindsym --to-code --no-repeat Ctrl+Print exec ~/.local/bin/screenshot full
+
+# screen recording: start, press again to stop (scripts/record)
+bindsym --to-code --no-repeat Shift+Print exec ~/.local/bin/record
+
 # screens off / on (scripts/screen)
 bindsym --to-code --no-repeat $mod+Escape exec ~/.local/bin/screen
 

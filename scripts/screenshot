@@ -1,6 +1,7 @@
 #!/bin/sh
 # screenshot - select a region, save it to ~/pictures/screenshots and copy it
-# bound to Print in sway; Esc cancels
+# bound to Print in sway; Esc cancels.
+# screenshot full: all screens at once, no selecting (Ctrl+Print)
 
 set -eu
 
@@ -8,11 +9,14 @@ set -eu
 dir="$HOME/pictures/screenshots"
 file="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
 
-# -b dimmed background, -c border color, -w border width.
-# </dev/null: otherwise slurp waits for a list of boxes on stdin
-geometry=$(slurp -b '#00000080' -c '#e6e6e6ff' -w 1 </dev/null) || exit 0
-
 mkdir -p "$dir"
-grim -g "$geometry" "$file"
+if [ "${1:-}" = full ]; then
+    grim "$file"
+else
+    # -b dimmed background, -c border color, -w border width.
+    # </dev/null: otherwise slurp waits for a list of boxes on stdin
+    geometry=$(slurp -b '#00000080' -c '#e6e6e6ff' -w 1 </dev/null) || exit 0
+    grim -g "$geometry" "$file"
+fi
 wl-copy --type image/png <"$file"
 notify-send -a screenshot 'screenshot saved and copied' "${file##*/}"

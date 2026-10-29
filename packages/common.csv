@@ -29,7 +29,8 @@
 ,libnotify,notify-send: send a notification from the shell or a script
 ,swaybg,wallpaper
 ,grim,screenshots
-,slurp,select a screen region (for grim)
+,slurp,select a screen region (for grim and wf-recorder)
+,wf-recorder,screen recording (scripts/record on Shift+Print)
 ,wl-clipboard,clipboard: wl-copy and wl-paste
 ,cliphist,clipboard history (scripts/clipboard on Super+C)
 ,xdg-utils,file types: cliphist keeps copied pictures as pictures

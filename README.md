@@ -86,7 +86,7 @@ packages/CARD.csv           graphics drivers: amd, intel, nvidia, nvidia-580xx
 services.txt                s6 services
 config/     ->  ~/.config/     sway, swaybar, foot, fastfetch, broot, nvim, mako, cliphist
 home/       ->  ~/             .zprofile .zshrc
-scripts/    ->  ~/.local/bin/  shh, launcher, keys, clipboard, volume, wifi, bluetooth, sound, wallpaper, screenshot, autotile, screen, hardware
+scripts/    ->  ~/.local/bin/  shh, launcher, keys, clipboard, volume, wifi, bluetooth, sound, wallpaper, screenshot, record, autotile, screen, hardware
 wallpapers/ ->  ~/wallpapers/  the newest picture here is the wallpaper
 ```
 
@@ -127,9 +127,11 @@ The configs in `$HOME` are links to the repo: to change something, edit the file
 | `Super + Shift + N` | Close All Notifications |
 | `Super + Ctrl + N` | Bring Back the Last Notification |
 | `Print` | Screenshot of a Region, Saved to `~/pictures/screenshots` and Copied |
+| `Ctrl + Print` | Screenshot of All Screens |
+| `Shift + Print` | Record the Screen to `~/videos/recordings` (press again to stop) |
 | `Alt + Shift` | Switch Keyboard Layout (`US` / `RU`) |
 
-**Bar:** click wifi for the network menu, bluetooth (shown only with an adapter) for the bluetooth menu,
+**Bar:** a red `● rec` while recording (click it to stop), click wifi for the network menu, bluetooth (shown only with an adapter) for the bluetooth menu,
 the volume for the sound menu, scroll on it to change it.
 
 **zsh:** `Tab` completes, `→` accepts the gray suggestion, `↑` / `↓` search the history by what
