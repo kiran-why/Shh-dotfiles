@@ -37,10 +37,7 @@ hardware=$(sh "$dots_path/scripts/hardware" 2>/dev/null || true)
 # █▀▀█ █▀▀  █    █▀▀  █▀▀  █▀█   ▀▀▄ 
 # ▀  ▀ ▀▀▀▀ ▀▀▀▀ ▀    ▀▀▀▀ ▀  ▀ ▀▀▀  
 
-# read_list FILE: lines that are not empty and not comments
-read_list() {
-    grep -v '^[[:space:]]*#' "$1" | grep -v '^[[:space:]]*$' || true
-}
+# (read_list is in lib.sh)
 
 # common.csv + packages/CARD.csv for every graphics card found
 package_lines() {

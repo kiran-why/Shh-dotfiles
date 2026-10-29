@@ -1,4 +1,4 @@
-# lib.sh - colors, messages and the logo for install.sh and link.sh
+# lib.sh - colors, messages, lists and the logo for install.sh, link.sh and shh
 # not run on its own: loaded with  . "$dots_path/lib.sh"
 
 ### COLORS ###
@@ -38,6 +38,14 @@ warn() { msg "$red"   "$sym_warn" "$1"; }
 error() {
     msg "$red" "$sym_fail" "$1" >&2
     exit 1
+}
+
+### LISTS ###
+
+# read_list FILE: lines that are not empty and not comments
+# (packages/*.csv, services.txt)
+read_list() {
+    grep -v '^[[:space:]]*#' "$1" | grep -v '^[[:space:]]*$' || true
 }
 
 ### LOGO ###

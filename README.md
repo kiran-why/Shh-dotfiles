@@ -67,12 +67,9 @@ ever deleted: a file in the way is renamed to `name.bak-DATE`.
 
 ## Updating
 
-To update Shh, you will need to pull the latest changes from GitHub by running the following commands:
-
-```bash
-cd ~/Shh-dotfiles
-git pull
-sh ./install.sh
+```sh
+shh update    # git pull, then install.sh
+shh doctor    # are the services up, links whole, packages installed?
 ```
 
 `install.sh` also updates the whole system (`pacman -Syu`): on Arch-based systems new packages
@@ -87,7 +84,7 @@ packages/CARD.csv           graphics drivers: amd, intel, nvidia, nvidia-580xx
 services.txt                s6 services
 config/     ->  ~/.config/     sway, swaybar, foot, fastfetch, broot, nvim, mako
 home/       ->  ~/             .zprofile .zshrc
-scripts/    ->  ~/.local/bin/  launcher, volume, wifi, sound, wallpaper, screenshot, autotile, screen, hardware
+scripts/    ->  ~/.local/bin/  shh, launcher, keys, volume, wifi, sound, wallpaper, screenshot, autotile, screen, hardware
 wallpapers/ ->  ~/wallpapers/  the newest picture here is the wallpaper
 ```
 

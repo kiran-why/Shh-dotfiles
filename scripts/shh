@@ -1,0 +1,153 @@
+#!/bin/sh
+# shh - look after the dotfiles: update them, or check that all is in place
+# usage: shh update | doctor | help
+
+set -eu
+
+# the repo: ~/.local/bin/shh is a link to REPO/scripts/shh.
+# if the configs ever become copies instead of links, this has to change
+self=$(readlink -f "$0")
+dots_path=$(cd "$(dirname "$self")/.." && pwd -P)
+
+[ -f "$dots_path/lib.sh" ] || { echo "lib.sh not found in $dots_path" >&2; exit 1; }
+. "$dots_path/lib.sh"
+
+usage() {
+    echo "usage: shh COMMAND"
+    echo "  update   git pull, then install.sh (it updates the system and links the configs)"
+    echo "  doctor   check services, links, packages and the session"
+    echo "  help     show this help"
+}
+
+### UPDATE ###
+
+update() {
+    step "updating the repo: $dots_path"
+    git -C "$dots_path" pull --ff-only ||
+        error "git pull failed (local changes? see git -C $dots_path status)"
+
+    # exec: install.sh takes over, the old copy of shh is not read any more
+    exec sh "$dots_path/install.sh"
+}
+
+### DOCTOR ###
+
+problems=0
+
+# bad TEXT: a warning that counts as a problem
+bad() {
+    warn "$1"
+    problems=$((problems + 1))
+}
+
+# every part of each service (iwd = iwd-srv + iwd-log) must be up
+check_services() {
+    step "s6 services (services.txt)"
+
+    local active svc parts part down
+    active=$(s6-rc -a list 2>/dev/null) || {
+        bad "cannot read the s6 state (s6-rc -a list)"
+        return 0
+    }
+
+    for svc in $(read_list "$dots_path/services.txt"); do
+        parts=$(s6-rc list "$svc" 2>/dev/null) || {
+            bad "$svc: unknown to s6, run sh install.sh"
+            continue
+        }
+        down=""
+        for part in $parts; do
+            printf '%s\n' "$active" | grep -qxF "$part" || down="$down $part"
+        done
+        if [ -z "$down" ]; then
+            ok "$svc"
+        else
+            bad "$svc is not running:$down"
+        fi
+    done
+}
+
+# our links (into the repo) that point to nothing, e.g. after a rename
+check_links() {
+    step "links"
+
+    local link target found=0
+    while IFS= read -r link; do
+        [ -n "$link" ] || continue
+        target=$(readlink "$link")
+        case "$target" in
+            "$dots_path"/*) bad "broken: $link -> $target"; found=1 ;;
+        esac
+    done <<EOF
+$(find "$HOME" "$HOME/.config" "$HOME/.local/bin" -maxdepth 1 -xtype l 2>/dev/null || true)
+EOF
+
+    [ "$found" = 1 ] || ok "no broken links"
+}
+
+# common.csv + packages/CARD.csv for this machine (as install.sh)
+check_packages() {
+    step "packages"
+
+    local hw list names missing pkg
+    names=$(for hw in common $(sh "$dots_path/scripts/hardware" 2>/dev/null || true); do
+        list="$dots_path/packages/$hw.csv"
+        [ ! -f "$list" ] || read_list "$list" | cut -d, -f2
+    done)
+
+    # pacman -T prints the ones that are not installed;
+    # $names without quotes: one argument per package
+    missing=$(pacman -T $names || true)
+
+    for pkg in $missing; do
+        bad "not installed: $pkg (sh install.sh)"
+    done
+    [ -n "$missing" ] || ok "all $(printf '%s\n' "$names" | wc -l) packages installed"
+}
+
+# what sway needs without elogind: XDG_RUNTIME_DIR and the groups
+check_session() {
+    step "session"
+
+    if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
+        ok "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
+    else
+        bad "XDG_RUNTIME_DIR is not set (pam_rundir in /etc/pam.d/system-login)"
+    fi
+
+    # id -nG USER: groups in /etc/group; id -nG: groups of this login
+    local user group
+    user=$(id -un)
+    for group in seat audio; do
+        if ! id -nG "$user" | tr ' ' '\n' | grep -qx "$group"; then
+            bad "$user is not in group $group (sh install.sh)"
+        elif ! id -nG | tr ' ' '\n' | grep -qx "$group"; then
+            bad "group $group: log out and in again"
+        else
+            ok "group $group"
+        fi
+    done
+}
+
+doctor() {
+    check_services
+    check_links
+    check_packages
+    check_session
+
+    echo
+    [ "$problems" -eq 0 ] || error "$problems problem(s)"
+    ok "all good"
+}
+
+### MAIN ###
+
+[ "$(id -u)" -ne 0 ] || error "do not run as root, run as your user"
+
+case "${1:-}" in
+    update)         update ;;
+    doctor)         doctor ;;
+    help|-h|--help) usage ;;
+    "")             usage >&2; exit 1 ;;
+    *)              usage >&2; error "unknown command: $1" ;;
+esac
