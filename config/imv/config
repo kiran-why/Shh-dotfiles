@@ -1,0 +1,8 @@
+# ~/.config/imv/config - image viewer (man 5 imv)
+# keys: arrows / j k next and previous, f fullscreen, q quit (man imv)
+
+[options]
+background = 000000
+overlay_font = JetBrainsMono Nerd Font:10
+overlay_text_color = e6e6e6
+overlay_background_color = 000000

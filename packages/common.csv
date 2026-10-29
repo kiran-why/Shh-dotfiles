@@ -20,6 +20,8 @@
 ,sway,tiling wayland compositor (includes swaybar and swaymsg)
 ,mesa,OpenGL for sway on every graphics card and in a VM
 ,firefox,browser (Super+B)
+,imv,image viewer (which program opens what: config/mimeapps.list)
+,mpv,video player
 
 # wayland tools
 # no swayidle: on Artix it depends on the elogind daemon
