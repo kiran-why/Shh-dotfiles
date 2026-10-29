@@ -6,11 +6,10 @@
 {
     "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
     "logo": {
-        "source": "artix",
-        // the logo has two colors ($1, $2), both white
+        "source": "artix_small",
+        // the small logo has one color ($1)
         "color": {
-            "1": "white",
-            "2": "white"
+            "1": "white"
         },
         "padding": {
             "right": 3
@@ -24,40 +23,16 @@
         }
     },
     "modules": [
-        "title",
-        "break",
-
-        // system
+        // one box: system and hardware
         { "type": "custom", "format": "{#90}┌────────────┐ ┌────────────────────────────────────┐" },
         { "type": "os",         "key": "{#90}│{#37}  OS       {#90}│", "format": "{#90}│{#97} {pretty-name<34} {#90}│{#}" },
         { "type": "kernel",     "key": "{#90}│{#37}  Kernel   {#90}│", "format": "{#90}│{#97} {release<34} {#90}│{#}" },
         { "type": "initsystem", "key": "{#90}│{#37}  Init     {#90}│", "format": "{#90}│{#97} {name<34} {#90}│{#}" },
         { "type": "uptime",     "key": "{#90}│{#37}  Uptime   {#90}│", "format": "{#90}│{#97} {formatted<34} {#90}│{#}" },
-        // os age = how many days ago / was created
-        { "type": "disk", "folders": "/",
-                                "key": "{#90}│{#37}  OS Age   {#90}│", "format": "{#90}│{#97} {days>3} days                           {#90}│{#}" },
         { "type": "packages",   "key": "{#90}│{#37}  Packages {#90}│", "format": "{#90}│{#97} {all<34} {#90}│{#}" },
-        { "type": "custom", "format": "{#90}└────────────┘ └────────────────────────────────────┘" },
-        "break",
-
-        // desktop
-        { "type": "custom", "format": "{#90}┌────────────┐ ┌────────────────────────────────────┐" },
-        { "type": "wm",         "key": "{#90}│{#37}  WM       {#90}│", "format": "{#90}│{#97} {pretty-name<34} {#90}│{#}" },
-        // the widths count on "foot" and "zsh": fastfetch only runs in foot
-        { "type": "terminal",   "key": "{#90}│{#37}  Term     {#90}│", "format": "{#90}│{#97} {pretty-name} {version<29} {#90}│{#}" },
-        { "type": "shell",      "key": "{#90}│{#37}  Shell    {#90}│", "format": "{#90}│{#97} {pretty-name} {version<30} {#90}│{#}" },
-        { "type": "display",    "key": "{#90}│{#37}  Display  {#90}│", "format": "{#90}│{#97} {width>4}x{height<4} {refresh-rate>3} Hz                   {#90}│{#}" },
-        { "type": "custom", "format": "{#90}└────────────┘ └────────────────────────────────────┘" },
-        "break",
-
-        // hardware
-        { "type": "custom", "format": "{#90}┌────────────┐ ┌────────────────────────────────────┐" },
         { "type": "cpu",        "key": "{#90}│{#37}  CPU      {#90}│", "format": "{#90}│{#97} {name<34} {#90}│{#}" },
         { "type": "gpu",        "key": "{#90}│{#37}  GPU      {#90}│", "format": "{#90}│{#97} {name<34} {#90}│{#}" },
         { "type": "memory",     "key": "{#90}│{#37}  RAM      {#90}│", "format": "{#90}│{#97} {used>10} / {total<21} {#90}│{#}" },
-        { "type": "swap",       "key": "{#90}│{#37}  Swap     {#90}│", "format": "{#90}│{#97} {used>10} / {total<21} {#90}│{#}" },
-        { "type": "disk", "folders": "/",
-                                "key": "{#90}│{#37}  Disk     {#90}│", "format": "{#90}│{#97} {size-used>10} / {size-total<10} - {filesystem<8} {#90}│{#}" },
         { "type": "custom", "format": "{#90}└────────────┘ └────────────────────────────────────┘" }
     ]
 }
