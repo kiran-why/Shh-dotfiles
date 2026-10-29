@@ -1,7 +1,9 @@
 #!/bin/sh
 # ~/.config/swaybar/status.sh - the right side of swaybar:
-#   network (ethernet or wifi), volume, clock, battery (laptops only)
-# clicks: network -> wifi menu, volume -> volume menu, wheel on volume -> +/- 5%
+#   network (ethernet or wifi), bluetooth (only with an adapter), volume,
+#   clock, battery (laptops only)
+# clicks: network -> wifi menu, bluetooth -> bluetooth menu,
+#   volume -> volume menu, wheel on volume -> +/- 5%
 
 # no "set -e": one failed check must not kill the bar
 set -u
@@ -64,6 +66,20 @@ vol() {
     esac
 }
 
+# bluetooth: only if an adapter exists (/sys/class/bluetooth/hci0).
+# white when a device is connected: the kernel adds hci0:N for each connection
+blue() {
+    local d hci=0
+    for d in /sys/class/bluetooth/hci*; do
+        [ -e "$d" ] || continue
+        case "${d##*/}" in
+            *:*) printf ','; block blue '󰂱' "$white"; return ;;
+            *)   hci=1 ;;
+        esac
+    done
+    [ "$hci" = 0 ] || { printf ','; block blue '󰂯' "$gray"; }
+}
+
 # date format: man date
 clock() {
     block clock "$(date +'%d.%m  %H:%M')" "$white"
@@ -112,7 +128,7 @@ bat() {
 # update every second
 status_loop() {
     while :; do
-        printf '[%s,%s,%s%s],\n' "$(net)" "$(vol)" "$(clock)" "$(bat)"
+        printf '[%s%s,%s,%s%s],\n' "$(net)" "$(blue)" "$(vol)" "$(clock)" "$(bat)"
         sleep 1
     done
 }
@@ -130,6 +146,7 @@ while read -r click; do
     what=$(printf '%s\n' "${click#,}" | jq -r '"\(.name) \(.button)"' 2>/dev/null) || continue
     case "$what" in
         "net 1") swaymsg exec 'foot --app-id=wifi ~/.local/bin/wifi' >/dev/null ;;
+        "blue 1") swaymsg exec 'foot --app-id=bluetooth ~/.local/bin/bluetooth' >/dev/null ;;
         "vol 1") swaymsg exec 'foot --app-id=volume ~/.local/bin/volume' >/dev/null ;;
         "vol 4") wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+ 2>/dev/null ;;
         "vol 5") wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- 2>/dev/null ;;

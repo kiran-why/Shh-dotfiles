@@ -40,6 +40,7 @@
 | Notifications | mako |
 | Sound | PipeWire + WirePlumber |
 | Network | iwd (wifi), dhcpcd (wired), openresolv |
+| Bluetooth | bluez (bluetoothctl), own menu |
 | Font | JetBrains Mono Nerd Font |
 
 ## Installation
@@ -84,7 +85,7 @@ packages/CARD.csv           graphics drivers: amd, intel, nvidia, nvidia-580xx
 services.txt                s6 services
 config/     ->  ~/.config/     sway, swaybar, foot, fastfetch, broot, nvim, mako
 home/       ->  ~/             .zprofile .zshrc
-scripts/    ->  ~/.local/bin/  shh, launcher, keys, volume, wifi, sound, wallpaper, screenshot, autotile, screen, hardware
+scripts/    ->  ~/.local/bin/  shh, launcher, keys, volume, wifi, bluetooth, sound, wallpaper, screenshot, autotile, screen, hardware
 wallpapers/ ->  ~/wallpapers/  the newest picture here is the wallpaper
 ```
 
@@ -126,7 +127,8 @@ The configs in `$HOME` are links to the repo: to change something, edit the file
 | `Print` | Screenshot of a Region, Saved to `~/pictures/screenshots` and Copied |
 | `Alt + Shift` | Switch Keyboard Layout (`US` / `RU`) |
 
-**Bar:** click wifi for the network menu, click the volume for the sound menu, scroll on it to change it.
+**Bar:** click wifi for the network menu, bluetooth (shown only with an adapter) for the bluetooth menu,
+the volume for the sound menu, scroll on it to change it.
 
 **zsh:** `Tab` completes, `→` accepts the gray suggestion, `↑` / `↓` search the history by what
 you typed, `Ctrl + ←` / `→` jump by words.

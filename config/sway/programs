@@ -2,7 +2,8 @@
 
 set $term foot
 set $browser firefox
-set $files foot broot
+# app-id: floats in the middle like the launcher (size in sway/rules)
+set $files foot --app-id=files broot
 set $menu foot --app-id=launcher ~/.local/bin/launcher
 
 # exec: once per session (exec_always would also run on every reload)

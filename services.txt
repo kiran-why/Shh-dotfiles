@@ -7,3 +7,5 @@ dbus
 iwd
 # wired network (wifi is iwd's)
 dhcpcd
+# bluetooth, needs dbus; idle on a machine without an adapter
+bluetoothd

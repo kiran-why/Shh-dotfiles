@@ -12,7 +12,7 @@
 ,zsh-autosuggestions,zsh: gray suggestions from the history while typing
 ,zsh-syntax-highlighting,zsh: unknown commands turn gray while typing
 ,neovim,text editor
-,fzf,fuzzy finder (launcher, volume and wifi menus)
+,fzf,fuzzy finder (launcher and the menus: volume, wifi, bluetooth, keys)
 ,broot,file manager that shows folders as a tree (Super+F)
 ,git,version control
 ,fastfetch,system info when a terminal opens
@@ -47,3 +47,8 @@
 ,openresolv,DNS config for iwd (no systemd-resolved)
 ,dhcpcd,DHCP for wired network (iwd only does wifi)
 ,dhcpcd-s6,dhcpcd service for s6
+
+# bluetooth (headphones); sound to them comes with pipewire-pulse
+,bluez,bluetooth daemon
+,bluez-utils,bluetoothctl (scripts/bluetooth)
+,bluez-s6,bluetoothd service for s6

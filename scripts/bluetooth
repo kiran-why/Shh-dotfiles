@@ -1,0 +1,178 @@
+#!/bin/sh
+# bluetooth - bluetooth menu: power, pair a new device, paired devices
+# (connect / disconnect), unpair a device
+# opened by a click on the bluetooth icon in swaybar (window size in sway/rules).
+# Esc goes back, Esc in the main menu closes it.
+# pairing has no PIN prompt: a keyboard that asks for one, pair in bluetoothctl
+
+set -eu
+
+# how long "pair a new device" looks for devices, in seconds
+scan_time=8
+
+# same look as scripts/launcher
+colors='fg:7,fg+:15,bg+:0,hl:15:underline,hl+:15:underline'
+colors="$colors,info:8,border:8,label:15,prompt:15,pointer:15,query:15"
+colors="$colors,separator:8,spinner:8,gutter:-1,header:7"
+
+menu() {
+    fzf --layout=reverse --border=sharp --info=hidden --prompt='> ' \
+        --pointer='▌' --no-scrollbar --highlight-line --color="$colors" "$@"
+}
+
+# a device menu: lines "label<TAB>address<TAB>name", only the label shows
+device_menu() {
+    menu --delimiter='\t' --with-nth=1 "$@"
+}
+
+# bluetoothctl colors some lines; this removes the color codes
+plain() {
+    sed 's/\x1b\[[0-9;]*m//g'
+}
+
+# timeout: bluetoothctl waits forever if bluetoothd hangs
+bt() {
+    timeout 30 bluetoothctl "$@"
+}
+
+# say TEXT: show it in the window until Enter
+say() {
+    echo "$1, press Enter"
+    read -r _
+}
+
+if ! ls /sys/class/bluetooth/hci* >/dev/null 2>&1; then
+    echo 'no bluetooth adapter found'
+    sleep 3
+    exit 1
+fi
+if ! pgrep -x bluetoothd >/dev/null; then
+    echo 'bluetoothd is not running: sudo s6-rc -u change bluetoothd'
+    sleep 5
+    exit 1
+fi
+
+# devices [FILTER]: "address name" per line; FILTER = Paired, Connected
+devices() {
+    bt devices "$@" | plain | sed -n 's/^Device \([0-9A-F:]*\) \(.*\)/\1 \2/p'
+}
+
+# has ADDRESS LIST: is the address one of the lines of LIST
+has() {
+    printf '%s\n' "$2" | grep -qxF "$1"
+}
+
+powered() {
+    [ "$(bt show | plain | sed -n 's/^[[:space:]]*Powered: //p')" = yes ]
+}
+
+# the top of the menu: power and the connected devices
+now() {
+    local names
+    if ! powered; then
+        printf '󰂲 off'
+        return
+    fi
+    names=$(devices Connected | cut -d' ' -f2- |
+        awk '{ printf "%s%s", (NR > 1 ? ", " : ""), $0 }')
+    printf '󰂯 on\nconnected: %s' "${names:-nothing}"
+}
+
+# paired_lines: the paired devices for device_menu, connected ones marked
+paired_lines() {
+    local connected mac name state
+    connected=$(devices Connected | cut -d' ' -f1)
+    devices Paired | while read -r mac name; do
+        state=''
+        if has "$mac" "$connected"; then state='  connected'; fi
+        printf '%s%s\t%s\t%s\n' "$name" "$state" "$mac" "$name"
+    done
+}
+
+# connect ADDRESS NAME
+connect() {
+    echo "connecting to $2..."
+    if bt connect "$1" >/dev/null; then
+        notify-send -a bluetooth 'bluetooth connected' "$2" || true
+    else
+        say 'could not connect'
+    fi
+}
+
+# look for devices nearby, pick one that is not paired yet, pair and connect
+pair_new() {
+    local paired pick mac name
+    while :; do
+        echo "looking for devices for $scan_time s..."
+        bt --timeout "$scan_time" scan on >/dev/null || true
+        paired=$(devices Paired | cut -d' ' -f1)
+
+        pick=$({ printf 'look again\t\t\n'
+                 devices | while read -r mac name; do
+                     has "$mac" "$paired" || printf '%s\t%s\t%s\n' "$name" "$mac" "$name"
+                 done; } |
+            device_menu --border-label=' pair ' --header='devices nearby') || return 0
+        mac=$(printf '%s\n' "$pick" | cut -f2)
+        name=$(printf '%s\n' "$pick" | cut -f3)
+        [ -n "$mac" ] || continue    # "look again"
+
+        echo "pairing with $name..."
+        if bt pair "$mac" >/dev/null; then
+            # trusted devices may reconnect by themselves
+            bt trust "$mac" >/dev/null || true
+            connect "$mac" "$name"
+            return 0
+        fi
+        say 'could not pair'
+    done
+}
+
+# pick a paired device: connected -> disconnect, else connect
+paired_menu() {
+    local pick mac name
+    pick=$(paired_lines |
+        device_menu --border-label=' paired ' --header='connect / disconnect') || return 0
+    mac=$(printf '%s\n' "$pick" | cut -f2)
+    name=$(printf '%s\n' "$pick" | cut -f3)
+    case "$pick" in
+        *'  connected'*) bt disconnect "$mac" >/dev/null || say 'could not disconnect' ;;
+        *)               connect "$mac" "$name" ;;
+    esac
+}
+
+# pick a paired device and forget it (pair it again to use it)
+unpair_menu() {
+    local pick mac name
+    pick=$(paired_lines |
+        device_menu --border-label=' unpair ' --header='forget a device') || return 0
+    mac=$(printf '%s\n' "$pick" | cut -f2)
+    name=$(printf '%s\n' "$pick" | cut -f3)
+    if bt remove "$mac" >/dev/null; then
+        notify-send -a bluetooth 'bluetooth: unpaired' "$name" || true
+    else
+        say 'could not unpair'
+    fi
+}
+
+# pos: the line the cursor starts on, so it stays where it was
+pos=1
+while :; do
+    if powered; then toggle='power off'; else toggle='power on'; fi
+    pick=$(printf '%s\n' "$toggle" 'pair a new device' 'paired devices' 'unpair a device' |
+        menu --border-label=' bluetooth ' --header="$(now)" --bind="load:pos($pos)") || exit 0
+    case "$pick" in
+        'power on')  pos=1; bt power on >/dev/null || say 'could not turn it on (rfkill?)' ;;
+        'power off') pos=1; bt power off >/dev/null || true ;;
+        *)
+            if ! powered; then
+                say 'the power is off'
+                continue
+            fi
+            case "$pick" in
+                'pair a new device') pos=2; pair_new ;;
+                'paired devices')    pos=3; paired_menu ;;
+                'unpair a device')   pos=4; unpair_menu ;;
+            esac
+            ;;
+    esac
+done
