@@ -1,14 +1,9 @@
 #!/bin/sh
 # link.sh - put the repo into $HOME: copies, or symlinks with --link
-#   config/NAME  -> ~/.config/NAME
-#   home/FILE    -> ~/FILE
-#   scripts/FILE -> ~/.local/bin/FILE
-#   wallpapers/  -> ~/wallpapers
-#   lib.sh link.sh services.txt packages/ -> ~/.local/share/shh (for shh)
-# Folders go file by file, so other files in them stay. Safe to run again:
-# a file that is not ours is renamed to NAME.bak-DATE, never deleted.
-# What is ours is listed in ~/.local/state/shh/installed.
-# usage: link.sh [-n] [--link] [-u], see usage below
+#   config/ -> ~/.config   home/ -> ~   scripts/ -> ~/.local/bin
+#   wallpapers/ -> ~/wallpapers   lib.sh link.sh services.txt packages/ -> ~/.local/share/shh
+# file by file; a file that is not ours goes to NAME.bak-DATE, never deleted.
+# ours = listed in ~/.local/state/shh/installed
 
 set -eu
 

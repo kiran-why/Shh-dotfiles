@@ -1,11 +1,11 @@
 #!/bin/sh
-# record - record the screen to ~/videos/recordings, run again to stop
+# record - record the screen to ~/media/recordings, run again to stop
 # Shift+Print: drag for a region, click a screen for all of it, Esc cancels.
 # no sound for now
 
 set -eu
 
-dir="$HOME/videos/recordings"
+dir="$HOME/media/recordings"
 file="$dir/$(date +%Y-%m-%d_%H-%M-%S).mp4"
 
 # already recording: SIGINT lets wf-recorder finish the file,

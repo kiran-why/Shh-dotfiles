@@ -97,6 +97,8 @@ bat() {
     for b in /sys/class/power_supply/BAT*; do
         [ -r "$b/capacity" ] || continue
         cap=$(cat "$b/capacity")
+        # some batteries report a bit over 100
+        [ "$cap" -le 100 ] || cap=100
         status=$(cat "$b/status" 2>/dev/null)
         color=$white
         low=0

@@ -34,7 +34,7 @@
 ,wf-recorder,screen recording (scripts/record on Shift+Print)
 ,wl-clipboard,clipboard: wl-copy and wl-paste
 ,cliphist,clipboard history (scripts/clipboard on Super+C)
-,xdg-utils,file types: cliphist keeps copied pictures as pictures
+,xdg-utils,xdg-open and file types (config/mimeapps.list; cliphist keeps pictures as pictures)
 ,jq,reads JSON (autotile, volume menu, bar clicks)
 ,ttf-jetbrains-mono-nerd,font with icons (bar)
 

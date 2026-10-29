@@ -144,9 +144,9 @@ become links to the repo, so an edit lands right in it, and `shh update` does a 
 | `Super + N` | Close the Notification |
 | `Super + Shift + N` | Close All Notifications |
 | `Super + Ctrl + N` | Bring Back the Last Notification |
-| `Print` | Screenshot of a Region, Saved to `~/pictures/screenshots` and Copied |
+| `Print` | Screenshot of a Region, Saved to `~/media/screenshots` and Copied |
 | `Ctrl + Print` | Screenshot of All Screens |
-| `Shift + Print` | Record the Screen to `~/videos/recordings` (press again to stop) |
+| `Shift + Print` | Record the Screen to `~/media/recordings` (press again to stop) |
 | `Alt + Shift` | Switch Keyboard Layout (`US` / `RU`) |
 
 **Bar:** a red `● rec` while recording (click it to stop), click wifi for the network menu, bluetooth (shown only with an adapter) for the bluetooth menu,

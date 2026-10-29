@@ -1,10 +1,10 @@
 #!/bin/sh
-# screenshot - save a region to ~/pictures/screenshots and copy it (Print)
+# screenshot - save a region to ~/media/screenshots and copy it (Print)
 # screenshot full: all screens, no selecting (Ctrl+Print)
 
 set -eu
 
-dir="$HOME/pictures/screenshots"
+dir="$HOME/media/screenshots"
 file="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
 
 mkdir -p "$dir"
