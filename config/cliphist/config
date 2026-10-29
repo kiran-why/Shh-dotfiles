@@ -1,0 +1,6 @@
+# ~/.config/cliphist/config - clipboard history (scripts/clipboard)
+# "option value", one per line; all options: cliphist -help
+
+# how many copies to keep; fewer = an accidentally copied password
+# leaves the history sooner
+max-items 100

@@ -38,6 +38,7 @@
 | Launcher, Menus | foot + fzf (own scripts) |
 | Files | broot |
 | Notifications | mako |
+| Clipboard | wl-clipboard + cliphist (history on `Super + C`) |
 | Sound | PipeWire + WirePlumber |
 | Network | iwd (wifi), dhcpcd (wired), openresolv |
 | Bluetooth | bluez (bluetoothctl), own menu |
@@ -83,9 +84,9 @@ install.sh link.sh lib.sh   installer, symlinks, shared messages
 packages/common.csv         packages: tag,package,description (empty tag = pacman, A = AUR)
 packages/CARD.csv           graphics drivers: amd, intel, nvidia, nvidia-580xx
 services.txt                s6 services
-config/     ->  ~/.config/     sway, swaybar, foot, fastfetch, broot, nvim, mako
+config/     ->  ~/.config/     sway, swaybar, foot, fastfetch, broot, nvim, mako, cliphist
 home/       ->  ~/             .zprofile .zshrc
-scripts/    ->  ~/.local/bin/  shh, launcher, keys, volume, wifi, bluetooth, sound, wallpaper, screenshot, autotile, screen, hardware
+scripts/    ->  ~/.local/bin/  shh, launcher, keys, clipboard, volume, wifi, bluetooth, sound, wallpaper, screenshot, autotile, screen, hardware
 wallpapers/ ->  ~/wallpapers/  the newest picture here is the wallpaper
 ```
 
@@ -107,6 +108,7 @@ The configs in `$HOME` are links to the repo: to change something, edit the file
 | `Super + F` | Files (broot) |
 | `Super + R` | Launcher |
 | `Super + /` | List of All Keys (search) |
+| `Super + C` | Clipboard History (Enter copies, Ctrl+D deletes) |
 | `Super + Q` | Close Window |
 | `Super + Shift + F` | Fullscreen |
 | `Super + V` | Float / Tile |

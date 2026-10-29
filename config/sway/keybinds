@@ -26,6 +26,9 @@ bindsym --to-code --no-repeat Print exec ~/.local/bin/screenshot
 # screens off / on (scripts/screen)
 bindsym --to-code --no-repeat $mod+Escape exec ~/.local/bin/screen
 
+# clipboard history (scripts/clipboard)
+bindsym --to-code --no-repeat $mod+c exec foot --app-id=clipboard ~/.local/bin/clipboard
+
 # list of all keys, searchable (scripts/keys)
 bindsym --to-code --no-repeat $mod+slash exec foot --app-id=keys ~/.local/bin/keys
 

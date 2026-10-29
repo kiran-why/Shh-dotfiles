@@ -5,4 +5,5 @@ for_window [app_id="wifi"] floating enable, resize set 600 400, move position ce
 for_window [app_id="bluetooth"] floating enable, resize set 600 400, move position center
 for_window [app_id="volume"] floating enable, resize set 500 300, move position center
 for_window [app_id="files"] floating enable, resize set 1000 650, move position center
+for_window [app_id="clipboard"] floating enable, resize set 800 500, move position center
 for_window [app_id="keys"] floating enable, resize set 900 600, move position center

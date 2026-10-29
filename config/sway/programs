@@ -9,6 +9,8 @@ set $menu foot --app-id=launcher ~/.local/bin/launcher
 # exec: once per session (exec_always would also run on every reload)
 exec ~/.local/bin/sound
 exec mako
+# clipboard history: every copy goes to cliphist (menu: scripts/clipboard)
+exec wl-paste --watch cliphist store
 
 # shared clipboard in VMware, does nothing elsewhere (scripts/vmware-clipboard)
 exec_always ~/.local/bin/vmware-clipboard

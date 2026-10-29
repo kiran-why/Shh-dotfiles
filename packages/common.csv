@@ -31,6 +31,8 @@
 ,grim,screenshots
 ,slurp,select a screen region (for grim)
 ,wl-clipboard,clipboard: wl-copy and wl-paste
+,cliphist,clipboard history (scripts/clipboard on Super+C)
+,xdg-utils,file types: cliphist keeps copied pictures as pictures
 ,jq,reads JSON (autotile, volume menu, bar clicks)
 ,ttf-jetbrains-mono-nerd,font with icons (bar)
 

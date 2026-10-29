@@ -1,0 +1,46 @@
+#!/bin/sh
+# clipboard - clipboard history (cliphist): pick an old copy to copy it again
+# opened by $mod+c in a floating foot window (size in sway/rules).
+# Enter copies, Ctrl+D deletes one, the first line clears all. Esc closes it.
+# the history size is in ~/.config/cliphist/config
+
+set -eu
+
+# same look as scripts/launcher
+colors='fg:7,fg+:15,bg+:0,hl:15:underline,hl+:15:underline'
+colors="$colors,info:8,border:8,label:15,prompt:15,pointer:15,query:15"
+colors="$colors,separator:8,spinner:8,gutter:-1,header:7"
+
+# cliphist lines are "id<TAB>preview": only the preview shows.
+# --no-sort keeps the newest on top; --expect prints the key first
+menu() {
+    fzf --layout=reverse --border=sharp --border-label=' clipboard ' \
+        --info=inline-right --prompt='> ' --pointer='▌' --no-scrollbar \
+        --highlight-line --color="$colors" --no-sort \
+        --delimiter='\t' --with-nth=2.. --expect=ctrl-d \
+        --header='enter: copy   ctrl-d: delete'
+}
+
+# the tab in front: an empty id, so it can't be a cliphist line
+clear_all='	clear history'
+
+while :; do
+    out=$({ printf '%s\n' "$clear_all"; cliphist list; } | menu) || exit 0
+    key=$(printf '%s\n' "$out" | head -n 1)
+    pick=$(printf '%s\n' "$out" | sed -n 2p)
+
+    if [ "$pick" = "$clear_all" ]; then
+        if [ "$key" = ctrl-d ]; then continue; fi
+        cliphist wipe
+        notify-send -a clipboard 'clipboard history cleared' || true
+        exit 0
+    fi
+
+    if [ "$key" = ctrl-d ]; then
+        printf '%s\n' "$pick" | cliphist delete
+        continue
+    fi
+
+    printf '%s\n' "$pick" | cliphist decode | wl-copy
+    exit 0
+done
