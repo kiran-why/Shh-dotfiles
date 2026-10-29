@@ -1,6 +1,6 @@
 #!/bin/sh
 # record - record the screen to ~/media/recordings, run again to stop
-# Shift+Print: drag for a region, click a screen for all of it, Esc cancels.
+# Ctrl+Print: drag for a region, click a screen for all of it, Esc cancels.
 # no sound for now
 
 set -eu

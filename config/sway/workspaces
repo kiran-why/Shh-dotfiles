@@ -1,6 +1,6 @@
 # ~/.config/sway/workspaces - workspace keys
 
-# $mod+N to switch, $mod+Shift+N to send the window there (0 = 10).
+# go to a workspace (0 = 10)
 # the bar shows only what is after ":"
 bindsym --to-code --no-repeat $mod+1 workspace number 1:●
 bindsym --to-code --no-repeat $mod+2 workspace number 2:●
@@ -12,6 +12,8 @@ bindsym --to-code --no-repeat $mod+7 workspace number 7:●
 bindsym --to-code --no-repeat $mod+8 workspace number 8:●
 bindsym --to-code --no-repeat $mod+9 workspace number 9:●
 bindsym --to-code --no-repeat $mod+0 workspace number 10:●
+
+# send the window to a workspace
 bindsym --to-code --no-repeat $mod+Shift+1 move container to workspace number 1:●
 bindsym --to-code --no-repeat $mod+Shift+2 move container to workspace number 2:●
 bindsym --to-code --no-repeat $mod+Shift+3 move container to workspace number 3:●
@@ -23,6 +25,6 @@ bindsym --to-code --no-repeat $mod+Shift+8 move container to workspace number 8:
 bindsym --to-code --no-repeat $mod+Shift+9 move container to workspace number 9:●
 bindsym --to-code --no-repeat $mod+Shift+0 move container to workspace number 10:●
 
-# scratchpad: $mod+s shows / hides it, $mod+Shift+s puts the window there
+# scratchpad: show / hide, put the window there
 bindsym --to-code --no-repeat $mod+s scratchpad show
 bindsym --to-code --no-repeat $mod+Shift+s move scratchpad

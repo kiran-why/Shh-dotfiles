@@ -31,7 +31,7 @@
 ,swaybg,wallpaper
 ,grim,screenshots
 ,slurp,select a screen region (for grim and wf-recorder)
-,wf-recorder,screen recording (scripts/record on Shift+Print)
+,wf-recorder,screen recording (scripts/record on Ctrl+Print)
 ,wl-clipboard,clipboard: wl-copy and wl-paste
 ,cliphist,clipboard history (scripts/clipboard on Super+C)
 ,xdg-utils,xdg-open and file types (config/mimeapps.list; cliphist keeps pictures as pictures)

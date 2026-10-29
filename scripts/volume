@@ -75,14 +75,19 @@ pick_device() {
     fi
 }
 
-# mute the sound or the mic, Esc goes back
+# action NODE: "mute" or "unmute", what a pick will do
+action() {
+    case "$(wp get-volume "$1" || true)" in *MUTED*) echo unmute ;; *) echo mute ;; esac
+}
+
+# mute or unmute the sound or the mic, Esc goes back
 mute_menu() {
     local pick
-    pick=$(printf '%s\n' 'mute volume' 'mute mic' |
-        menu --border-label=' mute ' --header="$(now)") || return 0
+    pick=$(printf '%s\n' "$(action "$out") volume" "$(action "$mic") mic" |
+        menu --border-label=' mute/unmute ' --header="$(now)") || return 0
     case "$pick" in
-        'mute volume') wp set-mute "$out" toggle ;;
-        'mute mic')    wp set-mute "$mic" toggle ;;
+        *volume) wp set-mute "$out" toggle ;;
+        *mic)    wp set-mute "$mic" toggle ;;
     esac
 }
 
@@ -103,12 +108,12 @@ esac
 # pos keeps the cursor on the last picked line
 pos=1
 while :; do
-    pick=$(printf '%s\n' '(+) volume' '(-) volume' mute 'in/out devices' |
+    pick=$(printf '%s\n' '(+) volume' '(-) volume' 'mute/unmute' 'in/out devices' |
         menu --border-label=' volume ' --header="$(now)" --bind="load:pos($pos)") || exit 0
     case "$pick" in
         '(+) volume')     pos=1; wp set-volume -l "$max" "$out" "$step+" ;;
         '(-) volume')     pos=2; wp set-volume "$out" "$step-" ;;
-        mute)             pos=3; mute_menu ;;
+        'mute/unmute')    pos=3; mute_menu ;;
         'in/out devices') pos=4; pick_device ;;
     esac
     wake_bar

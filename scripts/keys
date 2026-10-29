@@ -8,12 +8,27 @@ set -eu
 sway_dir="${XDG_CONFIG_HOME:-$HOME/.config}/sway"
 
 # "KEY  ACTION  description"; the description is the first comment line
-# of the block above the key, in gray
+# of the block above the key, in gray. Keys in a row that differ only in
+# the last key and the last word of the action make one line:
+# Super+Left/Down/Up/Right focus, Super+1..0 workspace number
 list() {
     awk '
+        # shown: a local variable (awk makes extra parameters local)
+        function flush(shown) {
+            if (n == 0) return
+            shown = (n > 4) ? first ".." last : keys
+            printf "%-30s %s", prefix shown, (n > 1 ? base : full)
+            if (pdesc != "") printf "  \033[90m%s\033[0m", pdesc
+            printf "\n"
+            n = 0
+        }
         /^[[:space:]]*$/ { desc = ""; next }
         /^[[:space:]]*#/ {
-            if (desc == "") { desc = $0; sub(/^[[:space:]]*#[[:space:]]*/, "", desc) }
+            if (desc == "") {
+                desc = $0
+                sub(/^[[:space:]]*#[[:space:]]*/, "", desc)
+                gsub(/\$mod/, "Super", desc)
+            }
             next
         }
         $1 == "bindsym" {
@@ -24,16 +39,25 @@ list() {
             for (j = i + 2; j <= NF; j++) cmd = cmd " " $j
 
             gsub(/\$mod/, "Super", key)
+            sub(/XF86Audio/, "", key)
             sub(/^exec /, "", cmd)
             sub(/^foot(client)? --app-id=[^ ]* /, "", cmd)
             gsub(/~\/\.local\/bin\//, "", cmd)
-            d = desc
-            gsub(/\$mod/, "Super", d)
 
-            printf "%-22s %s", key, cmd
-            if (d != "") printf "  \033[90m%s\033[0m", d
-            printf "\n"
+            # "Super+Shift+" + "Left", "move" + "left"
+            p = key; sub(/[^+]*$/, "", p)
+            k = substr(key, length(p) + 1)
+            w = split(cmd, word, " ")
+            b = (w > 1) ? substr(cmd, 1, length(cmd) - length(word[w]) - 1) : ""
+
+            if (n > 0 && b != "" && p == prefix && b == base && desc == pdesc) {
+                keys = keys "/" k; last = k; n++
+                next
+            }
+            flush()
+            prefix = p; first = last = keys = k; base = b; full = cmd; pdesc = desc; n = 1
         }
+        END { flush() }
     ' "$@"
 }
 

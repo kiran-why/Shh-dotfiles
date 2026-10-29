@@ -1,6 +1,6 @@
 #!/bin/sh
 # screenshot - save a region to ~/media/screenshots and copy it (Print)
-# screenshot full: all screens, no selecting (Ctrl+Print)
+# screenshot full: all screens, no selecting (Shift+Print)
 
 set -eu
 

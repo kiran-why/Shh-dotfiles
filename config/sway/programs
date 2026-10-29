@@ -6,6 +6,7 @@ set $browser firefox
 # floats like the launcher (sway/rules)
 set $files footclient --app-id=files broot
 set $menu footclient --app-id=launcher ~/.local/bin/launcher
+set $exit swaynag -t warning -m 'exit sway?' -B 'yes, exit' 'swaymsg exit'
 
 # exec: once per session, exec_always: also on every reload
 # a running server makes the new one quit; a crashed one is restarted on reload
