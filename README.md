@@ -17,15 +17,16 @@
 <p align="center"><strong>Quiet, minimal Wayland setup for Artix Linux (s6). No useless GUI.</strong></p>
 
 <p align="center">
-<a href="#-stack">🧱 Stack</a> •
-<a href="#-installation">📦 Installation</a> •
-<a href="#-updating">🔄 Updating</a> •
-<a href="#-layout">📁 Layout</a> •
-<a href="#-showcase">📸 Showcase</a> •
-<a href="#-keybinds">🎹 Keybinds</a>
+<a href="#stack">Stack</a> •
+<a href="#installation">Installation</a> •
+<a href="#updating">Updating</a> •
+<a href="#layout">Layout</a> •
+<a href="#showcase">Showcase</a> •
+<a href="#keybinds">Keybinds</a> •
+<a href="#known-issues">Known issues</a>
 </p>
 
-## 🧱 Stack
+## Stack
 
 | | |
 |---|---|
@@ -41,7 +42,7 @@
 | Network | iwd (wifi), dhcpcd (wired), openresolv |
 | Font | JetBrains Mono Nerd Font |
 
-## 📦 Installation
+## Installation
 
 Start from a fresh **Artix base install with s6** (pick `seatd-s6`, not elogind), a user
 in the `wheel` group and a working internet connection. Then, as that user (**not root**):
@@ -64,7 +65,7 @@ options and links the configs with `link.sh`. It is safe to run again, and nothi
 ever deleted: a file in the way is renamed to `name.bak-DATE`.
 `sh install.sh --check` only checks that every package exists.
 
-## 🔄 Updating
+## Updating
 
 To update Shh, you will need to pull the latest changes from GitHub by running the following commands:
 
@@ -74,7 +75,7 @@ git pull
 sh ./install.sh
 ```
 
-## 📁 Layout
+## Layout
 
 ```
 install.sh link.sh lib.sh   installer, symlinks, shared messages
@@ -89,12 +90,12 @@ wallpapers/ ->  ~/wallpapers/  the newest picture here is the wallpaper
 
 The configs in `$HOME` are links to the repo: to change something, edit the file here.
 
-## 📸 Showcase
+## Showcase
 
 <img width="1290" height="730" alt="image(2)" src="https://github.com/user-attachments/assets/5c10c6bd-413b-4a90-8860-a3befe76d147" />
 
 
-## 🎹 Keybinds
+## Keybinds
 
 `Super` is the Windows key.
 
@@ -125,19 +126,19 @@ The configs in `$HOME` are links to the repo: to change something, edit the file
 **zsh:** `Tab` completes, `→` accepts the gray suggestion, `↑` / `↓` search the history by what
 you typed, `Ctrl + ←` / `→` jump by words.
 
-## ⚠️ Known issues
+## Known issues
 
 - NVIDIA is untested (no hardware). GTX 6xx / 7xx and older get no NVIDIA driver and run on nouveau
 - Black screen after boot on NVIDIA: remove `kms` from `HOOKS` in `/etc/mkinitcpio.conf`, then
   `sudo mkinitcpio -P` (from the Arch wiki)
 
-## 🖇️ Thanks
+## Thanks
 
 Ideas taken from [LARBS](https://github.com/LukeSmithxyz/LARBS) (installer) and
 [holman/dotfiles](https://github.com/holman/dotfiles) (symlinks).
 
 
-## 📄 License
+## License
 
 <p>
   <a href="LICENSE">
