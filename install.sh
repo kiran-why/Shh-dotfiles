@@ -19,6 +19,8 @@ dots_path=$(cd "$(dirname "$0")" && pwd -P)
 packages_dir="$dots_path/packages"
 packages_file="$packages_dir/common.csv"
 services_file="$dots_path/services.txt"
+# the parts shh config can turn off
+components_file="$dots_path/components.txt"
 
 # temporary sudo rule (enable_nopasswd)
 sudoers_tmp="/etc/sudoers.d/dotfiles-temp"
@@ -114,6 +116,19 @@ check_system() {
     ok "artix + s6, internet, sudo"
 }
 
+# the menu on the first run; later shh config changes the choices
+choose_parts() {
+    step "what to install"
+
+    if [ -f "$shh_config" ]; then
+        info "choices: $shh_config (change: shh config)"
+    else
+        SHH_INSTALL=1 sh "$dots_path/scripts/shh" config || error "shh config failed"
+    fi
+    aur_helper=$(setting aur_helper yay)
+    ok "done"
+}
+
 # in_arch PKG: is PKG in Arch [extra]? pacman can't tell before enable_arch_repos
 in_arch() {
     curl -s -m 10 "https://archlinux.org/packages/search/json/?name=$1&repo=Extra" |
@@ -178,6 +193,11 @@ enable_nopasswd() {
 tweak_pacman() {
     step "pacman and makepkg settings"
 
+    if [ "$(setting pacman yes)" = no ]; then
+        info "skipped (shh config)"
+        return 0
+    fi
+
     sudo sed -i 's/^#Color$/Color/' /etc/pacman.conf
     sudo sed -Ei 's/^#?(ParallelDownloads).*/\1 = 5/' /etc/pacman.conf
     # build AUR packages on all cpu cores
@@ -237,8 +257,13 @@ install_aur_helper() {
 install_packages() {
     step "packages"
 
-    local tag pkg desc
+    local tag pkg desc off_pkgs
+    off_pkgs=$(off_items "$components_file" 2)
     package_lines | while IFS=, read -r tag pkg desc; do
+        if printf '%s\n' "$off_pkgs" | grep -qxF -- "$pkg"; then
+            info "off: $pkg"
+            continue
+        fi
         if is_installed "$pkg"; then
             ok "$pkg"
             continue
@@ -350,16 +375,26 @@ configure_network() {
 enable_services() {
     step "s6 services from services.txt"
 
-    local svc
-    for svc in $(read_list "$services_file"); do
+    local svc services off_svcs disabled=''
+    off_svcs=$(off_items "$components_file" 4)
+    services=$(read_list "$services_file" | without "$off_svcs")
+    for svc in $services; do
         sudo s6 set enable "$svc" || error "cannot enable $svc"
         info "enabled $svc"
+    done
+    # a part turned off in shh config: its service too (only if it is on now)
+    for svc in $off_svcs; do
+        s6 set status 2>/dev/null | grep -qx "$svc-srv/active" || continue
+        sudo s6 set disable "$svc" || error "cannot disable $svc"
+        info "disabled $svc"
+        disabled="$disabled $svc"
     done
 
     sudo s6 set commit || error "s6 set commit failed"
     sudo s6 live install || error "s6 live install failed"
     # live install only swaps the db: services new to it stay down until reboot
-    sudo s6 live start $(read_list "$services_file") || error "cannot start the services"
+    sudo s6 live start $services || error "cannot start the services"
+    [ -z "$disabled" ] || sudo s6 live stop $disabled || warn "cannot stop$disabled"
 
     # seat: screen and input for sway; audio: the sound card (no elogind)
     sudo usermod -aG seat,audio "$USER"
@@ -381,15 +416,33 @@ configure_system() {
     fi
     info "pam_rundir: XDG_RUNTIME_DIR at login"
 
-    write_root /etc/modprobe.d/nobeep.conf "blacklist pcspkr"
-    info "pc speaker disabled"
+    if [ "$(setting nobeep yes)" = yes ]; then
+        write_root /etc/modprobe.d/nobeep.conf "blacklist pcspkr"
+        info "pc speaker disabled"
+    fi
 
     ok "done"
 }
 
 link_dotfiles() {
     step "dotfiles"
-    DOTS_NO_LOGO=1 sh "$dots_path/link.sh"
+    # no mode in shh config: link.sh keeps what is installed
+    local mode
+    mode=$(setting mode '')
+    DOTS_NO_LOGO=1 sh "$dots_path/link.sh" ${mode:+"--$mode"}
+}
+
+# what parts turned off in shh config left behind; removing is up to you
+leftovers() {
+    local pkgs
+    pkgs=$(off_items "$components_file" 2)
+    # pacman -Qq prints the installed ones (with no names: all of them)
+    [ -z "$pkgs" ] || pkgs=$(pacman -Qq $pkgs 2>/dev/null | tr '\n' ' ' || true)
+    [ -z "$pkgs" ] || warn "not needed anymore: sudo pacman -Rs $pkgs"
+
+    if [ "$(setting nobeep yes)" = no ] && [ -e /etc/modprobe.d/nobeep.conf ]; then
+        warn "the pc speaker is still off: sudo rm /etc/modprobe.d/nobeep.conf"
+    fi
 }
 
 # █▄ ▄█ ▄▀▀▄ ▀█▀ █▄  █ 
@@ -422,6 +475,7 @@ if [ "$check_only" = 1 ]; then
 fi
 
 check_system
+choose_parts
 enable_nopasswd
 tweak_pacman
 enable_arch_repos
@@ -433,6 +487,7 @@ configure_network
 enable_services
 configure_system
 link_dotfiles
+leftovers
 
 echo
 ok "all done - reboot and log in on the TTY"

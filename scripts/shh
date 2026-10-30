@@ -15,11 +15,10 @@ list="$HOME/.local/state/shh/installed"
 repo_url="https://github.com/kiran-why/Shh-dotfiles.git"
 tab=$(printf '\t')
 
-# before the install there is no $share yet: sh scripts/shh config uses the repo
+# started from the repo (sh scripts/shh config, install.sh): its files, they
+# can be newer than $share; ~/.local/bin/shh finds no lib.sh in ~/.local
 repo=$(cd "$(dirname "$0")/.." && pwd -P)
-if [ ! -f "$share/lib.sh" ] && [ -f "$repo/lib.sh" ]; then
-    share="$repo"
-fi
+[ ! -f "$repo/lib.sh" ] || share="$repo"
 
 [ -f "$share/lib.sh" ] || { echo "lib.sh not found in $share, run sh link.sh from the repo" >&2; exit 1; }
 . "$share/lib.sh"
@@ -269,7 +268,8 @@ check_services() {
         return 0
     }
 
-    for svc in $(read_list "$share/services.txt"); do
+    # a part turned off in shh config has its service off too
+    for svc in $(read_list "$share/services.txt" | without "$(off_items "$share/components.txt" 4)"); do
         parts=$(s6-rc list "$svc" 2>/dev/null) || {
             bad "$svc: unknown to s6, run sh install.sh"
             continue
@@ -307,7 +307,7 @@ check_packages() {
     names=$(for hw in common $(sh "$HOME/.local/bin/hardware" 2>/dev/null || true); do
         csv="$share/packages/$hw.csv"
         [ ! -f "$csv" ] || read_list "$csv" | cut -d, -f2
-    done)
+    done | without "$(off_items "$share/components.txt" 2)")
 
     # pacman -T prints the missing ones
     missing=$(pacman -T $names || true)

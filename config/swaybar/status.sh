@@ -73,6 +73,8 @@ vol() {
 # only with an adapter; white when connected (the kernel adds hci0:N per connection)
 blue() {
     local d hci=0
+    # bluetooth turned off in shh config: no menu to open
+    [ -x ~/.local/bin/bluetooth ] || return 0
     for d in /sys/class/bluetooth/hci*; do
         [ -e "$d" ] || continue
         case "${d##*/}" in
