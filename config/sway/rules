@@ -1,6 +1,8 @@
 # ~/.config/sway/rules - floating windows and their size (width height)
+# menus from the bar go to the top right corner: ppt = % of the workspace
+# (it starts under the bar), x = 100 - width
 
 for_window [app_id="launcher"] floating enable, resize set 600 400, move position center
-for_window [app_id="wifi"] floating enable, resize set 600 400, move position center
-for_window [app_id="volume"] floating enable, resize set 500 300, move position center
+for_window [app_id="wifi"] floating enable, resize set 20 ppt 21 ppt, move position 80 ppt 0 ppt
+for_window [app_id="volume"] floating enable, resize set 20 ppt 21 ppt, move position 80 ppt 0 ppt
 for_window [app_id="keys"] floating enable, resize set 900 600, move position center

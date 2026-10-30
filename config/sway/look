@@ -5,8 +5,8 @@ output * bg $black solid_color
 exec_always ~/.local/bin/wallpaper
 
 # border width and gaps in px
-default_border pixel 2
-default_floating_border pixel 2
+default_border pixel 1
+default_floating_border pixel 1
 gaps inner 0
 
 # class                 border  backgr. text    indicator child_border

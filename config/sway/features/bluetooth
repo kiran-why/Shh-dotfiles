@@ -1,3 +1,4 @@
 # ~/.config/sway/features/bluetooth - the bluetooth menu, opened from the bar (shh config: bluetooth)
 
-for_window [app_id="bluetooth"] floating enable, resize set 600 400, move position center
+# top right, under the icon in the bar (like wifi in sway/rules)
+for_window [app_id="bluetooth"] floating enable, resize set 24 ppt 28 ppt, move position 76 ppt 0 ppt
