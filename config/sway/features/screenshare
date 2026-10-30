@@ -1,0 +1,5 @@
+# ~/.config/sway/features/screenshare - screen sharing (shh config: screenshare)
+
+# the portal is started by dbus, and dbus-run-session started before sway:
+# tell it where the screen is
+exec dbus-update-activation-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway

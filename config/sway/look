@@ -16,6 +16,3 @@ client.unfocused        $dark   $black  $gray   $dark     $dark
 client.urgent           $red    $red    $black  $red      $red
 
 font monospace 10
-
-# no X11 programs: everything we use speaks wayland natively
-xwayland disable

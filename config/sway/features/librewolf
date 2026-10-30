@@ -1,0 +1,4 @@
+# ~/.config/sway/features/librewolf - the browser (shh config: features > browser)
+
+# browser
+bindsym --to-code --no-repeat $mod+b exec librewolf

@@ -19,7 +19,10 @@
 # desktop
 ,sway,tiling wayland compositor (includes swaybar and swaymsg)
 ,mesa,OpenGL for sway on every graphics card and in a VM
-,firefox,browser (Super+B)
+,firefox,browser (Super+B); shh config picks one of the browsers
+,librewolf,browser: firefox without telemetry
+,chromium,browser
+A,brave-bin,browser: chromium with an ad blocker
 ,imv,image viewer (which program opens what: config/mimeapps.list)
 ,mpv,video player
 
@@ -37,6 +40,7 @@
 ,xdg-utils,xdg-open and file types (config/mimeapps.list; cliphist keeps pictures as pictures)
 ,jq,reads JSON (autotile, volume menu, bar clicks)
 ,ttf-jetbrains-mono-nerd,font with icons (bar)
+,xdg-desktop-portal-wlr,screen sharing in the browser and messengers (sway/features/screenshare)
 
 # sound
 ,pipewire,sound server
@@ -56,3 +60,36 @@
 ,bluez,bluetooth daemon
 ,bluez-utils,bluetoothctl (scripts/bluetooth)
 ,bluez-s6,bluetoothd service for s6
+
+# messengers: off until turned on in shh config
+,telegram-desktop,telegram (qt6, wayland)
+A,ayugram-desktop,telegram fork; built from source, takes long
+,discord,discord (electron)
+
+# tools (shh config: tools)
+,btop,system monitor
+,htop,system monitor
+,7zip,archives: 7z x FILE
+,man-db,man: manual pages for commands
+,man-pages,manual pages for the C library and system calls
+,tealdeer,tldr: short examples for a command
+
+# media (shh config: media); mpv and imv are in "desktop"
+,yt-dlp,mpv plays youtube links with it
+,obs-studio,screen recording and streaming
+,vlc,video player (needs xwayland)
+,gimp,image editor
+
+# apps (shh config: apps)
+,libreoffice-fresh,office
+,qbittorrent,torrents
+,virtualbox,virtual machines (needs xwayland)
+,virtualbox-host-dkms,virtualbox kernel module, built for the running kernel
+,linux-headers,for dkms to build virtualbox-host-dkms
+,xorg-xwayland,X11 programs (shh config: settings > xwayland)
+,qt6-wayland,qt6 programs (obs, qbittorrent) without xwayland
+
+# fonts (shh config: fonts); the bar needs ttf-jetbrains-mono-nerd above
+,noto-fonts-emoji,emoji in the browser and messengers
+,noto-fonts,text font for pages and programs (latin, cyrillic, greek)
+,noto-fonts-cjk,chinese, japanese and korean text (off by default)

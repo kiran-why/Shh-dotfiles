@@ -1,13 +1,49 @@
 # components.txt - parts shh config can turn off; everything else is always installed
-# name|packages|files (repo paths)|services|description
+# name|packages|files (repo paths)|services|mark|group|default
+# group = the tab in shh config: empty = features, browser = one of them (firefox
+# by default), messengers, media, apps, tools, fonts; xwayland = settings > xwayland.
+# mark: recommended = the setup uses it (on by default; never for temporary things),
+# AUR, needs xwayland. default: empty = on, no = off
 # packages stay in packages/common.csv too; sway lines of a part go in config/sway/features/NAME
 
-record|wf-recorder|scripts/record config/sway/features/record||screen recording
-bluetooth|bluez bluez-utils bluez-s6|scripts/bluetooth config/sway/features/bluetooth|bluetoothd|bluetooth menu
-clipboard|cliphist|scripts/clipboard config/cliphist config/sway/features/clipboard||clipboard history
-autotile||scripts/autotile config/sway/features/autotile||hyprland-like splits
-firefox|firefox|config/sway/features/firefox||browser
-broot|broot|config/broot config/sway/features/broot||file manager
-mpv|mpv|||video player
-imv|imv|config/imv||image viewer
-fastfetch|fastfetch|config/fastfetch||system info when a terminal opens
+record|wf-recorder|scripts/record config/sway/features/record||recommended||
+bluetooth|bluez bluez-utils bluez-s6|scripts/bluetooth config/sway/features/bluetooth|bluetoothd|recommended||
+clipboard|cliphist|scripts/clipboard config/cliphist config/sway/features/clipboard||recommended||
+screenshare|xdg-desktop-portal-wlr|config/sway/features/screenshare||recommended||
+autotile||scripts/autotile config/sway/features/autotile||recommended||
+broot|broot|config/broot config/sway/features/broot||recommended||
+fastfetch|fastfetch|config/fastfetch||recommended||
+
+firefox|firefox|config/sway/features/firefox||recommended|browser|
+librewolf|librewolf|config/sway/features/librewolf|||browser|
+chromium|chromium|config/sway/features/chromium|||browser|
+brave|brave-bin|config/sway/features/brave||AUR|browser|
+
+telegram|telegram-desktop||||messengers|no
+ayugram|ayugram-desktop|||AUR|messengers|no
+discord|discord||||messengers|no
+
+mpv|mpv|||recommended|media|
+imv|imv|config/imv||recommended|media|
+yt-dlp|yt-dlp||||media|no
+obs|obs-studio qt6-wayland||||media|no
+vlc|vlc|||needs xwayland|media|no
+gimp|gimp||||media|no
+
+libreoffice|libreoffice-fresh||||apps|no
+qbittorrent|qbittorrent qt6-wayland||||apps|no
+virtualbox|virtualbox virtualbox-host-dkms linux-headers|||needs xwayland|apps|no
+
+btop|btop||||tools|no
+htop|htop||||tools|no
+7zip|7zip||||tools|no
+man|man-db man-pages||||tools|no
+tldr|tealdeer||||tools|no
+
+emoji|noto-fonts-emoji|||recommended|fonts|
+noto|noto-fonts|||recommended|fonts|
+cjk|noto-fonts-cjk||||fonts|no
+
+# settings > xwayland: noxwayland is on when xwayland is off (sway can't have both lines)
+noxwayland||config/sway/features/noxwayland|||xwayland|
+xwayland|xorg-xwayland||||xwayland|

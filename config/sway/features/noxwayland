@@ -1,0 +1,4 @@
+# ~/.config/sway/features/noxwayland - no X11 programs: everything we use speaks
+# wayland natively. shh config: settings > xwayland (it leaves this file out)
+
+xwayland disable

@@ -34,7 +34,7 @@
 | Distro / Init | Artix Linux, s6 (no systemd) |
 | Login | Plain TTY, no display manager; sway starts on tty1 |
 | Seat | seatd + pam_rundir (no elogind) |
-| Desktop | sway + swaybar, no XWayland |
+| Desktop | sway + swaybar, no XWayland (can be turned on in `shh config` for X11 programs) |
 | Shell / Terminal / Editor | zsh / foot / neovim |
 | Launcher, Menus | foot + fzf (own scripts) |
 | Files | broot |
@@ -45,6 +45,8 @@
 | Network | iwd (wifi), dhcpcd (wired), openresolv |
 | Bluetooth | bluez (bluetoothctl), own menu |
 | AUR helper | yay or paru (`shh config`) |
+| Browser | firefox, or librewolf, chromium, brave (`shh config`) |
+| Messengers | telegram, ayugram, discord: off until picked in `shh config` |
 | Font | JetBrains Mono Nerd Font |
 
 ## Installation
@@ -63,7 +65,7 @@ cd ~ && rm -rf ~/Shh-dotfiles    # optional: all is copied, shh update downloads
 
 
 On the first run `install.sh` opens a menu: what to install (screen recording, bluetooth,
-firefox ...) and a few settings (keyboard layouts, yay or paru, copies or links).
+the browser, messengers ...) and a few settings (keyboard layouts, yay or paru, copies or links).
 Reboot and log in on **tty1**: sway starts by itself. Other ttys (`Ctrl+Alt+F2` ...)
 stay plain consoles for rescue.
 

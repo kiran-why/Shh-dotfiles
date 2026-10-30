@@ -61,10 +61,11 @@ set_value() {
     fi
 }
 
-# toggle NAME: yes <-> no
+# toggle NAME [DEFAULT]: yes <-> no; DEFAULT when NAME is not set (yes)
 toggle() {
-    if [ "$(setting "$1" yes)" = yes ]; then set_value "$1" no; else set_value "$1" yes; fi
-    note="$1: $(setting "$1" yes)"
+    local default="${2:-yes}"
+    if [ "$(setting "$1" "$default")" = yes ]; then set_value "$1" no; else set_value "$1" yes; fi
+    note="$1: $(setting "$1" "$default")"
 }
 
 # lines are "key<TAB>text": only the text shows, the key says what was picked
@@ -77,9 +78,9 @@ line() {
     printf '%s\t%-3s %-14s %s\n' "$1" "$2" "$3" "$4"
 }
 
-# yes_no NAME TEXT: a line with [x] or [ ]
+# yes_no NAME TEXT [DEFAULT]: a line with [x] or [ ]
 yes_no() {
-    if [ "$(setting "$1" yes)" = yes ]; then line "$1" '[x]' "$1" "$2"; else line "$1" '[ ]' "$1" "$2"; fi
+    if [ "$(setting "$1" "${3:-yes}")" = yes ]; then line "$1" '[x]' "$1" "$2"; else line "$1" '[ ]' "$1" "$2"; fi
 }
 
 # label_of LIST KEY: the shown text of KEY in LIST
@@ -92,30 +93,58 @@ choose() {
     printf '%s\n' "$2" | menu --border-label=" $1 " | cut -f1
 }
 
+# center TEXT: TEXT in the middle of the menu (window width minus the
+# border and the cursor column); with no terminal as it is
+center() {
+    local cols pad
+    cols=$(stty size 2>/dev/null </dev/tty | cut -d" " -f2)
+    pad=$(( (${cols:-0} - 4 - ${#1}) / 2 ))
+    [ "$pad" -gt 0 ] || pad=0
+    printf '%*s%s\n' "$pad" '' "$1"
+}
+
 # loop LABEL HEADER LINES ACT: a menu that stays open. LINES prints the
 # lines, ACT KEY does the change and may set $note. Esc leaves
 loop() {
-    local lines pick pos=1
+    local lines pick header pos=1
     note=''
     while :; do
         lines=$("$3")
+        # a last line of one space: an empty line above the list
+        header=$(center "$2"; [ -z "$note" ] || center "$note"; echo ' ')
         pick=$(printf '%s\n' "$lines" |
-            menu --border-label=" $1 " --header="$2${note:+
-$note}" --bind="load:pos($pos)") || return 0
+            menu --border-label=" $1 " --header="$header" --bind="load:pos($pos)") || return 0
         pos=$(printf '%s\n' "$lines" | grep -nxF -- "$pick" | cut -d: -f1)
         "$4" "${pick%%"$tab"*}"
     done
 }
 
 top_lines() {
-    line settings '' settings 'copies or links, layouts, aur helper, beeper, pacman'
-    line features '' features 'programs and parts you can leave out'
+    line settings '' settings ''
+    line features '' features ''
+    # an empty line between the two groups; Enter on it does nothing
+    printf -- '-\t\n'
+    line browser '' browser "$(setting browser firefox)"
+    line messengers '' messengers "$(on_list messengers)"
+    line media '' media "$(on_list media)"
+    line apps '' apps "$(on_list apps)"
+    line tools '' tools "$(on_list tools)"
+    line fonts '' fonts "$(on_list fonts)"
 }
 
 top_act() {
+    local value
     case "$1" in
-        settings) loop settings 'Enter: change   Esc: back' settings_lines settings_act ;;
-        features) loop features 'Enter: on / off   Esc: back' features_lines toggle ;;
+        settings)
+            loop settings 'Enter: change   Esc: back' settings_lines settings_act ;;
+        browser)
+            value=$(choose browser "$(group browser | awk -F'|' -v t="$tab" '{ printf "%s%s%-10s %s\n", $1, t, $1, $2 }')")
+            [ -z "$value" ] || set_value browser "$value" ;;
+        features|messengers|media|apps|tools|fonts)
+            # features: the parts with no group
+            tab_group=$1
+            [ "$1" != features ] || tab_group=''
+            loop "$1" 'Enter: on / off   Esc: back' group_lines group_act ;;
     esac
     note=''
 }
@@ -127,6 +156,7 @@ settings_lines() {
     line aur_helper '' 'aur helper' "$(setting aur_helper yay)"
     yes_no nobeep 'mute the motherboard beeper'
     yes_no pacman 'pacman colors and parallel downloads, AUR builds on all cpu cores'
+    yes_no xwayland 'X11 programs; after a relogin' no
 }
 
 settings_act() {
@@ -139,6 +169,9 @@ settings_act() {
             loop layouts 'Enter: on / off   Esc: back   the first one is the default' layout_lines layout_act
             note="layouts: $(setting layouts us,ru)"
             return 0 ;;
+        xwayland)
+            toggle xwayland no
+            return 0 ;;
         *)
             toggle "$1"
             return 0 ;;
@@ -148,11 +181,30 @@ settings_act() {
     note="$1: $value"
 }
 
-features_lines() {
-    local name desc
-    read_list "$share/components.txt" | while IFS='|' read -r name _ _ _ desc; do
-        yes_no "$name" "$desc"
+# group GROUP: "name|desc|default" of the parts in GROUP (components.txt)
+group() {
+    read_list "$share/components.txt" | awk -F'|' -v g="$1" '$6 == g { print $1 "|" $5 "|" $7 }'
+}
+
+# on_list GROUP: the parts of GROUP turned on, like "btop,man", or none
+on_list() {
+    local name desc default list
+    list=$(group "$1" | while IFS='|' read -r name desc default; do
+        [ "$(setting "$name" "${default:-yes}")" = no ] || echo "$name"
+    done | paste -sd, -)
+    echo "${list:-none}"
+}
+
+# the tab of $tab_group: a line per part, Enter turns it on / off
+group_lines() {
+    local name desc default
+    group "$tab_group" | while IFS='|' read -r name desc default; do
+        yes_no "$name" "$desc" "${default:-yes}"
     done
+}
+
+group_act() {
+    toggle "$1" "$(group "$tab_group" | awk -F'|' -v n="$1" '$1 == n { print $3 }')"
 }
 
 # every xkb layout as "code<TAB>name"; before the install there is no
@@ -200,8 +252,8 @@ layout_act() {
     note="layouts: $now"
 }
 
-# shh config: two tabs, settings and features; every change goes to
-# $shh_config at once
+# shh config: tabs settings, features, browser, messengers, tools, fonts;
+# every change goes to $shh_config at once
 config() {
     [ -f "$share/components.txt" ] || error "not found: $share/components.txt (sh link.sh)"
     command -v fzf >/dev/null || sudo pacman -S --needed --noconfirm fzf || error "cannot install fzf"

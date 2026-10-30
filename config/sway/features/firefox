@@ -1,4 +1,4 @@
-# ~/.config/sway/features/firefox - the browser (shh config: firefox)
+# ~/.config/sway/features/firefox - the browser (shh config: features > browser)
 
 # browser
 bindsym --to-code --no-repeat $mod+b exec firefox

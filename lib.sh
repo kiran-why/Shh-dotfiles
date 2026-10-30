@@ -79,14 +79,34 @@ setting() {
     printf '%s\n' "${value:-$2}"
 }
 
+# part_on NAME GROUP DEFAULT: is the part turned on? (components.txt)
+part_on() {
+    case "$2" in
+        browser)  [ "$(setting browser firefox)" = "$1" ] ;;
+        # two parts: noxwayland (the sway line) or xwayland (the package)
+        xwayland)
+            if [ "$(setting xwayland no)" = yes ]; then [ "$1" = xwayland ]; else [ "$1" = noxwayland ]; fi ;;
+        *)        [ "$(setting "$1" "${3:-yes}")" = yes ] ;;
+    esac
+}
+
 # off_items COMPONENTS FIELD: one per line, FIELD (2 packages, 3 files,
-# 4 services) of the parts in COMPONENTS turned off (NAME=no)
+# 4 services) of the parts in COMPONENTS turned off. Shared by a part that
+# is on (qt6-wayland): not off
 off_items() {
-    local line
-    read_list "$1" | while IFS= read -r line; do
-        [ "$(setting "${line%%|*}" yes)" = no ] || continue
-        printf '%s\n' "$line" | cut -d'|' -f"$2" | tr ' ' '\n'
-    done | grep -v '^$' || true
+    local name group default line words on='' off=''
+    while IFS= read -r line; do
+        [ -n "$line" ] || continue
+        IFS='|' read -r name _ _ _ _ group default <<EOF
+$line
+EOF
+        words=$(printf '%s\n' "$line" | cut -d'|' -f"$2")
+        if part_on "$name" "$group" "$default"; then on="$on $words"; else off="$off $words"; fi
+    done <<EOF
+$(read_list "$1")
+EOF
+    # unquoted on purpose: one word per line
+    printf '%s\n' $off | grep -v '^$' | without "$(printf '%s\n' $on | grep -v '^$')"
 }
 
 # █    ▄▀▀▄ ▄▀▀▀ ▄▀▀▄ 

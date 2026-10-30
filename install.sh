@@ -396,9 +396,12 @@ enable_services() {
     sudo s6 live start $services || error "cannot start the services"
     [ -z "$disabled" ] || sudo s6 live stop $disabled || warn "cannot stop$disabled"
 
-    # seat: screen and input for sway; audio: the sound card (no elogind)
-    sudo usermod -aG seat,audio "$USER"
-    ok "added $USER to groups seat, audio (relogin to apply)"
+    # seat: screen and input for sway; audio: the sound card (no elogind);
+    # vboxusers: usb in virtualbox (shh config: apps)
+    local groups=seat,audio
+    ! part_on virtualbox apps no || groups="$groups,vboxusers"
+    sudo usermod -aG "$groups" "$USER"
+    ok "added $USER to groups $groups (relogin to apply)"
 }
 
 configure_system() {
