@@ -9,4 +9,6 @@ include ~/.config/sway/input
 include ~/.config/sway/rules
 include ~/.config/sway/keybinds
 include ~/.config/sway/workspaces
+# parts shh config can turn off; only the ones turned on are installed
+include ~/.config/sway/features/*
 include ~/.config/swaybar/bar

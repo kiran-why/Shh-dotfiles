@@ -1,0 +1,3 @@
+# ~/.config/sway/features/autotile - hyprland-like splits (shh config: autotile)
+
+exec ~/.local/bin/autotile

@@ -1,0 +1,5 @@
+# ~/.config/sway/features/record - screen recording (shh config: record)
+
+# screen recording, press again to stop
+# not Shift: a held Shift makes slurp select a square
+bindsym --to-code --no-repeat Ctrl+Print exec ~/.local/bin/record

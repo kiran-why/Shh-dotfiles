@@ -1,0 +1,9 @@
+# ~/.config/sway/features/clipboard - clipboard history (shh config: clipboard)
+
+# keeps every copy for scripts/clipboard
+exec wl-paste --watch cliphist store
+
+# clipboard history
+bindsym --to-code --no-repeat $mod+c exec footclient --app-id=clipboard ~/.local/bin/clipboard
+
+for_window [app_id="clipboard"] floating enable, resize set 800 500, move position center

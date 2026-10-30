@@ -98,7 +98,7 @@ check_system() {
     fi
 
     # https, not ping: ICMP is often blocked
-    curl -s -o /dev/null -m 10 https://artixlinux.org ||
+    curl -s -o /dev/null -m 20 https://artixlinux.org ||
         error "no internet connection"
 
     ok "artix + s6, internet, sudo"
@@ -297,7 +297,7 @@ configure_gpu() {
     ok "done"
 }
 
-# before enable_services: s6 live install starts iwd and dhcpcd right away
+# before enable_services: it starts iwd and dhcpcd right away
 configure_network() {
     step "network settings"
 
@@ -328,7 +328,7 @@ configure_network() {
     ok "done"
 }
 
-# services.txt: enable -> commit -> live install, they start at boot.
+# services.txt: enable -> commit -> live install -> start, they also start at boot.
 # a one-time "unable to chdir to <svc>-srv" after it is harmless
 enable_services() {
     step "s6 services from services.txt"
@@ -341,6 +341,8 @@ enable_services() {
 
     sudo s6 set commit || error "s6 set commit failed"
     sudo s6 live install || error "s6 live install failed"
+    # live install only swaps the db: services new to it stay down until reboot
+    sudo s6 live start $(read_list "$services_file") || error "cannot start the services"
 
     # seat: screen and input for sway; audio: the sound card (no elogind)
     sudo usermod -aG seat,audio "$USER"

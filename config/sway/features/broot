@@ -1,0 +1,6 @@
+# ~/.config/sway/features/broot - the file manager (shh config: broot)
+
+# files, a floating broot
+bindsym --to-code --no-repeat $mod+f exec footclient --app-id=files broot
+
+for_window [app_id="files"] floating enable, resize set 1000 650, move position center

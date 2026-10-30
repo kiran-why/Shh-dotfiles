@@ -61,5 +61,11 @@ list() {
     ' "$@"
 }
 
-list "$sway_dir/keybinds" "$sway_dir/workspaces" |
+# features/: only the parts shh config turned on are there
+set -- "$sway_dir/keybinds" "$sway_dir/workspaces"
+for f in "$sway_dir"/features/*; do
+    [ ! -f "$f" ] || set -- "$@" "$f"
+done
+
+list "$@" |
     fzf --ansi --border-label=' keys ' >/dev/null || true

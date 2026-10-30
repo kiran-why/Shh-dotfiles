@@ -9,9 +9,6 @@ default_border pixel 2
 default_floating_border pixel 2
 gaps inner 0
 
-# hyprland-like splits (scripts/autotile)
-exec ~/.local/bin/autotile
-
 # class                 border  backgr. text    indicator child_border
 client.focused          $white  $white  $black  $white    $white
 client.focused_inactive $dark   $black  $gray   $dark     $dark

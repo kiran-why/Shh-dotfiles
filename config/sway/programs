@@ -2,9 +2,6 @@
 
 # terminals are footclient windows of one foot server: a few MB each, not 25
 set $term footclient
-set $browser firefox
-# floats like the launcher (sway/rules)
-set $files footclient --app-id=files broot
 set $menu footclient --app-id=launcher ~/.local/bin/launcher
 set $exit swaynag -t warning -m 'exit sway?' -B 'yes, exit' 'swaymsg exit'
 
@@ -13,8 +10,6 @@ set $exit swaynag -t warning -m 'exit sway?' -B 'yes, exit' 'swaymsg exit'
 exec_always foot --server
 exec ~/.local/bin/sound
 exec mako
-# clipboard history (scripts/clipboard)
-exec wl-paste --watch cliphist store
 
 # shared clipboard in VMware (scripts/vmware-clipboard)
 exec_always ~/.local/bin/vmware-clipboard

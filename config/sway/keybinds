@@ -1,5 +1,5 @@
 # ~/.config/sway/keybinds - keys for programs and windows
-# workspace keys are in workspaces, all keys are in README.
+# workspace keys are in workspaces, keys of the parts shh config can turn off in features/.
 # the first comment line of a block is its text in Super+/ (scripts/keys).
 # --to-code: works on the ru layout; --no-repeat: a stuck key runs it once
 
@@ -8,8 +8,6 @@ set $mod Mod4
 
 # programs
 bindsym --to-code --no-repeat $mod+t exec $term
-bindsym --to-code --no-repeat $mod+b exec $browser
-bindsym --to-code --no-repeat $mod+f exec $files
 bindsym --to-code --no-repeat $mod+r exec $menu
 
 # windows
@@ -26,15 +24,8 @@ bindsym --to-code --no-repeat Print exec ~/.local/bin/screenshot
 # screenshot of all screens
 bindsym --to-code --no-repeat Shift+Print exec ~/.local/bin/screenshot full
 
-# screen recording, press again to stop
-# not Shift: a held Shift makes slurp select a square
-bindsym --to-code --no-repeat Ctrl+Print exec ~/.local/bin/record
-
 # screens off / on
 bindsym --to-code --no-repeat $mod+Escape exec ~/.local/bin/screen
-
-# clipboard history
-bindsym --to-code --no-repeat $mod+c exec footclient --app-id=clipboard ~/.local/bin/clipboard
 
 # this list
 bindsym --to-code --no-repeat $mod+slash exec footclient --app-id=keys ~/.local/bin/keys
