@@ -25,6 +25,8 @@ bindsym --to-code --no-repeat $mod+Shift+8 move container to workspace number 8:
 bindsym --to-code --no-repeat $mod+Shift+9 move container to workspace number 9:●
 bindsym --to-code --no-repeat $mod+Shift+0 move container to workspace number 10:●
 
-# scratchpad: show / hide, put the window there
+# show / hide the scratchpad
 bindsym --to-code --no-repeat $mod+s scratchpad show
+
+# send the window to the scratchpad
 bindsym --to-code --no-repeat $mod+Shift+s move scratchpad

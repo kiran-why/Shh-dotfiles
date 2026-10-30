@@ -58,6 +58,37 @@ read_list() {
     grep -v '^[[:space:]]*#' "$1" | grep -v '^[[:space:]]*$' || true
 }
 
+# without LIST: stdin minus the lines that are in LIST (one per line)
+without() {
+    if [ -n "$1" ]; then grep -vxF -- "$1" || true; else cat; fi
+}
+
+# ▄▀▀▀ █  █ ▄▀▀▄ ▀█▀ ▄▀▀▀ █▀▀▀ ▄▀▀▀ 
+# █    █▀▀█ █  █  █  █    █▀▀   ▀▀▄ 
+#  ▀▀▀ ▀  ▀  ▀▀  ▀▀▀  ▀▀▀ ▀▀▀▀ ▀▀▀ 
+
+# what shh config picked: NAME=VALUE lines, editable by hand; not in the
+# repo, so shh update remembers it
+shh_config="$HOME/.config/shh/config"
+
+# setting NAME DEFAULT: NAME from $shh_config (the last line wins), or DEFAULT
+setting() {
+    local value
+    value=$(sed -n "s/^$1=//p" "$shh_config" 2>/dev/null | tail -n 1 |
+        sed 's/#.*//; s/[[:space:]]//g')
+    printf '%s\n' "${value:-$2}"
+}
+
+# off_items COMPONENTS FIELD: one per line, FIELD (2 packages, 3 files,
+# 4 services) of the parts in COMPONENTS turned off (NAME=no)
+off_items() {
+    local line
+    read_list "$1" | while IFS= read -r line; do
+        [ "$(setting "${line%%|*}" yes)" = no ] || continue
+        printf '%s\n' "$line" | cut -d'|' -f"$2" | tr ' ' '\n'
+    done | grep -v '^$' || true
+}
+
 # █    ▄▀▀▄ ▄▀▀▀ ▄▀▀▄ 
 # █    █  █ █ ▀█ █  █ 
 # ▀▀▀▀  ▀▀   ▀▀▀  ▀▀  

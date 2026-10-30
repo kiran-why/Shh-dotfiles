@@ -4,8 +4,8 @@
 #  ▄▄▄ █▄▄  █▄▄  
 # ▀▀▄▄ █  █ █  █ 
 # ▀▀▀  ▀  ▀ ▀  ▀ 
-# shh - look after the dotfiles: update, check, change a color, uninstall
-# usage: shh update | doctor | color OLD NEW | uninstall [-n] | help
+# shh - look after the dotfiles: pick the parts, update, check, change a color, uninstall
+# usage: shh config | update | doctor | color OLD NEW | uninstall [-n] | help
 
 set -eu
 
@@ -15,16 +15,212 @@ list="$HOME/.local/state/shh/installed"
 repo_url="https://github.com/kiran-why/Shh-dotfiles.git"
 tab=$(printf '\t')
 
+# before the install there is no $share yet: sh scripts/shh config uses the repo
+repo=$(cd "$(dirname "$0")/.." && pwd -P)
+if [ ! -f "$share/lib.sh" ] && [ -f "$repo/lib.sh" ]; then
+    share="$repo"
+fi
+
 [ -f "$share/lib.sh" ] || { echo "lib.sh not found in $share, run sh link.sh from the repo" >&2; exit 1; }
 . "$share/lib.sh"
 
 usage() {
     echo "usage: shh COMMAND"
+    echo "  config   pick the parts and settings for install.sh (then: shh update)"
     echo "  update   install.sh from a fresh clone (it updates the system and the configs)"
     echo "  doctor   check services, installed files, packages and the session"
     echo "  color OLD NEW  change a color in every config, e.g. shh color d7263d ff0000"
     echo "  uninstall [-n] remove what link.sh put in place, put the old files back (-n: only show)"
     echo "  help     show this help"
+}
+
+# ▄▀▀▀ ▄▀▀▄ █▄  █ █▀▀▀ ▀█▀ ▄▀▀▀ 
+# █    █  █ █ ▀▄█ █▀▀   █  █ ▀█ 
+#  ▀▀▀  ▀▀  ▀   ▀ ▀    ▀▀▀  ▀▀▀ 
+
+# choices for the small menus: "value<TAB>shown text"
+modes="copy${tab}copy   copies, the repo can be deleted
+link${tab}link   links to the repo, edits land in it"
+helpers="yay${tab}yay
+paru${tab}paru"
+# xkb options for switching the layout
+toggles="alt_shift_toggle${tab}Alt+Shift
+ctrl_shift_toggle${tab}Ctrl+Shift
+win_space_toggle${tab}Super+Space
+caps_toggle${tab}Caps Lock
+lalt_lshift_toggle${tab}Left Alt+Left Shift"
+
+# copies or links now: link.sh keeps what is installed
+if [ -L "$HOME/.local/share/shh/lib.sh" ]; then mode_now=link; else mode_now=copy; fi
+
+# set_value NAME VALUE: change NAME in $shh_config, or add it
+set_value() {
+    if grep -q "^$1=" "$shh_config"; then
+        sed -i "s|^$1=.*|$1=$2|" "$shh_config"
+    else
+        printf '%s=%s\n' "$1" "$2" >>"$shh_config"
+    fi
+}
+
+# toggle NAME: yes <-> no
+toggle() {
+    if [ "$(setting "$1" yes)" = yes ]; then set_value "$1" no; else set_value "$1" yes; fi
+    note="$1: $(setting "$1" yes)"
+}
+
+# lines are "key<TAB>text": only the text shows, the key says what was picked
+menu() {
+    fzf --info=hidden --delimiter="$tab" --with-nth=2 "$@"
+}
+
+# line KEY BOX LABEL TEXT: a menu line
+line() {
+    printf '%s\t%-3s %-14s %s\n' "$1" "$2" "$3" "$4"
+}
+
+# yes_no NAME TEXT: a line with [x] or [ ]
+yes_no() {
+    if [ "$(setting "$1" yes)" = yes ]; then line "$1" '[x]' "$1" "$2"; else line "$1" '[ ]' "$1" "$2"; fi
+}
+
+# label_of LIST KEY: the shown text of KEY in LIST
+label_of() {
+    printf '%s\n' "$1" | awk -F "$tab" -v k="$2" '$1 == k { print $2 }'
+}
+
+# choose LABEL LIST: pick one, print its key (nothing on Esc)
+choose() {
+    printf '%s\n' "$2" | menu --border-label=" $1 " | cut -f1
+}
+
+# loop LABEL HEADER LINES ACT: a menu that stays open. LINES prints the
+# lines, ACT KEY does the change and may set $note. Esc leaves
+loop() {
+    local lines pick pos=1
+    note=''
+    while :; do
+        lines=$("$3")
+        pick=$(printf '%s\n' "$lines" |
+            menu --border-label=" $1 " --header="$2${note:+
+$note}" --bind="load:pos($pos)") || return 0
+        pos=$(printf '%s\n' "$lines" | grep -nxF -- "$pick" | cut -d: -f1)
+        "$4" "${pick%%"$tab"*}"
+    done
+}
+
+top_lines() {
+    line settings '' settings 'copies or links, layouts, aur helper, beeper, pacman'
+    line features '' features 'programs and parts you can leave out'
+}
+
+top_act() {
+    case "$1" in
+        settings) loop settings 'Enter: change   Esc: back' settings_lines settings_act ;;
+        features) loop features 'Enter: on / off   Esc: back' features_lines toggle ;;
+    esac
+    note=''
+}
+
+settings_lines() {
+    line mode '' mode "$(setting mode "$mode_now")"
+    line layouts '' layouts "$(setting layouts us,ru)"
+    line layout_toggle '' 'switch layout' "$(label_of "$toggles" "$(setting layout_toggle alt_shift_toggle)")"
+    line aur_helper '' 'aur helper' "$(setting aur_helper yay)"
+    yes_no nobeep 'mute the motherboard beeper'
+    yes_no pacman 'pacman colors and parallel downloads, AUR builds on all cpu cores'
+}
+
+settings_act() {
+    local value
+    case "$1" in
+        mode)          value=$(choose mode "$modes") ;;
+        layout_toggle) value=$(choose 'switch layout' "$toggles") ;;
+        aur_helper)    value=$(choose 'aur helper' "$helpers") ;;
+        layouts)
+            loop layouts 'Enter: on / off   Esc: back   the first one is the default' layout_lines layout_act
+            note="layouts: $(setting layouts us,ru)"
+            return 0 ;;
+        *)
+            toggle "$1"
+            return 0 ;;
+    esac
+    [ -n "$value" ] || return 0
+    set_value "$1" "$value"
+    note="$1: $value"
+}
+
+features_lines() {
+    local name desc
+    read_list "$share/components.txt" | while IFS='|' read -r name _ _ _ desc; do
+        yes_no "$name" "$desc"
+    done
+}
+
+# every xkb layout as "code<TAB>name"; before the install there is no
+# evdev.lst yet (it comes with sway), so a short list
+all_layouts() {
+    local lst=/usr/share/X11/xkb/rules/evdev.lst
+    if [ -f "$lst" ]; then
+        awk '/^! layout/ { f = 1; next } /^!/ { f = 0 }
+            f && NF { c = $1; $1 = ""; sub(/^ +/, ""); print c "\t" $0 }' "$lst"
+        return
+    fi
+    printf '%s\n' "us${tab}English (US)" "gb${tab}English (UK)" "ru${tab}Russian" \
+        "ua${tab}Ukrainian" "by${tab}Belarusian" "kz${tab}Kazakh" "de${tab}German" \
+        "fr${tab}French" "es${tab}Spanish" "it${tab}Italian" "pl${tab}Polish" \
+        "pt${tab}Portuguese" "tr${tab}Turkish" "cz${tab}Czech"
+}
+
+# the layouts turned on first, in their order, then the rest
+layout_lines() {
+    all_layouts | awk -F "$tab" -v now="$(setting layouts us,ru)" '
+        { name[$1] = $2; order[++n] = $1 }
+        END {
+            k = split(now, on, ",")
+            for (i = 1; i <= k; i++) { printf "%s\t[x] %-14s %s\n", on[i], on[i], name[on[i]]; used[on[i]] }
+            for (i = 1; i <= n; i++)
+                if (!(order[i] in used)) printf "%s\t[ ] %-14s %s\n", order[i], order[i], name[order[i]]
+        }'
+}
+
+# layout_act CODE: on -> off (one has to stay), off -> on at the end
+layout_act() {
+    local now
+    now=$(setting layouts us,ru)
+    case ",$now," in
+        *",$1,"*)
+            if [ "$now" = "$1" ]; then
+                note="one layout has to stay"
+                return 0
+            fi
+            now=$(printf '%s\n' "$now" | tr ',' '\n' | grep -vxF -- "$1" | paste -sd, -) ;;
+        *)
+            now="$now,$1" ;;
+    esac
+    set_value layouts "$now"
+    note="layouts: $now"
+}
+
+# shh config: two tabs, settings and features; every change goes to
+# $shh_config at once
+config() {
+    [ -f "$share/components.txt" ] || error "not found: $share/components.txt (sh link.sh)"
+    command -v fzf >/dev/null || sudo pacman -S --needed --noconfirm fzf || error "cannot install fzf"
+    # the look of every menu; .zprofile sets it only after the install
+    if [ -z "${FZF_DEFAULT_OPTS_FILE:-}" ] && [ -f "$repo/config/fzf/fzfrc" ]; then
+        export FZF_DEFAULT_OPTS_FILE="$repo/config/fzf/fzfrc"
+    fi
+
+    mkdir -p "${shh_config%/*}"
+    [ -f "$shh_config" ] || printf '%s\n' \
+        '# ~/.config/shh/config - your choices for install.sh and shh update' \
+        '# change: shh config, then shh update (or edit here); a missing line = the default' \
+        >"$shh_config"
+
+    loop 'shh config' 'Enter: open   Esc: done' top_lines top_act
+
+    info "saved in $shh_config"
+    [ -n "${SHH_INSTALL:-}" ] || info "apply: shh update (before the first install: sh install.sh)"
 }
 
 # █  █ █▀▀▄ █▀▀▄ ▄▀▀▄ ▀▀█▀▀ █▀▀▀ 
@@ -202,6 +398,7 @@ color() {
 [ "$(id -u)" -ne 0 ] || error "do not run as root, run as your user"
 
 case "${1:-}" in
+    config)         config ;;
     update)         update ;;
     doctor)         doctor ;;
     color)          shift; color "$@" ;;

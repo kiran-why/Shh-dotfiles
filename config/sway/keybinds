@@ -1,18 +1,24 @@
 # ~/.config/sway/keybinds - keys for programs and windows
 # workspace keys are in workspaces, keys of the parts shh config can turn off in features/.
-# the first comment line of a block is its text in Super+/ (scripts/keys).
+# the first comment line of a block says what the key does, Super+/ shows it (scripts/keys).
 # --to-code: works on the ru layout; --no-repeat: a stuck key runs it once
 
 # Mod4 = the Windows key
 set $mod Mod4
 
-# programs
+# terminal
 bindsym --to-code --no-repeat $mod+t exec $term
+
+# launcher
 bindsym --to-code --no-repeat $mod+r exec $menu
 
-# windows
+# close the window
 bindsym --to-code --no-repeat $mod+q kill
+
+# fullscreen
 bindsym --to-code --no-repeat $mod+Shift+f fullscreen
+
+# float / tile
 bindsym --to-code --no-repeat $mod+v floating toggle
 
 # leave sway, asks first
@@ -27,7 +33,7 @@ bindsym --to-code --no-repeat Shift+Print exec ~/.local/bin/screenshot full
 # screens off / on
 bindsym --to-code --no-repeat $mod+Escape exec ~/.local/bin/screen
 
-# this list
+# all keys (this list)
 bindsym --to-code --no-repeat $mod+slash exec footclient --app-id=keys ~/.local/bin/keys
 
 # reload the config
@@ -48,13 +54,17 @@ bindsym --to-code --no-repeat $mod+Shift+Down move down
 bindsym --to-code --no-repeat $mod+Shift+Up move up
 bindsym --to-code --no-repeat $mod+Shift+Right move right
 
-# volume keys
+# volume up / down / mute
 # the level shows in a notification; the step and the max are in scripts/volume
 bindsym --to-code XF86AudioRaiseVolume exec ~/.local/bin/volume up
 bindsym --to-code XF86AudioLowerVolume exec ~/.local/bin/volume down
 bindsym --to-code --no-repeat XF86AudioMute exec ~/.local/bin/volume mute
 
-# notifications: close, close all, bring back
+# close the notification
 bindsym --to-code --no-repeat $mod+n exec makoctl dismiss
+
+# close all notifications
 bindsym --to-code --no-repeat $mod+Shift+n exec makoctl dismiss -a
+
+# bring back the last notification
 bindsym --to-code --no-repeat $mod+Ctrl+n exec makoctl restore

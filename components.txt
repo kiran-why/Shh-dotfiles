@@ -1,0 +1,13 @@
+# components.txt - parts shh config can turn off; everything else is always installed
+# name|packages|files (repo paths)|services|description
+# packages stay in packages/common.csv too; sway lines of a part go in config/sway/features/NAME
+
+record|wf-recorder|scripts/record config/sway/features/record||screen recording
+bluetooth|bluez bluez-utils bluez-s6|scripts/bluetooth config/sway/features/bluetooth|bluetoothd|bluetooth menu
+clipboard|cliphist|scripts/clipboard config/cliphist config/sway/features/clipboard||clipboard history
+autotile||scripts/autotile config/sway/features/autotile||hyprland-like splits
+firefox|firefox|config/sway/features/firefox||browser
+broot|broot|config/broot config/sway/features/broot||file manager
+mpv|mpv|||video player
+imv|imv|config/imv||image viewer
+fastfetch|fastfetch|config/fastfetch||system info when a terminal opens

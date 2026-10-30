@@ -19,7 +19,6 @@ dots_path=$(cd "$(dirname "$0")" && pwd -P)
 packages_dir="$dots_path/packages"
 packages_file="$packages_dir/common.csv"
 services_file="$dots_path/services.txt"
-aur_helper="yay"
 
 # temporary sudo rule (enable_nopasswd)
 sudoers_tmp="/etc/sudoers.d/dotfiles-temp"
@@ -29,6 +28,9 @@ stamp=$(date +%Y%m%d-%H%M%S)
 
 [ -f "$dots_path/lib.sh" ] || { echo "lib.sh not found in $dots_path" >&2; exit 1; }
 . "$dots_path/lib.sh"
+
+# yay or paru (shh config)
+aur_helper=$(setting aur_helper yay)
 
 # a VM type or the graphics cards, one per line (scripts/hardware)
 hardware=$(sh "$dots_path/scripts/hardware" 2>/dev/null || true)
@@ -56,6 +58,14 @@ all_package_lines() {
 
 is_installed() {
     pacman -Qq "$1" >/dev/null 2>&1
+}
+
+# aur_install PKG: paru shows every PKGBUILD for review unless told not to.
+# </dev/null: it must not read the rest of a list we loop over
+aur_install() {
+    local review=''
+    [ "$aur_helper" != paru ] || review=--skipreview
+    "$aur_helper" -S --needed --noconfirm $review "$1" </dev/null
 }
 
 # write_root FILE TEXT: put TEXT into FILE as root. An old FILE with other
@@ -197,6 +207,13 @@ enable_arch_repos() {
 install_aur_helper() {
     step "AUR helper: $aur_helper"
 
+    # the other one, after a switch in shh config
+    local other
+    for other in yay paru; do
+        [ "$other" = "$aur_helper" ] || ! is_installed "$other-bin" ||
+            info "$other-bin is not needed anymore: sudo pacman -Rs $other-bin"
+    done
+
     if command -v "$aur_helper" >/dev/null; then
         ok "already installed"
         return
@@ -205,7 +222,7 @@ install_aur_helper() {
     sudo pacman -S --needed --noconfirm git base-devel </dev/null ||
         error "cannot install git and base-devel"
 
-    # yay-bin: prebuilt, no need to compile Go
+    # -bin: prebuilt, no need to compile Go (yay) or Rust (paru)
     local build_dir
     build_dir=$(mktemp -d)
     git clone --depth 1 "https://aur.archlinux.org/$aur_helper-bin.git" "$build_dir" ||
@@ -230,7 +247,7 @@ install_packages() {
         info "$pkg - $desc"
         # </dev/null: pacman must not read the rest of our list
         case "$tag" in
-            A) "$aur_helper" -S --needed --noconfirm "$pkg" </dev/null ;;
+            A) aur_install "$pkg" ;;
             *) sudo pacman -S --needed --noconfirm "$pkg" </dev/null ;;
         esac || error "cannot install $pkg"
     done
@@ -260,7 +277,7 @@ vmware_clipboard() {
 
     info "VMware detected, installing open-vm-tools-clipway (building from AUR)..."
     info "This might take some time so don't panic!"
-    if "$aur_helper" -S --needed --noconfirm open-vm-tools-clipway </dev/null >"$log" 2>&1; then
+    if aur_install open-vm-tools-clipway >"$log" 2>&1; then
         ok "open-vm-tools-clipway installed"
     else
         warn "failed to install open-vm-tools-clipway (optional) - see $log"

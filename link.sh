@@ -6,7 +6,7 @@
 # ▀ ▀ ▀  ▀ ▀  ▀ ▀ ▀▀▀  ▀  ▀ 
 # link.sh - put the repo into $HOME: copies, or symlinks with --link
 #   config/ -> ~/.config   home/ -> ~   scripts/ -> ~/.local/bin
-#   wallpapers/ -> ~/wallpapers   lib.sh link.sh services.txt packages/ -> ~/.local/share/shh
+#   wallpapers/ -> ~/wallpapers   lib.sh link.sh services.txt components.txt packages/ -> ~/.local/share/shh
 # file by file; a file that is not ours goes to NAME.bak-DATE, never deleted.
 # ours = listed in ~/.local/state/shh/installed
 
@@ -236,7 +236,7 @@ install_all() {
     install_entries "$dots_path/home"    "$HOME"
     install_entries "$dots_path/scripts" "$bin_dir"
     install_tree "$dots_path/wallpapers" "$HOME/wallpapers"
-    for f in lib.sh link.sh services.txt packages; do
+    for f in lib.sh link.sh services.txt components.txt packages; do
         install_tree "$dots_path/$f" "$share_dir/$f"
     done
 
