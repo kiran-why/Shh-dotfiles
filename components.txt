@@ -1,7 +1,7 @@
 # components.txt - parts shh config can turn off; everything else is always installed
 # name|packages|files (repo paths)|services|mark|group|default
 # group = the tab in shh config: empty = features, browser = one of them (firefox
-# by default), messengers, media, apps, tools, fonts; xwayland = settings > xwayland.
+# by default), messengers, vpn, media, apps, tools, fonts; xwayland = settings > xwayland.
 # mark: recommended = the setup uses it (on by default; never for temporary things),
 # AUR, needs xwayland. default: empty = on, no = off
 # packages stay in packages/common.csv too; sway lines of a part go in config/sway/features/NAME
@@ -18,10 +18,20 @@ firefox|firefox|config/sway/features/firefox||recommended|browser|
 librewolf|librewolf|config/sway/features/librewolf|||browser|
 chromium|chromium|config/sway/features/chromium|||browser|
 brave|brave-bin|config/sway/features/brave||AUR|browser|
+torbrowser|torbrowser-launcher|config/sway/features/torbrowser|||browser|
 
 telegram|telegram-desktop||||messengers|no
 ayugram|ayugram-desktop|||AUR|messengers|no
 discord|discord||||messengers|no
+
+# sing-box: the vpn menu and its s6 service (install.sh runs vpn setup);
+# the others only get installed, their s6 services you turn on yourself
+sing-box|sing-box|scripts/vpn config/sway/features/vpn|sing-box|recommended|vpn|
+xray|xray-bin|||AUR|vpn|no
+wireguard|wireguard-tools wireguard-s6||||vpn|no
+amneziawg|amneziawg-tools amneziawg-dkms linux-headers|||AUR|vpn|no
+openvpn|openvpn openvpn-s6||||vpn|no
+tor|tor tor-s6||||vpn|no
 
 mpv|mpv|||recommended|media|
 imv|imv|config/imv||recommended|media|
@@ -33,6 +43,7 @@ gimp|gimp||||media|no
 libreoffice|libreoffice-fresh||||apps|no
 qbittorrent|qbittorrent qt6-wayland||||apps|no
 virtualbox|virtualbox virtualbox-host-dkms linux-headers|||needs xwayland|apps|no
+steam|steam|||needs xwayland|apps|no
 
 btop|btop||||tools|no
 htop|htop||||tools|no

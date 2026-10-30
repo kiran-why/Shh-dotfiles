@@ -219,6 +219,17 @@ enable_arch_repos() {
         info "added [extra] to /etc/pacman.conf"
     fi
 
+    # steam (shh config: apps) is 32-bit: artix [lib32] (commented out in
+    # pacman.conf) and arch [multilib], after [extra]
+    if part_on steam apps no; then
+        sudo sed -i '/^#\[lib32\]$/,/^#Include/ s/^#//' /etc/pacman.conf
+        if ! grep -q '^\[multilib\]' /etc/pacman.conf; then
+            printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist-arch\n' |
+                sudo tee -a /etc/pacman.conf >/dev/null
+        fi
+        info "steam: [lib32] and [multilib] enabled"
+    fi
+
     sudo pacman-key --populate archlinux
     sudo pacman -Syu --noconfirm </dev/null || error "system update failed"
     ok "arch [extra] enabled, system updated"
@@ -257,8 +268,23 @@ install_aur_helper() {
 install_packages() {
     step "packages"
 
-    local tag pkg desc off_pkgs
+    local tag pkg desc off_pkgs hw lib32
     off_pkgs=$(off_items "$components_file" 2)
+
+    # steam: 32-bit vulkan for this card first, or pacman picks any
+    # lib32-vulkan-driver. nvidia-580xx and VMs: none here
+    if part_on steam apps no; then
+        for hw in $hardware; do
+            case "$hw" in
+                amd)    lib32=lib32-vulkan-radeon ;;
+                intel)  lib32=lib32-vulkan-intel ;;
+                nvidia) lib32=lib32-nvidia-utils ;;
+                *)      continue ;;
+            esac
+            is_installed "$lib32" || sudo pacman -S --needed --noconfirm "$lib32" </dev/null ||
+                error "cannot install $lib32"
+        done
+    fi
     package_lines | while IFS=, read -r tag pkg desc; do
         if printf '%s\n' "$off_pkgs" | grep -qxF -- "$pkg"; then
             info "off: $pkg"
@@ -395,6 +421,11 @@ enable_services() {
     # live install only swaps the db: services new to it stay down until reboot
     sudo s6 live start $services || error "cannot start the services"
     [ -z "$disabled" ] || sudo s6 live stop $disabled || warn "cannot stop$disabled"
+
+    # sing-box (shh config: vpn): our own s6 service; started from the vpn menu
+    if part_on sing-box vpn no; then
+        sh "$dots_path/scripts/vpn" setup || error "vpn setup failed"
+    fi
 
     # seat: screen and input for sway; audio: the sound card (no elogind);
     # vboxusers: usb in virtualbox (shh config: apps)

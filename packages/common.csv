@@ -23,6 +23,7 @@
 ,librewolf,browser: firefox without telemetry
 ,chromium,browser
 A,brave-bin,browser: chromium with an ad blocker
+,torbrowser-launcher,tor browser: downloads and updates it on the first start
 ,imv,image viewer (which program opens what: config/mimeapps.list)
 ,mpv,video player
 
@@ -74,6 +75,18 @@ A,ayugram-desktop,telegram fork; built from source, takes long
 ,man-pages,manual pages for the C library and system calls
 ,tealdeer,tldr: short examples for a command
 
+# vpn (shh config: vpn)
+,sing-box,vpn client for subscriptions (scripts/vpn)
+A,xray-bin,vless / reality proxy core
+,wireguard-tools,wireguard vpn
+,wireguard-s6,wireguard service for s6
+A,amneziawg-tools,wireguard hidden from dpi
+A,amneziawg-dkms,amneziawg kernel module, built for the running kernel
+,openvpn,openvpn
+,openvpn-s6,openvpn service for s6
+,tor,tor
+,tor-s6,tor service for s6
+
 # media (shh config: media); mpv and imv are in "desktop"
 ,yt-dlp,mpv plays youtube links with it
 ,obs-studio,screen recording and streaming
@@ -84,6 +97,7 @@ A,ayugram-desktop,telegram fork; built from source, takes long
 ,libreoffice-fresh,office
 ,qbittorrent,torrents
 ,virtualbox,virtual machines (needs xwayland)
+,steam,games (needs xwayland; from [multilib], install.sh enables it)
 ,virtualbox-host-dkms,virtualbox kernel module, built for the running kernel
 ,linux-headers,for dkms to build virtualbox-host-dkms
 ,xorg-xwayland,X11 programs (shh config: settings > xwayland)

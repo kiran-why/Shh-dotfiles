@@ -45,7 +45,8 @@
 | Network | iwd (wifi), dhcpcd (wired), openresolv |
 | Bluetooth | bluez (bluetoothctl), own menu |
 | AUR helper | yay or paru (`shh config`) |
-| Browser | firefox, or librewolf, chromium, brave (`shh config`) |
+| Browser | firefox, or librewolf, chromium, brave, tor browser (`shh config`) |
+| VPN | sing-box with its own menu (`vpn`), or xray, wireguard, amneziawg, openvpn, tor (`shh config`) |
 | Messengers | telegram, ayugram, discord: off until picked in `shh config` |
 | Font | JetBrains Mono Nerd Font |
 
