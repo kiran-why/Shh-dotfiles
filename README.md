@@ -44,6 +44,7 @@
 | Sound | PipeWire + WirePlumber |
 | Network | iwd (wifi), dhcpcd (wired), openresolv |
 | Bluetooth | bluez (bluetoothctl), own menu |
+| AUR helper | yay or paru (`shh config`) |
 | Font | JetBrains Mono Nerd Font |
 
 ## Installation
@@ -61,14 +62,17 @@ cd ~ && rm -rf ~/Shh-dotfiles    # optional: all is copied, shh update downloads
 ```
 
 
+On the first run `install.sh` opens a menu: what to install (screen recording, bluetooth,
+firefox ...) and a few settings (keyboard layouts, yay or paru, copies or links).
 Reboot and log in on **tty1**: sway starts by itself. Other ttys (`Ctrl+Alt+F2` ...)
 stay plain consoles for rescue.
 
 <details>
 <summary>What install.sh does</summary>
 
-`install.sh` checks the system, adds the Arch `[extra]` repo and `yay`, installs
-`packages/common.csv` and the drivers for your graphics card, enables the s6 services from `services.txt`, sets a few system
+`install.sh` checks the system, asks what to install (`shh config`, only on the first run),
+adds the Arch `[extra]` repo and `yay` or `paru`, installs
+`packages/common.csv` (without the parts you turned off) and the drivers for your graphics card, enables the s6 services from `services.txt`, sets a few system
 options and copies the configs with `link.sh`. It is safe to run again: a file you changed (or one that was there before)
 is never deleted, it goes to `name.bak-DATE`, and the list of them is printed at the end.
 `sh install.sh --check` only checks that every package exists.
@@ -78,10 +82,20 @@ is never deleted, it goes to `name.bak-DATE`, and the list of them is printed at
 ## Updating
 
 ```sh
+shh config    # turn parts on / off, layouts, yay or paru (then shh update)
 shh update    # install.sh from a fresh clone
 shh doctor    # are the services up, files in place, packages installed?
 shh color d7263d ff0000    # change a color in every config (the palette: config/foot/foot.ini)
 ```
+
+<details>
+<summary>Turning a part off later</summary>
+
+Your choices are in `~/.config/shh/config` (`shh config` or by hand), so `shh update` remembers them.
+A part turned off loses its keys, scripts and configs, its service is turned off; its packages stay,
+`shh update` prints the `pacman -Rs` line to remove them.
+
+</details>
 
 <details>
 <summary>Why it updates the whole system</summary>
@@ -113,11 +127,12 @@ install.sh link.sh lib.sh   installer, copies the files, shared messages
 packages/common.csv         packages: tag,package,description (empty tag = pacman, A = AUR)
 packages/CARD.csv           graphics drivers: amd, intel, nvidia, nvidia-580xx
 services.txt                s6 services
-config/     ->  ~/.config/     sway, swaybar, foot, fzf (the look of all menus), fastfetch, broot, nvim, mako, cliphist, imv, mimeapps.list
+components.txt              the parts shh config can turn off: packages, files, services
+config/     ->  ~/.config/     sway (features/: one file per part), swaybar, foot, fzf (the look of all menus), fastfetch, broot, nvim, mako, cliphist, imv, mimeapps.list
 home/       ->  ~/             .zprofile .zshrc
 scripts/    ->  ~/.local/bin/  shh, launcher, keys, clipboard, volume, wifi, bluetooth, sound, wallpaper, screenshot, record, autotile, screen, hardware
 wallpapers/ ->  ~/wallpapers/  the newest picture here is the wallpaper
-lib.sh link.sh services.txt packages/  ->  ~/.local/share/shh/  for shh
+lib.sh link.sh services.txt components.txt packages/  ->  ~/.local/share/shh/  for shh
 ```
 
 <details>
@@ -142,33 +157,18 @@ become links to the repo, so an edit lands right in it, and `shh update` does a 
 
 | Keys | Action |
 |---|---|
-| `Super + T` | Terminal (foot) |
-| `Super + B` | Browser |
-| `Super + F` | Files (broot) |
+| `Super + T` | Terminal |
 | `Super + R` | Launcher |
-| `Super + /` | List of All Keys (search) |
-| `Super + C` | Clipboard History (Enter copies, Ctrl+D deletes) |
+| `Super + B` | Browser |
+| `Super + F` | Files |
 | `Super + Q` | Close Window |
-| `Super + Shift + F` | Fullscreen |
-| `Super + V` | Float / Tile |
 | `Super + Arrows` | Move Focus |
-| `Super + Shift + Arrows` | Move Window |
-| `Super + Mouse` | Drag (Left) / Resize (Right) a Window |
 | `Super + 1 … 0` | Go to Workspace |
 | `Super + Shift + 1 … 0` | Send Window to Workspace |
-| `Super + S` | Show / Hide Scratchpad |
-| `Super + Shift + S` | Send Window to Scratchpad |
 | `Super + L` | Leave the Desktop |
-| `Super + Esc` | Screen Off / On |
-| `Super + Shift + C` | Reload Config and Wallpaper |
-| `Volume Keys` | Volume Up / Down / Mute, Level in a Notification |
-| `Super + N` | Close the Notification |
-| `Super + Shift + N` | Close All Notifications |
-| `Super + Ctrl + N` | Bring Back the Last Notification |
-| `Print` | Screenshot of a Region, Saved to `~/media/screenshots` and Copied |
-| `Shift + Print` | Screenshot of All Screens |
-| `Ctrl + Print` | Record the Screen to `~/media/recordings` (press again to stop) |
-| `Alt + Shift` | Switch Keyboard Layout (`US` / `RU`) |
+| `Print` | Screenshot of a Region |
+
+**`Super + /` shows all keys (searchable).**
 
 **Bar:** a red `● rec` while recording (click it to stop), click wifi for the network menu, bluetooth (shown only with an adapter) for the bluetooth menu,
 the volume for the sound menu, scroll on it to change it.

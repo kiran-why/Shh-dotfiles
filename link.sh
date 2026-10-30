@@ -138,6 +138,8 @@ install_tree() {
     local dst="$2"
 
     [ -e "$src" ] || error "source not found: $src"
+    # a part turned off in shh config (components.txt)
+    case "$off_files" in *" ${src#"$dots_path/"} "*) return 0 ;; esac
     if [ ! -d "$src" ]; then
         install_file "$src" "$dst"
         return
@@ -228,11 +230,46 @@ uninstall_all() {
     print_system
 }
 
+# install_input: ~/.config/sway/input from shh config (layouts, switch layout).
+# Made here, not in the repo, so always a copy, even with --link
+install_input() {
+    local layouts toggle old_mode="$mode"
+    layouts=$(setting layouts us,ru)
+    toggle=$(setting layout_toggle alt_shift_toggle)
+
+    # the file can be edited by hand; a bad value breaks the keyboard in sway
+    if ! printf '%s\n' "$layouts" | grep -qx '[a-z]\{2,\}\(,[a-z]\{2,\}\)*'; then
+        warn "layouts=$layouts in $shh_config is not like us,ru, using us,ru"
+        layouts=us,ru
+    fi
+    if ! printf '%s\n' "$toggle" | grep -qx '[a-z_]\{1,\}'; then
+        warn "layout_toggle=$toggle in $shh_config is not an xkb option, using alt_shift_toggle"
+        toggle=alt_shift_toggle
+    fi
+
+    printf '%s\n' \
+        '# ~/.config/sway/input - keyboard' \
+        '# made by link.sh from ~/.config/shh/config: change it with shh config, then shh update' \
+        '' \
+        'input type:keyboard {' \
+        "    xkb_layout $layouts" \
+        "    xkb_options grp:$toggle" \
+        '}' >"$new_list.input"
+
+    mode=copy
+    install_file "$new_list.input" "$config_dir/sway/input"
+    mode="$old_mode"
+}
+
 install_all() {
     [ -d "$dots_path/config" ] || error "run link.sh from the repo, not from $dots_path"
 
+    # files of the parts turned off, " a b ": install_tree skips them
+    off_files=" $(off_items "$dots_path/components.txt" 3 | tr '\n' ' ') "
+
     local f k dst
     install_entries "$dots_path/config"  "$config_dir"
+    install_input
     install_entries "$dots_path/home"    "$HOME"
     install_entries "$dots_path/scripts" "$bin_dir"
     install_tree "$dots_path/wallpapers" "$HOME/wallpapers"
@@ -292,7 +329,7 @@ done
 [ "$dry_run" = 0 ] || info "dry run: nothing will be changed"
 
 new_list=$(mktemp)
-trap 'rm -f "$new_list"' EXIT
+trap 'rm -f "$new_list" "$new_list.input"' EXIT
 
 if [ "$uninstall" = 1 ]; then
     uninstall_all
