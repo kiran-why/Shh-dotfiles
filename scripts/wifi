@@ -1,5 +1,5 @@
 #!/bin/sh
-# wifi - pick a network and connect (iwd asks for the password itself)
+# wifi - available networks (connect), known networks (forget), disconnect
 # opened from the wifi icon in swaybar
 
 set -eu
@@ -34,37 +34,84 @@ current() {
         sed -n 's/^ *Connected network  *\(.*[^ ]\) *$/\1/p'
 }
 
-# network names: without the table header, the ">" mark and the
-# security and signal columns
+# available networks as "name<TAB>bars  security  name": columns by the
+# header, so names with spaces work. Signal: 4 stars, the weak part gray
 networks() {
-    iwctl station "$dev" get-networks | plain |
-        grep -v -e '---' -e 'Available networks' -e 'Network name' |
-        sed -E 's/^[ >]*//; s/ +[a-z0-9-]+ +\** *$//' |
-        grep -v '^ *$'
+    iwctl station "$dev" get-networks | awk '
+        BEGIN { split("▂ ▄ ▆ █", bar, " ") }
+        { p = $0; gsub(/\033\[[0-9;]*m/, "", p) }
+        p ~ /Network name/ { sec = index(p, "Security"); sig = index(p, "Signal"); next }
+        !sec || p ~ /^-+$/ || p ~ /^ *$/ { next }
+        {
+            name = substr(p, 1, sec - 1); now = (name ~ />/)
+            sub(/^[ >]+/, "", name); sub(/ +$/, "", name)
+            security = substr(p, sec, sig - sec); gsub(/ /, "", security)
+            stars = substr(p, sig); total = gsub(/\*/, "", stars)
+            gray = 0
+            if (match($0, /\033\[1;90m\*+/)) { g = substr($0, RSTART, RLENGTH); gray = gsub(/\*/, "", g) }
+            # a bar per bright star; no substr: it cuts UTF-8 by bytes
+            bars = ""
+            for (i = 1; i <= 4; i++) bars = bars (i <= total - gray ? bar[i] : " ")
+            printf "%s\t%s  %-6s %s%s\n", name, bars, security, name, (now ? "  (now)" : "")
+        }'
 }
 
-iwctl station "$dev" scan 2>/dev/null || true
-sleep 2
+# saved networks, one name per line (column "Name" up to "Security")
+known() {
+    iwctl known-networks list | awk '
+        { p = $0; gsub(/\033\[[0-9;]*m/, "", p) }
+        p ~ /^ *Name / { sec = index(p, "Security"); next }
+        !sec || p ~ /^-+$/ || p ~ /^ *$/ { next }
+        { name = substr(p, 1, sec - 1); sub(/^ +/, "", name); sub(/ +$/, "", name); print name }'
+}
 
+scan() {
+    iwctl station "$dev" scan 2>/dev/null || true
+    sleep 2
+}
+
+# pick a network and connect; iwd asks for the password itself. Esc goes back
+available_menu() {
+    local pick
+    scan
+    while :; do
+        pick=$({ printf 'rescan\trescan\n'; networks; } |
+            menu --border-label=' available networks ' --header="$dev: $(current || true)" \
+                --delimiter='\t' --with-nth=2 | cut -f1) || return 0
+        case "$pick" in
+            '')     return 0 ;;
+            rescan) scan ;;
+            *)
+                if iwctl station "$dev" connect "$pick"; then
+                    notify-send -a wifi 'wifi connected' "$pick" || true
+                    exit 0
+                fi
+                notify-send -a wifi 'wifi: could not connect' "$pick" || true
+                echo 'could not connect, press Enter'
+                read -r _
+                ;;
+        esac
+    done
+}
+
+# forget a saved network (its password too). Esc goes back
+known_menu() {
+    local pick
+    while :; do
+        pick=$(known | menu --border-label=' known networks ' --header='Enter: forget') || return 0
+        iwctl known-networks "$pick" forget || true
+        notify-send -a wifi 'wifi: forgot' "$pick" || true
+    done
+}
+
+# pos keeps the cursor on the last picked line
+pos=1
 while :; do
-    pick=$({ echo rescan; echo disconnect; networks; } |
-        menu --border-label=' wifi ' --header="$dev: $(current || true)") || exit 0
+    pick=$(printf '%s\n' 'available networks' 'known networks' 'disconnect' |
+        menu --border-label=' wifi ' --header="$dev: $(current || true)" --bind="load:pos($pos)") || exit 0
     case "$pick" in
-        rescan)
-            iwctl station "$dev" scan || true
-            sleep 2
-            ;;
-        disconnect)
-            iwctl station "$dev" disconnect || true
-            ;;
-        *)
-            if iwctl station "$dev" connect "$pick"; then
-                notify-send -a wifi 'wifi connected' "$pick" || true
-                exit 0
-            fi
-            notify-send -a wifi 'wifi: could not connect' "$pick" || true
-            echo 'could not connect, press Enter'
-            read -r _
-            ;;
+        'available networks') pos=1; available_menu ;;
+        'known networks')     pos=2; known_menu ;;
+        disconnect)           pos=3; iwctl station "$dev" disconnect || true ;;
     esac
 done
