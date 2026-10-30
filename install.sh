@@ -109,9 +109,15 @@ check_system() {
         error "replace elogind-s6 with seatd-s6, then run install.sh again"
     fi
 
-    # https, not ping: ICMP is often blocked
-    curl -s -o /dev/null -m 20 https://artixlinux.org ||
-        error "no internet connection"
+    # https, not ping: ICMP is often blocked; a few sites, one can be down or blocked
+    local site online=0
+    for site in https://artixlinux.org https://archlinux.org https://github.com; do
+        if curl -s -o /dev/null -m 10 "$site"; then
+            online=1
+            break
+        fi
+    done
+    [ "$online" = 1 ] || error "no internet connection"
 
     ok "artix + s6, internet, sudo"
 }
@@ -269,7 +275,7 @@ install_packages() {
     step "packages"
 
     local tag pkg desc off_pkgs hw lib32
-    off_pkgs=$(off_items "$components_file" 2)
+    off_pkgs=$(off_packages "$components_file" "$packages_dir" "$hardware")
 
     # steam: 32-bit vulkan for this card first, or pacman picks any
     # lib32-vulkan-driver. nvidia-580xx and VMs: none here
@@ -469,7 +475,7 @@ link_dotfiles() {
 # what parts turned off in shh config left behind; removing is up to you
 leftovers() {
     local pkgs
-    pkgs=$(off_items "$components_file" 2)
+    pkgs=$(off_packages "$components_file" "$packages_dir" "$hardware")
     # pacman -Qq prints the installed ones (with no names: all of them)
     [ -z "$pkgs" ] || pkgs=$(pacman -Qq $pkgs 2>/dev/null | tr '\n' ' ' || true)
     [ -z "$pkgs" ] || warn "not needed anymore: sudo pacman -Rs $pkgs"

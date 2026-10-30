@@ -356,11 +356,12 @@ check_files() {
 check_packages() {
     step "packages"
 
-    local hw csv names missing pkg
-    names=$(for hw in common $(sh "$HOME/.local/bin/hardware" 2>/dev/null || true); do
+    local hw hardware csv names missing pkg
+    hardware=$(sh "$HOME/.local/bin/hardware" 2>/dev/null || true)
+    names=$(for hw in common $hardware; do
         csv="$share/packages/$hw.csv"
         [ ! -f "$csv" ] || read_list "$csv" | cut -d, -f2
-    done | without "$(off_items "$share/components.txt" 2)")
+    done | without "$(off_packages "$share/components.txt" "$share/packages" "$hardware")")
 
     # pacman -T prints the missing ones
     missing=$(pacman -T $names || true)

@@ -109,6 +109,17 @@ EOF
     printf '%s\n' $off | grep -v '^$' | without "$(printf '%s\n' $on | grep -v '^$')"
 }
 
+# off_packages COMPONENTS PACKAGES_DIR HARDWARE: the packages of the parts
+# turned off, without the ones a graphics card list needs too (linux-headers:
+# nvidia-580xx.csv and virtualbox)
+off_packages() {
+    local hw cards
+    cards=$(for hw in $3; do
+        [ ! -f "$2/$hw.csv" ] || read_list "$2/$hw.csv" | cut -d, -f2
+    done)
+    off_items "$1" 2 | without "$cards"
+}
+
 # █    ▄▀▀▄ ▄▀▀▀ ▄▀▀▄ 
 # █    █  █ █ ▀█ █  █ 
 # ▀▀▀▀  ▀▀   ▀▀▀  ▀▀  
