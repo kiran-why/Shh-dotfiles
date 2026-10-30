@@ -126,6 +126,7 @@ top_lines() {
     printf -- '-\t\n'
     line browser '' browser "$(setting browser firefox)"
     line messengers '' messengers "$(on_list messengers)"
+    line vpn '' vpn "$(on_list vpn)"
     line media '' media "$(on_list media)"
     line apps '' apps "$(on_list apps)"
     line tools '' tools "$(on_list tools)"
@@ -140,7 +141,7 @@ top_act() {
         browser)
             value=$(choose browser "$(group browser | awk -F'|' -v t="$tab" '{ printf "%s%s%-10s %s\n", $1, t, $1, $2 }')")
             [ -z "$value" ] || set_value browser "$value" ;;
-        features|messengers|media|apps|tools|fonts)
+        features|messengers|vpn|media|apps|tools|fonts)
             # features: the parts with no group
             tab_group=$1
             [ "$1" != features ] || tab_group=''
@@ -252,7 +253,7 @@ layout_act() {
     note="layouts: $now"
 }
 
-# shh config: tabs settings, features, browser, messengers, tools, fonts;
+# shh config: tabs settings, features, browser, messengers, vpn, media, apps, tools, fonts;
 # every change goes to $shh_config at once
 config() {
     [ -f "$share/components.txt" ] || error "not found: $share/components.txt (sh link.sh)"

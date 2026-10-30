@@ -1,0 +1,307 @@
+#!/bin/sh
+# vpn - sing-box from a subscription (shh config: vpn)
+# vpn: the menu: on/off, locations, add or update the subscription, start at boot
+# vpn update: download the subscription, make /etc/sing-box/config.json, check it
+# vpn setup: the s6 service sing-box (install.sh runs it)
+# update and setup run themselves as root with sudo
+
+set -eu
+
+dir=/etc/sing-box
+# location names for the menu, readable without root
+state=/var/lib/sing-box
+# the menu switches locations through it (localhost only)
+api=127.0.0.1:9090
+
+# links: vless:// links (one per line) -> sing-box outbounds, one
+# JSON object per line. What sing-box can't do is skipped with a message:
+# xhttp, vless encryption. LC_ALL=C: %HH decoding works on bytes
+links() {
+    LC_ALL=C awk '
+        # %HH -> the byte
+        function dec(s,   out, i, h) {
+            out = ""
+            for (i = 1; i <= length(s); i++) {
+                if (substr(s, i, 1) == "%" && i + 2 <= length(s)) {
+                    h = tolower(substr(s, i + 1, 2))
+                    out = out sprintf("%c", (index("0123456789abcdef", substr(h, 1, 1)) - 1) * 16 + index("0123456789abcdef", substr(h, 2, 1)) - 1)
+                    i += 2
+                } else out = out substr(s, i, 1)
+            }
+            return out
+        }
+        function q(s) { gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return "\"" s "\"" }
+        function skip(why) { printf "skipped: %s (%s)\n", name, why > "/dev/stderr" }
+
+        /^vless:\/\// {
+            link = substr($0, 9); sub(/\r$/, "", link)
+            name = ""; query = ""
+            if ((i = index(link, "#"))) { name = dec(substr(link, i + 1)); link = substr(link, 1, i - 1) }
+            if ((i = index(link, "?"))) { query = substr(link, i + 1); link = substr(link, 1, i - 1) }
+
+            # uuid@host:port, host can be [ipv6]
+            i = index(link, "@"); uuid = dec(substr(link, 1, i - 1)); hp = substr(link, i + 1)
+            port = hp; sub(/.*:/, "", port)
+            host = substr(hp, 1, length(hp) - length(port) - 1); gsub(/^\[|\]$/, "", host)
+
+            split("", p)
+            n = split(query, kv, "&")
+            for (j = 1; j <= n; j++) { e = index(kv[j], "="); if (e) p[substr(kv[j], 1, e - 1)] = dec(substr(kv[j], e + 1)) }
+
+            if (name == "") name = host
+            type = ("type" in p) ? p["type"] : "tcp"
+            if (("encryption" in p) && p["encryption"] != "none") { skip("vless encryption"); next }
+            if (type != "tcp" && type != "grpc" && type != "ws" && type != "httpupgrade") { skip(type); next }
+
+            # the same name twice: add a number
+            tag = name
+            if (tag in seen) tag = tag " " (++seen[name] + 1); else seen[name] = 0
+
+            out = "{\"type\":\"vless\",\"tag\":" q(tag) ",\"server\":" q(host) ",\"server_port\":" (port + 0) ",\"uuid\":" q(uuid)
+            if (p["flow"] != "") out = out ",\"flow\":" q(p["flow"])
+
+            sec = p["security"]
+            if (sec == "tls" || sec == "reality") {
+                tls = "\"enabled\":true"
+                if (p["sni"] != "") tls = tls ",\"server_name\":" q(p["sni"])
+                fp = p["fp"]
+                if (fp != "") {
+                    # sing-box knows these; anything else looks like chrome
+                    if (fp !~ /^(chrome|firefox|edge|safari|360|qq|ios|android|random|randomized)$/) fp = "chrome"
+                    tls = tls ",\"utls\":{\"enabled\":true,\"fingerprint\":" q(fp) "}"
+                }
+                if (p["alpn"] != "") { a = p["alpn"]; gsub(/,/, "\",\"", a); tls = tls ",\"alpn\":[\"" a "\"]" }
+                if (sec == "reality") tls = tls ",\"reality\":{\"enabled\":true,\"public_key\":" q(p["pbk"]) ",\"short_id\":" q(p["sid"]) "}"
+                out = out ",\"tls\":{" tls "}"
+            }
+
+            if (type == "grpc")
+                out = out ",\"transport\":{\"type\":\"grpc\",\"service_name\":" q(p["serviceName"]) "}"
+            else if (type == "ws" || type == "httpupgrade") {
+                t = "\"type\":" q(type) ",\"path\":" q(p["path"] == "" ? "/" : p["path"])
+                if (p["host"] != "") t = t ((type == "ws") ? ",\"headers\":{\"Host\":" q(p["host"]) "}" : ",\"host\":" q(p["host"]))
+                out = out ",\"transport\":{" t "}"
+            }
+            print out "}"
+        }
+    '
+}
+
+# config OUTBOUNDS_FILE: the whole config around the outbounds (a JSON array).
+# Everything goes through the picked location, the local network directly
+config() {
+    jq -n --slurpfile o "$1" '
+        ($o[0] | map(.tag)) as $tags | {
+        log: { level: "warn" },
+        dns: {
+            servers: [
+                { type: "https", tag: "remote", server: "1.1.1.1", detour: "proxy" },
+                { type: "local", tag: "local" }
+            ],
+            final: "remote"
+        },
+        inbounds: [{
+            type: "tun", tag: "tun-in",
+            address: ["172.18.0.1/30", "fdfe:dcba:9876::1/126"],
+            mtu: 1500, auto_route: true, strict_route: true
+        }],
+        # interrupt: a new location takes over the open connections too
+        outbounds: ([{ type: "selector", tag: "proxy", outbounds: $tags, interrupt_exist_connections: true }]
+            + $o[0] + [{ type: "direct", tag: "direct" }]),
+        route: {
+            rules: [
+                { action: "sniff" },
+                { protocol: "dns", action: "hijack-dns" },
+                { ip_is_private: true, outbound: "direct" }
+            ],
+            final: "proxy",
+            auto_detect_interface: true,
+            default_domain_resolver: { server: "local" }
+        },
+        experimental: {
+            clash_api: { external_controller: "'"$api"'" },
+            # remembers the picked location
+            cache_file: { enabled: true, path: "'"$state"'/cache.db" }
+        }
+    }'
+}
+
+update() {
+    # sh: works without the +x bit too (sh scripts/vpn update)
+    [ "$(id -u)" -eq 0 ] || exec sudo sh "$0" update
+
+    local url tmp
+    [ -s "$dir/subscription" ] || { echo "no subscription link: vpn > paste the subscription link" >&2; exit 1; }
+    url=$(head -n 1 "$dir/subscription")
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' EXIT
+
+    # the server sets a cookie and sends us back to the same link: keep it
+    curl -fsSL -m 30 -c "$tmp/jar" -b "$tmp/jar" -A "sing-box" -o "$tmp/sub" "$url" ||
+        { echo "cannot download the subscription" >&2; exit 1; }
+    # base64 of the links, maybe without the = padding at the end
+    tr -d '\r\n' <"$tmp/sub" | sed 's/$/===/; s/\(\(....\)*\).*/\1/' | base64 -d >"$tmp/links" 2>/dev/null ||
+        cp "$tmp/sub" "$tmp/links"
+
+    links <"$tmp/links" | jq -s . >"$tmp/outbounds.json"
+    [ "$(jq length "$tmp/outbounds.json")" -gt 0 ] || { echo "no locations sing-box can use" >&2; exit 1; }
+    config "$tmp/outbounds.json" >"$tmp/config.json"
+    sing-box check -c "$tmp/config.json"
+
+    install -d -m 700 "$dir"
+    install -d -m 755 "$state"
+    install -m 600 "$tmp/config.json" "$dir/config.json"
+    jq -r '.[].tag' "$tmp/outbounds.json" >"$state/locations"
+    chmod 644 "$state/locations"
+    ! running || s6 live restart sing-box
+    echo "$(jq length "$tmp/outbounds.json") locations"
+}
+
+# the s6 service: our own ones go in /etc/s6/adminsv (storelist in
+# /etc/s6-frontend.conf); the log part is like the one of dhcpcd-s6
+setup() {
+    [ "$(id -u)" -eq 0 ] || exec sudo sh "$0" setup
+
+    local srv=/etc/s6/adminsv/sing-box-srv log=/etc/s6/adminsv/sing-box-log
+    mkdir -p "$srv" "$log"
+    echo longrun >"$srv/type"
+    echo sing-box-log >"$srv/producer-for"
+    printf '%s\n' '#!/bin/execlineb -P' 'fdmove -c 2 1' \
+        "exec sing-box run -c $dir/config.json -D $state" >"$srv/run"
+    echo longrun >"$log/type"
+    echo sing-box-srv >"$log/consumer-for"
+    echo sing-box >"$log/pipeline-name"
+    echo 3 >"$log/notification-fd"
+    cat >"$log/run" <<'EOF'
+#!/bin/execlineb -P
+ifelse { test -w /var/log } {
+	foreground { install -d -o s6log -g s6log /var/log/sing-box }
+	s6-setuidgid s6log exec -c s6-log -d3 -b -- n3 s2000000 T /var/log/sing-box
+}
+foreground { install -d -o s6log -g s6log /run/log/sing-box }
+s6-setuidgid s6log exec -c s6-log -d3 -b -- n3 s2000000 T /run/log/sing-box
+EOF
+    chmod 755 "$srv/run" "$log/run"
+
+    # known to s6 now, but not started at boot (vpn > start at boot)
+    s6 repository sync
+    s6 set commit
+    s6 live install
+    echo "s6 service sing-box ready"
+}
+
+# the menu
+
+running() { s6-rc -a list 2>/dev/null | grep -qx sing-box-srv; }
+
+# the location in use (empty when off)
+now() { curl -s -m 2 "http://$api/proxies/proxy" 2>/dev/null | jq -r '.now // empty' 2>/dev/null || true; }
+
+menu() { fzf --info=hidden "$@"; }
+
+header() {
+    if running; then echo "vpn: on - $(now)"; else echo 'vpn: off'; fi
+    if [ -s "$state/locations" ]; then echo 'subscription: set'; else echo 'subscription: not set'; fi
+    [ -z "$note" ] || echo "$note"
+}
+
+# start and wait for the API (up to 5 s): picking a location needs it
+start() {
+    local i=0
+    sudo s6 live start sing-box || { note='cannot start sing-box (vpn setup?)'; return 1; }
+    while [ "$i" -lt 10 ] && ! curl -s -m 1 -o /dev/null "http://$api/version"; do
+        sleep 0.5
+        i=$((i + 1))
+    done
+}
+
+# Enter picks a location; with the vpn off it starts it first
+locations_menu() {
+    local pick cur
+    [ -s "$state/locations" ] || { note='no locations: add subscription first'; return 0; }
+    while :; do
+        cur=$(now)
+        pick=$(awk -v now="$cur" '{ print ($0 == now ? "[x] " : "[ ] ") $0 }' "$state/locations" |
+            menu --border-label=' locations ' --header="${note:-Enter: use it   Esc: back}") || return 0
+        pick=${pick#????}
+        running || start || return 0
+        # names have spaces and flags: jq makes the JSON
+        if jq -n --arg n "$pick" '{ name: $n }' |
+            curl -s -m 5 -o /dev/null -w '%{http_code}' -X PUT -H 'Content-Type: application/json' \
+                --data @- "http://$api/proxies/proxy" | grep -qx 204; then
+            note="location: $pick"
+        else
+            note="cannot switch to $pick"
+        fi
+    done
+}
+
+# paste the link (Ctrl+Shift+V), it is not shown; only root can read it then
+add() {
+    local link out
+    printf 'paste the subscription link (Ctrl+Shift+V), then Enter: '
+    stty -echo 2>/dev/null || true
+    read -r link || link=''
+    stty echo 2>/dev/null || true
+    echo
+    case "$link" in
+        https://?*[[:space:]]*|https://) note='not a subscription link'; return 0 ;;
+        https://?*) ;;
+        '') note='no link pasted'; return 0 ;;
+        *) note='not a subscription link (https://...)'; return 0 ;;
+    esac
+    printf '%s\n' "$link" | sudo sh -c "install -d -m 700 $dir && umask 077 && cat > $dir/subscription" ||
+        { note='cannot save the link'; return 0; }
+    wl-copy --clear 2>/dev/null || true
+    if out=$(sh "$0" update 2>&1); then
+        note="added, $(printf '%s\n' "$out" | tail -n 1); remove the link from Super+C"
+    else
+        note=$(printf '%s\n' "$out" | tail -n 1)
+    fi
+}
+
+update_menu() {
+    local out
+    if out=$(sh "$0" update 2>&1); then
+        note="updated, $(printf '%s\n' "$out" | tail -n 1)"
+    else
+        note=$(printf '%s\n' "$out" | tail -n 1)
+    fi
+}
+
+# enabled = started at boot
+boot() { s6 set status 2>/dev/null | grep -qx 'sing-box-srv/active'; }
+
+boot_toggle() {
+    local how=enable
+    ! boot || how=disable
+    sudo sh -c "s6 set $how sing-box && s6 set commit && s6 live install" >/dev/null ||
+        { note="cannot $how sing-box"; return 0; }
+    note="start at boot: $(boot && echo yes || echo no)"
+}
+
+case "${1:-}" in
+    update) update; exit ;;
+    setup)  setup; exit ;;
+    '')     ;;
+    *)      echo "usage: vpn [update | setup]" >&2; exit 1 ;;
+esac
+
+# pos keeps the cursor on the last picked line
+pos=1
+note=''
+while :; do
+    if boot; then atboot=yes; else atboot=no; fi
+    pick=$(printf '%s\n' on/off locations 'add subscription' 'update subscription' "start at boot: $atboot" |
+        menu --border-label=' vpn ' --header="$(header)" --bind="load:pos($pos)") || exit 0
+    note=''
+    case "$pick" in
+        on/off)
+            pos=1
+            if running; then sudo s6 live stop sing-box || note='cannot stop sing-box'; else start || true; fi ;;
+        locations)             pos=2; locations_menu ;;
+        'add subscription')    pos=3; add ;;
+        'update subscription') pos=4; update_menu ;;
+        'start at boot'*)      pos=5; boot_toggle ;;
+    esac
+done
