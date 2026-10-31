@@ -150,7 +150,7 @@ become links to the repo, so an edit lands right in it, and `shh update` does a 
 
 ## Showcase
 
-<img width="1290" height="730" alt="image(2)" src="https://github.com/user-attachments/assets/5c10c6bd-413b-4a90-8860-a3befe76d147" />
+<img width="2560" height="1440" alt="desktop" src="https://github.com/user-attachments/assets/8cbfed6a-b9ad-4028-8a53-2ce614a65485" />
 
 
 ## Keybinds
