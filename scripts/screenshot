@@ -17,4 +17,4 @@ else
     grim -g "$geometry" "$file"
 fi
 wl-copy --type image/png <"$file"
-notify-send -a screenshot 'screenshot saved and copied' "${file##*/}"
+notify-send -a screenshot 'screenshot saved and copied' "${file##*/}" || true

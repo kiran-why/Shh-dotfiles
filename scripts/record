@@ -1,7 +1,7 @@
 #!/bin/sh
 # record - record the screen to ~/media/recordings, run again to stop
 # Ctrl+Print: drag for a region, click a screen for all of it, Esc cancels.
-# no sound for now
+# record: no sound, record sound: the system sound, record mic: the microphone
 
 set -eu
 
@@ -23,16 +23,23 @@ fi
 # -o: a click picks a whole screen
 geometry=$(slurp -o -b '#00000080' -c '#e6e6e6ff' -w 1 </dev/null) || exit 0
 
+# one source only: wf-recorder can't mix the system sound and the mic
+case "${1:-}" in
+    sound) set -- --audio="$(pactl get-default-sink).monitor" ;;
+    mic)   set -- --audio ;;
+    *)     set -- ;;
+esac
+
 mkdir -p "$dir"
 # in the background, so the bar can show "● rec" right away
-wf-recorder -g "$geometry" -f "$file" </dev/null >/dev/null 2>&1 &
+wf-recorder "$@" -g "$geometry" -f "$file" </dev/null >/dev/null 2>&1 &
 rec_pid=$!
 sleep 0.2
 wake_bar
 
 if wait "$rec_pid"; then
-    notify-send -a record 'recording saved' "${file##*/}"
+    notify-send -a record 'recording saved' "${file##*/}" || true
 else
-    notify-send -a record -u critical 'recording failed' 'run wf-recorder in a terminal to see why'
+    notify-send -a record -u critical 'recording failed' 'run wf-recorder in a terminal to see why' || true
 fi
 wake_bar

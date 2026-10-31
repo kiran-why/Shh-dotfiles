@@ -12,6 +12,7 @@ screenshare|xdg-desktop-portal-wlr|config/sway/features/screenshare|||
 autotile||scripts/autotile config/sway/features/autotile|||
 broot|broot|config/broot config/sway/features/broot|||
 fastfetch|fastfetch|config/fastfetch|||
+scratchpad||config/sway/features/scratchpad|||
 
 # misc: programs the setup counts on; sing-box: the vpn menu and its s6
 # service (install.sh runs vpn setup)
@@ -22,6 +23,7 @@ imv|imv|config/imv||misc|
 btop|btop|||misc|
 7zip|7zip|||misc|
 man|man-db man-pages|||misc|
+mako|mako|config/mako config/sway/features/mako||misc|
 emoji|noto-fonts-emoji|||misc|
 noto|noto-fonts|||misc|
 

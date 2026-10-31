@@ -1,0 +1,12 @@
+# ~/.config/sway/features/mako - notifications (shh config: misc)
+
+exec mako
+
+# close the notification
+bindsym --to-code --no-repeat $mod+n exec makoctl dismiss
+
+# close all notifications
+bindsym --to-code --no-repeat $mod+Shift+n exec makoctl dismiss -a
+
+# bring back the last notification
+bindsym --to-code --no-repeat $mod+Ctrl+n exec makoctl restore

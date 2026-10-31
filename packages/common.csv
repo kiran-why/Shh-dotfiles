@@ -23,7 +23,6 @@
 # wayland tools
 # no swayidle: on Artix it depends on the elogind daemon
 ,foot,terminal emulator
-,mako,notifications
 ,libnotify,notify-send: send a notification from the shell or a script
 ,swaybg,wallpaper
 ,grim,screenshots
@@ -58,6 +57,7 @@
 # misc (shh config: misc)
 ,firefox,browser (Super+B)
 ,sing-box,vpn client for subscriptions (scripts/vpn)
+,mako,notifications (Super+N closes one)
 ,mpv,video player
 ,imv,image viewer (which program opens what: config/mimeapps.list)
 ,btop,system monitor

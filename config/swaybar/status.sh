@@ -118,7 +118,7 @@ bat() {
         fi
 
         if [ "$low" = 1 ] && [ ! -e "$low_flag" ]; then
-            notify-send -a battery -u critical 'battery low' "$cap%, plug in the charger" >/dev/null
+            notify-send -a battery -u critical 'battery low' "$cap%, plug in the charger" >/dev/null || true
             : >"$low_flag"
         elif [ "$low" = 0 ] && [ -e "$low_flag" ]; then
             rm -f "$low_flag"

@@ -59,12 +59,3 @@ bindsym --to-code --no-repeat $mod+Shift+Right move right
 bindsym --to-code XF86AudioRaiseVolume exec ~/.local/bin/volume up
 bindsym --to-code XF86AudioLowerVolume exec ~/.local/bin/volume down
 bindsym --to-code --no-repeat XF86AudioMute exec ~/.local/bin/volume mute
-
-# close the notification
-bindsym --to-code --no-repeat $mod+n exec makoctl dismiss
-
-# close all notifications
-bindsym --to-code --no-repeat $mod+Shift+n exec makoctl dismiss -a
-
-# bring back the last notification
-bindsym --to-code --no-repeat $mod+Ctrl+n exec makoctl restore

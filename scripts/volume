@@ -99,7 +99,7 @@ notify_level() {
     local text
     text=$(now)
     notify-send -a volume -t 1500 -h string:x-dunst-stack-tag:volume \
-        "$(printf '%s\n' "$text" | head -n 1)" "$(printf '%s\n' "$text" | sed -n 2p)"
+        "$(printf '%s\n' "$text" | head -n 1)" "$(printf '%s\n' "$text" | sed -n 2p)" || true
 }
 
 case "${1:-}" in

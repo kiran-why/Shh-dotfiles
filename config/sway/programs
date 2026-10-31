@@ -9,7 +9,6 @@ set $exit swaynag -t warning -m 'exit sway?' -B 'yes, exit' 'swaymsg exit'
 # a running server makes the new one quit; a crashed one is restarted on reload
 exec_always foot --server
 exec ~/.local/bin/sound
-exec mako
 
 # shared clipboard in VMware (scripts/vmware-clipboard)
 exec_always ~/.local/bin/vmware-clipboard

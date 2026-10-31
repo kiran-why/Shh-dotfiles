@@ -1,0 +1,7 @@
+# ~/.config/sway/features/scratchpad - hidden windows (shh config: scratchpad)
+
+# show / hide the scratchpad
+bindsym --to-code --no-repeat $mod+s scratchpad show
+
+# send the window to the scratchpad
+bindsym --to-code --no-repeat $mod+Shift+s move scratchpad

@@ -3,3 +3,9 @@
 # screen recording, press again to stop
 # not Shift: a held Shift makes slurp select a square
 bindsym --to-code --no-repeat Ctrl+Print exec ~/.local/bin/record
+
+# screen recording with the system sound
+bindsym --to-code --no-repeat Ctrl+Alt+Print exec ~/.local/bin/record sound
+
+# screen recording with the microphone
+bindsym --to-code --no-repeat Alt+Print exec ~/.local/bin/record mic
