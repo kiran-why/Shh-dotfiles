@@ -12,6 +12,9 @@ menu() {
     fzf --info=hidden "$@"
 }
 
+# the last header line: one space, so an empty line sits above the list
+gap=$(printf '\n ')
+
 # lines are "label<TAB>address<TAB>name", only the label shows
 device_menu() {
     menu --delimiter='\t' --with-nth=1 "$@"
@@ -103,7 +106,7 @@ pair_new() {
                  devices | while read -r mac name; do
                      has "$mac" "$paired" || printf '%s\t%s\t%s\n' "$name" "$mac" "$name"
                  done; } |
-            device_menu --border-label=' pair ' --header='devices nearby') || return 0
+            device_menu --border-label=' pair ' --header="devices nearby$gap") || return 0
         mac=$(printf '%s\n' "$pick" | cut -f2)
         name=$(printf '%s\n' "$pick" | cut -f3)
         [ -n "$mac" ] || continue    # "look again"
@@ -123,7 +126,7 @@ pair_new() {
 paired_menu() {
     local pick mac name
     pick=$(paired_lines |
-        device_menu --border-label=' paired ' --header='connect / disconnect') || return 0
+        device_menu --border-label=' paired ' --header="connect / disconnect$gap") || return 0
     mac=$(printf '%s\n' "$pick" | cut -f2)
     name=$(printf '%s\n' "$pick" | cut -f3)
     case "$pick" in
@@ -136,7 +139,7 @@ paired_menu() {
 unpair_menu() {
     local pick mac name
     pick=$(paired_lines |
-        device_menu --border-label=' unpair ' --header='forget a device') || return 0
+        device_menu --border-label=' unpair ' --header="forget a device$gap") || return 0
     mac=$(printf '%s\n' "$pick" | cut -f2)
     name=$(printf '%s\n' "$pick" | cut -f3)
     if bt remove "$mac" >/dev/null; then
@@ -151,7 +154,7 @@ pos=1
 while :; do
     if powered; then toggle='power off'; else toggle='power on'; fi
     pick=$(printf '%s\n' "$toggle" 'pair a new device' 'paired devices' 'unpair a device' |
-        menu --border-label=' bluetooth ' --header="$(now)" --bind="load:pos($pos)") || exit 0
+        menu --border-label=' bluetooth ' --header="$(now)$gap" --bind="load:pos($pos)") || exit 0
     case "$pick" in
         'power on')  pos=1; bt power on >/dev/null || say 'could not turn it on (rfkill?)' ;;
         'power off') pos=1; bt power off >/dev/null || true ;;

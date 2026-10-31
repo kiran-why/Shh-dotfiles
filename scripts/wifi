@@ -1,5 +1,5 @@
 #!/bin/sh
-# wifi - available networks (connect), known networks (forget), disconnect
+# wifi - available networks (connect), known networks (forget), check internet, disconnect
 # opened from the wifi icon in swaybar
 
 set -eu
@@ -7,6 +7,9 @@ set -eu
 menu() {
     fzf --info=hidden "$@"
 }
+
+# the last header line: one space, so an empty line sits above the list
+gap=$(printf '\n ')
 
 # iwctl colors its output
 plain() {
@@ -76,7 +79,7 @@ available_menu() {
     scan
     while :; do
         pick=$({ printf 'rescan\trescan\n'; networks; } |
-            menu --border-label=' available networks ' --header="$dev: $(current || true)" \
+            menu --border-label=' available networks ' --header="$dev: $(current || true)$gap" \
                 --delimiter='\t' --with-nth=2 | cut -f1) || return 0
         case "$pick" in
             '')     return 0 ;;
@@ -98,20 +101,36 @@ available_menu() {
 known_menu() {
     local pick
     while :; do
-        pick=$(known | menu --border-label=' known networks ' --header='Enter: forget') || return 0
+        pick=$(known | menu --border-label=' known networks ' --header="Enter: forget$gap") || return 0
         iwctl known-networks "$pick" forget || true
         notify-send -a wifi 'wifi: forgot' "$pick" || true
     done
 }
 
-# pos keeps the cursor on the last picked line
+# https, not ping: ICMP is often blocked; a few sites, one can be down
+check_internet() {
+    local site
+    for site in https://artixlinux.org https://archlinux.org https://github.com; do
+        if curl -s -o /dev/null -m 5 "$site"; then
+            note='internet: ok'
+            return
+        fi
+    done
+    note='internet: no connection'
+}
+
+# pos keeps the cursor on the last picked line; note: the last check
 pos=1
+note=''
 while :; do
-    pick=$(printf '%s\n' 'available networks' 'known networks' 'disconnect' |
-        menu --border-label=' wifi ' --header="$dev: $(current || true)" --bind="load:pos($pos)") || exit 0
+    pick=$(printf '%s\n' 'available networks' 'known networks' 'check internet' 'disconnect' |
+        menu --border-label=' wifi ' --header="$dev: $(current || true)${note:+
+$note}$gap" --bind="load:pos($pos)") || exit 0
+    note=''
     case "$pick" in
         'available networks') pos=1; available_menu ;;
         'known networks')     pos=2; known_menu ;;
-        disconnect)           pos=3; iwctl station "$dev" disconnect || true ;;
+        'check internet')     pos=3; check_internet ;;
+        disconnect)           pos=4; iwctl station "$dev" disconnect || true ;;
     esac
 done

@@ -213,6 +213,9 @@ now() { api_call /proxies/proxy -m 2 2>/dev/null | jq -r '.now // empty' 2>/dev/
 
 menu() { fzf --info=hidden "$@"; }
 
+# the last header line: one space, so an empty line sits above the list
+gap=$(printf '\n ')
+
 header() {
     if running; then echo "vpn: on - $(now)"; else echo 'vpn: off'; fi
     if [ -s "$state/locations" ]; then echo 'subscription: set'; else echo 'subscription: not set'; fi
@@ -236,7 +239,7 @@ locations_menu() {
     while :; do
         cur=$(now)
         pick=$(awk -v now="$cur" '{ print ($0 == now ? "[x] " : "[ ] ") $0 }' "$state/locations" |
-            menu --border-label=' locations ' --header="${note:-Enter: use it   Esc: back}") || return 0
+            menu --border-label=' locations ' --header="${note:-Enter: use it   Esc: back}$gap") || return 0
         pick=${pick#????}
         running || start || return 0
         # names have spaces and flags: jq makes the JSON
@@ -307,7 +310,7 @@ note=''
 while :; do
     if boot; then atboot=yes; else atboot=no; fi
     pick=$(printf '%s\n' on/off locations 'add subscription' 'update subscription' "start at boot: $atboot" |
-        menu --border-label=' vpn ' --header="$(header)" --bind="load:pos($pos)") || exit 0
+        menu --border-label=' vpn ' --header="$(header)$gap" --bind="load:pos($pos)") || exit 0
     note=''
     case "$pick" in
         on/off)

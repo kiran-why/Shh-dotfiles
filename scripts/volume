@@ -15,6 +15,9 @@ menu() {
     fzf --info=hidden "$@"
 }
 
+# the last header line: one space, so an empty line sits above the list
+gap=$(printf '\n ')
+
 # wpctl prints harmless "RTKit error" lines that would mess up the menu
 wp() {
     wpctl "$@" 2>/dev/null
@@ -84,7 +87,7 @@ action() {
 mute_menu() {
     local pick
     pick=$(printf '%s\n' "$(action "$out") volume" "$(action "$mic") mic" |
-        menu --border-label=' mute/unmute ' --header="$(now)") || return 0
+        menu --border-label=' mute/unmute ' --header="$(now)$gap") || return 0
     case "$pick" in
         *volume) wp set-mute "$out" toggle ;;
         *mic)    wp set-mute "$mic" toggle ;;
@@ -109,7 +112,7 @@ esac
 pos=1
 while :; do
     pick=$(printf '%s\n' '(+) volume' '(-) volume' 'mute/unmute' 'in/out devices' |
-        menu --border-label=' volume ' --header="$(now)" --bind="load:pos($pos)") || exit 0
+        menu --border-label=' volume ' --header="$(now)$gap" --bind="load:pos($pos)") || exit 0
     case "$pick" in
         '(+) volume')     pos=1; wp set-volume -l "$max" "$out" "$step+" ;;
         '(-) volume')     pos=2; wp set-volume "$out" "$step-" ;;
