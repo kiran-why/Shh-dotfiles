@@ -45,9 +45,8 @@
 | Network | iwd (wifi), dhcpcd (wired), openresolv |
 | Bluetooth | bluez (bluetoothctl), own menu |
 | AUR helper | yay or paru (`shh config`) |
-| Browser | firefox, or librewolf, chromium, brave, tor browser (`shh config`) |
-| VPN | sing-box with its own menu (`vpn`), or xray, wireguard, amneziawg, openvpn, tor (`shh config`) |
-| Messengers | telegram, ayugram, discord: off until picked in `shh config` |
+| Browser | firefox |
+| VPN | sing-box with its own menu (`vpn`) |
 | Font | JetBrains Mono Nerd Font |
 
 ## Installation
@@ -66,7 +65,7 @@ cd ~ && rm -rf ~/Shh-dotfiles    # optional: all is copied, shh update downloads
 
 
 On the first run `install.sh` opens a menu: what to install (screen recording, bluetooth,
-the browser, messengers ...) and a few settings (keyboard layouts, yay or paru, copies or links).
+the browser, the vpn ...) and a few settings (keyboard layouts, yay or paru, copies or links).
 Reboot and log in on **tty1**: sway starts by itself. Other ttys (`Ctrl+Alt+F2` ...)
 stay plain consoles for rescue.
 

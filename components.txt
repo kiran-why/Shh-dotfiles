@@ -1,31 +1,30 @@
 # components.txt - parts shh config can turn off; everything else is always installed
-# name|packages|files (repo paths)|services|mark|group|default
+# name|packages|files (repo paths)|services|group|default
 # group = the tab in shh config: empty = features, misc = programs we always use;
 # xwayland = settings > xwayland. Anything else: sudo pacman -S NAME yourself.
-# mark: recommended = the setup uses it (on by default; never for temporary things).
 # default: empty = on, no = off
 # packages stay in packages/common.csv too; sway lines of a part go in config/sway/features/NAME
 
-record|wf-recorder|scripts/record config/sway/features/record||recommended||
-bluetooth|bluez bluez-utils bluez-s6|scripts/bluetooth config/sway/features/bluetooth|bluetoothd|recommended||
-clipboard|cliphist|scripts/clipboard config/cliphist config/sway/features/clipboard||recommended||
-screenshare|xdg-desktop-portal-wlr|config/sway/features/screenshare||recommended||
-autotile||scripts/autotile config/sway/features/autotile||recommended||
-broot|broot|config/broot config/sway/features/broot||recommended||
-fastfetch|fastfetch|config/fastfetch||recommended||
+record|wf-recorder|scripts/record config/sway/features/record|||
+bluetooth|bluez bluez-utils bluez-s6|scripts/bluetooth config/sway/features/bluetooth|bluetoothd||
+clipboard|cliphist|scripts/clipboard config/cliphist config/sway/features/clipboard|||
+screenshare|xdg-desktop-portal-wlr|config/sway/features/screenshare|||
+autotile||scripts/autotile config/sway/features/autotile|||
+broot|broot|config/broot config/sway/features/broot|||
+fastfetch|fastfetch|config/fastfetch|||
 
 # misc: programs the setup counts on; sing-box: the vpn menu and its s6
 # service (install.sh runs vpn setup)
-firefox|firefox|config/sway/features/firefox||recommended|misc|
-sing-box|sing-box|scripts/vpn config/sway/features/vpn|sing-box|recommended|misc|
-mpv|mpv|||recommended|misc|
-imv|imv|config/imv||recommended|misc|
-btop|btop|||recommended|misc|
-7zip|7zip|||recommended|misc|
-man|man-db man-pages|||recommended|misc|
-emoji|noto-fonts-emoji|||recommended|misc|
-noto|noto-fonts|||recommended|misc|
+firefox|firefox|config/sway/features/firefox||misc|
+sing-box|sing-box|scripts/vpn config/sway/features/vpn|sing-box|misc|
+mpv|mpv|||misc|
+imv|imv|config/imv||misc|
+btop|btop|||misc|
+7zip|7zip|||misc|
+man|man-db man-pages|||misc|
+emoji|noto-fonts-emoji|||misc|
+noto|noto-fonts|||misc|
 
 # settings > xwayland: noxwayland is on when xwayland is off (sway can't have both lines)
-noxwayland||config/sway/features/noxwayland|||xwayland|
-xwayland|xorg-xwayland||||xwayland|
+noxwayland||config/sway/features/noxwayland||xwayland|
+xwayland|xorg-xwayland|||xwayland|

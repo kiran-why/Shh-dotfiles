@@ -96,7 +96,7 @@ off_items() {
     local name group default line words on='' off=''
     while IFS= read -r line; do
         [ -n "$line" ] || continue
-        IFS='|' read -r name _ _ _ _ group default <<EOF
+        IFS='|' read -r name _ _ _ group default <<EOF
 $line
 EOF
         words=$(printf '%s\n' "$line" | cut -d'|' -f"$2")

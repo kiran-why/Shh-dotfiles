@@ -10,4 +10,4 @@
 --highlight-line
 --color=fg:7,fg+:15,bg+:0,hl:15:underline,hl+:15:underline,header:7
 --color=info:8,border:8,label:15,prompt:15,pointer:15,query:15
---color=separator:8,spinner:8,gutter:-1
+--color=separator:8,spinner:8,gutter:8

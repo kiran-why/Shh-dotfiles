@@ -120,28 +120,18 @@ loop() {
 }
 
 top_lines() {
-    line settings '' settings ''
-    line features '' features ''
+    line settings '' settings 'install options'
+    line features '' features 'desktop tools'
     # an empty line between the two groups; Enter on it does nothing
     printf -- '-\t\n'
-    line browser '' browser "$(setting browser firefox)"
-    line messengers '' messengers "$(on_list messengers)"
-    line vpn '' vpn "$(on_list vpn)"
-    line media '' media "$(on_list media)"
-    line apps '' apps "$(on_list apps)"
-    line tools '' tools "$(on_list tools)"
-    line fonts '' fonts "$(on_list fonts)"
+    line misc '' misc 'additional packages'
 }
 
 top_act() {
-    local value
     case "$1" in
         settings)
             loop settings 'Enter: change   Esc: back' settings_lines settings_act ;;
-        browser)
-            value=$(choose browser "$(group browser | awk -F'|' -v t="$tab" '{ printf "%s%s%-10s %s\n", $1, t, $1, $2 }')")
-            [ -z "$value" ] || set_value browser "$value" ;;
-        features|messengers|vpn|media|apps|tools|fonts)
+        features|misc)
             # features: the parts with no group
             tab_group=$1
             [ "$1" != features ] || tab_group=''
@@ -182,30 +172,21 @@ settings_act() {
     note="$1: $value"
 }
 
-# group GROUP: "name|desc|default" of the parts in GROUP (components.txt)
+# group GROUP: "name|default" of the parts in GROUP (components.txt)
 group() {
-    read_list "$share/components.txt" | awk -F'|' -v g="$1" '$6 == g { print $1 "|" $5 "|" $7 }'
-}
-
-# on_list GROUP: the parts of GROUP turned on, like "btop,man", or none
-on_list() {
-    local name desc default list
-    list=$(group "$1" | while IFS='|' read -r name desc default; do
-        [ "$(setting "$name" "${default:-yes}")" = no ] || echo "$name"
-    done | paste -sd, -)
-    echo "${list:-none}"
+    read_list "$share/components.txt" | awk -F'|' -v g="$1" '$5 == g { print $1 "|" $6 }'
 }
 
 # the tab of $tab_group: a line per part, Enter turns it on / off
 group_lines() {
-    local name desc default
-    group "$tab_group" | while IFS='|' read -r name desc default; do
-        yes_no "$name" "$desc" "${default:-yes}"
+    local name default
+    group "$tab_group" | while IFS='|' read -r name default; do
+        yes_no "$name" '' "${default:-yes}"
     done
 }
 
 group_act() {
-    toggle "$1" "$(group "$tab_group" | awk -F'|' -v n="$1" '$1 == n { print $3 }')"
+    toggle "$1" "$(group "$tab_group" | awk -F'|' -v n="$1" '$1 == n { print $2 }')"
 }
 
 # every xkb layout as "code<TAB>name"; before the install there is no
@@ -253,7 +234,7 @@ layout_act() {
     note="layouts: $now"
 }
 
-# shh config: tabs settings, features, browser, messengers, vpn, media, apps, tools, fonts;
+# shh config: tabs settings, features, misc;
 # every change goes to $shh_config at once
 config() {
     [ -f "$share/components.txt" ] || error "not found: $share/components.txt (sh link.sh)"
@@ -361,7 +342,7 @@ check_packages() {
     names=$(for hw in common $hardware; do
         csv="$share/packages/$hw.csv"
         [ ! -f "$csv" ] || read_list "$csv" | cut -d, -f2
-    done | without "$(off_packages "$share/components.txt" "$share/packages" "$hardware")")
+    done | without "$(off_items "$share/components.txt" 2)")
 
     # pacman -T prints the missing ones
     missing=$(pacman -T $names || true)
