@@ -65,7 +65,7 @@ cd ~ && rm -rf ~/Shh-dotfiles    # optional: all is copied, shh update downloads
 
 
 On the first run `install.sh` opens a menu: what to install (screen recording, bluetooth,
-the browser, the vpn ...) and a few settings (keyboard layouts, yay or paru, copies or links).
+firefox, the vpn ...) and a few settings (keyboard layouts, yay or paru, copies or links).
 Reboot and log in on **tty1**: sway starts by itself. Other ttys (`Ctrl+Alt+F2` ...)
 stay plain consoles for rescue.
 
@@ -170,7 +170,7 @@ become links to the repo, so an edit lands right in it, and `shh update` does a 
 | `Super + L` | Leave the Desktop |
 | `Print` | Screenshot of a Region |
 
-**`Super + /` shows all keys (searchable).**
+**`Super + /` shows all keys (searchable).** A part turned off in `shh config` takes its keys with it.
 
 **Bar:** a red `● rec` while recording (click it to stop), click wifi for the network menu, bluetooth (shown only with an adapter) for the bluetooth menu,
 the volume for the sound menu, scroll on it to change it.
