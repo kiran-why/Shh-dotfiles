@@ -102,7 +102,8 @@ config() {
         },
         inbounds: [{
             type: "tun", tag: "tun-in",
-            address: ["172.18.0.1/30", "fdfe:dcba:9876::1/126"],
+            # IPv4 only: the servers have no IPv6, a v6 tunnel broke TLS (strict_route makes v6 unreachable)
+            address: ["172.18.0.1/30"],
             mtu: 1500, auto_route: true, strict_route: true
         }],
         # interrupt: a new location takes over the open connections too
