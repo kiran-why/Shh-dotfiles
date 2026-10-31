@@ -82,7 +82,6 @@ setting() {
 # part_on NAME GROUP DEFAULT: is the part turned on? (components.txt)
 part_on() {
     case "$2" in
-        browser)  [ "$(setting browser firefox)" = "$1" ] ;;
         # two parts: noxwayland (the sway line) or xwayland (the package)
         xwayland)
             if [ "$(setting xwayland no)" = yes ]; then [ "$1" = xwayland ]; else [ "$1" = noxwayland ]; fi ;;
@@ -92,7 +91,7 @@ part_on() {
 
 # off_items COMPONENTS FIELD: one per line, FIELD (2 packages, 3 files,
 # 4 services) of the parts in COMPONENTS turned off. Shared by a part that
-# is on (qt6-wayland): not off
+# is on: not off
 off_items() {
     local name group default line words on='' off=''
     while IFS= read -r line; do
@@ -107,17 +106,6 @@ $(read_list "$1")
 EOF
     # unquoted on purpose: one word per line
     printf '%s\n' $off | grep -v '^$' | without "$(printf '%s\n' $on | grep -v '^$')"
-}
-
-# off_packages COMPONENTS PACKAGES_DIR HARDWARE: the packages of the parts
-# turned off, without the ones a graphics card list needs too (linux-headers:
-# nvidia-580xx.csv and virtualbox)
-off_packages() {
-    local hw cards
-    cards=$(for hw in $3; do
-        [ ! -f "$2/$hw.csv" ] || read_list "$2/$hw.csv" | cut -d, -f2
-    done)
-    off_items "$1" 2 | without "$cards"
 }
 
 # █    ▄▀▀▄ ▄▀▀▀ ▄▀▀▄ 

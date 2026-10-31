@@ -1,4 +1,0 @@
-# ~/.config/sway/features/brave - the browser (shh config: features > browser)
-
-# browser
-bindsym --to-code --no-repeat $mod+b exec brave

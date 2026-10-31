@@ -1,4 +1,0 @@
-# ~/.config/sway/features/torbrowser - the browser (shh config: browser)
-
-# browser
-bindsym --to-code --no-repeat $mod+b exec torbrowser-launcher
