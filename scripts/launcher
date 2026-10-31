@@ -5,8 +5,9 @@
 
 set -eu
 
-# started by sway or other scripts, a second copy would clash
-hidden='autotile sound hardware wallpaper vmware-clipboard'
+# started by sway or a key: from here a second copy would clash, record and
+# screenshot would catch their own terminal window
+hidden='autotile sound hardware wallpaper vmware-clipboard record screenshot'
 
 # every executable in $PATH, without duplicates
 programs() {

@@ -132,7 +132,7 @@ services.txt                s6 services
 components.txt              the parts shh config can turn off: packages, files, services
 config/     ->  ~/.config/     sway (features/: one file per part), swaybar, foot, fzf (the look of all menus), fastfetch, broot, nvim, mako, cliphist, imv, mimeapps.list
 home/       ->  ~/             .zprofile .zshrc
-scripts/    ->  ~/.local/bin/  shh, launcher, keys, clipboard, volume, wifi, bluetooth, sound, wallpaper, screenshot, record, autotile, screen, hardware
+scripts/    ->  ~/.local/bin/  shh, launcher, keys, clipboard, volume, wifi, bluetooth, vpn, sound, wallpaper, screenshot, record, autotile, screen, hardware
 wallpapers/ ->  ~/wallpapers/  the newest picture here is the wallpaper
 lib.sh link.sh services.txt components.txt packages/  ->  ~/.local/share/shh/  for shh
 ```

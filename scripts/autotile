@@ -1,6 +1,6 @@
 #!/bin/sh
 # autotile - hyprland-like dwindle: a new window halves the focused one
-# along its longer side. Started once by sway (sway/look)
+# along its longer side. Started once by sway (sway/features/autotile)
 
 set -eu
 

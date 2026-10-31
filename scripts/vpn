@@ -1,5 +1,5 @@
 #!/bin/sh
-# vpn - sing-box from a subscription (shh config: vpn)
+# vpn - sing-box from a subscription (shh config: misc)
 # vpn: the menu: on/off, locations, add or update the subscription, start at boot
 # vpn update: download the subscription, make /etc/sing-box/config.json, check it
 # vpn setup: the s6 service sing-box (install.sh runs it)
@@ -102,7 +102,7 @@ config() {
         },
         inbounds: [{
             type: "tun", tag: "tun-in",
-            # IPv4 only: the servers have no IPv6, a v6 tunnel broke TLS (strict_route makes v6 unreachable)
+            # IPv4 only: the servers have no v6; strict_route makes v6 unreachable
             address: ["172.18.0.1/30"],
             mtu: 1500, auto_route: true, strict_route: true
         }],
@@ -201,7 +201,6 @@ EOF
 
 running() { s6-rc -a list 2>/dev/null | grep -qx sing-box-srv; }
 
-# the location in use (empty when off)
 # api_call PATH [CURL OPTIONS]: the API with the secret from vpn update
 api_call() {
     local path="$1"
@@ -209,6 +208,7 @@ api_call() {
     curl -s -H "Authorization: Bearer $(cat "$state/secret" 2>/dev/null)" "$@" "http://$api$path"
 }
 
+# the location in use (empty when off)
 now() { api_call /proxies/proxy -m 2 2>/dev/null | jq -r '.now // empty' 2>/dev/null || true; }
 
 menu() { fzf --info=hidden "$@"; }

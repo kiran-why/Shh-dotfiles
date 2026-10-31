@@ -42,7 +42,7 @@ if ! ls /sys/class/bluetooth/hci* >/dev/null 2>&1; then
     exit 1
 fi
 if ! pgrep -x bluetoothd >/dev/null; then
-    echo 'bluetoothd is not running: sudo s6-rc -u change bluetoothd'
+    echo 'bluetoothd is not running: sudo s6 live start bluetoothd'
     sleep 5
     exit 1
 fi
