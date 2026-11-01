@@ -12,7 +12,7 @@ step=5%
 max=1.0
 
 menu() {
-    fzf --info=hidden "$@"
+    fzf --info=hidden --no-input "$@"
 }
 
 # the last header line: one space, so an empty line sits above the list

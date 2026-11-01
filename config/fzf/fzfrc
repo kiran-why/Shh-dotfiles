@@ -2,7 +2,7 @@
 # colors are foot.ini palette numbers: 7 text, 15 white, 8 gray, 0 dark gray
 
 --layout=reverse
---border=sharp
+--border=top
 --info=inline-right
 --prompt='> '
 --pointer='▌'

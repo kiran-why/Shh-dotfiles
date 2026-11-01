@@ -9,7 +9,7 @@ set -eu
 scan_time=8
 
 menu() {
-    fzf --info=hidden "$@"
+    fzf --info=hidden --no-input "$@"
 }
 
 # the last header line: one space, so an empty line sits above the list

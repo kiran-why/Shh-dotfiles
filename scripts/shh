@@ -70,7 +70,7 @@ toggle() {
 
 # lines are "key<TAB>text": only the text shows, the key says what was picked
 menu() {
-    fzf --info=hidden --delimiter="$tab" --with-nth=2 "$@"
+    fzf --info=hidden --no-input --delimiter="$tab" --with-nth=2 "$@"
 }
 
 # line KEY BOX LABEL TEXT: a menu line
