@@ -164,9 +164,9 @@ settings_lines() {
     line mode '' mode "$(setting mode "$mode_now")"
     line layouts '' layouts "$(setting layouts us,ru)"
     line layout_toggle '' 'switch layout' "$(label_of "$toggles" "$(setting layout_toggle alt_shift_toggle)")"
-    line aur_helper '' 'aur helper' "$(setting aur_helper yay)"
+    # distro_settings: distro.sh (Artix: aur helper, pacman)
+    ! command -v distro_settings >/dev/null || distro_settings
     yes_no nobeep 'mute the motherboard beeper'
-    yes_no pacman 'pacman colors and parallel downloads, AUR builds on all cpu cores'
     yes_no xwayland 'X11 programs; after a relogin' no
 }
 
@@ -371,7 +371,7 @@ check_session() {
     if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
         ok "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
     else
-        bad "XDG_RUNTIME_DIR is not set (pam_rundir in /etc/pam.d/system-login)"
+        bad "XDG_RUNTIME_DIR is not set (PAM sets it at login: sh install.sh)"
     fi
 
     # id -nG USER: /etc/group; id -nG: this login (needs a relogin to change)

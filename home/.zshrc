@@ -10,13 +10,22 @@
 # █▀▀  █▀█  █  █ █ ▀ █ █▀▀    █   
 # ▀    ▀  ▀  ▀▀  ▀   ▀ ▀      ▀   
                                 
-# the folder, then "<artix icon> :" (red after an error); %F{N} = foot.ini color.
+# the folder, then "<distro icon> :" (red after an error); %F{N} = foot.ini color.
 # no icon on the TTY: no nerd font there
+# icons: Nerd Fonts nf-linux-*, picked by ID in /etc/os-release; others get tux
+distro_id=$([ -r /etc/os-release ] && . /etc/os-release && echo "${ID:-}")
+case "$distro_id" in
+    artix)  icon=$'\uf31f' ;;
+    void)   icon=$'\uf32e' ;;
+    gentoo) icon=$'\uf30d' ;;
+    *)      icon=$'\uf31a' ;;
+esac
 if [ "$TERM" = linux ]; then
     PROMPT=$'\n%F{15}%~%f\n%(?.%F{15}.%F{1}):%f '
 else
-    PROMPT=$'\n%F{15}%~%f\n%F{15}%f %(?.%F{15}.%F{1}):%f '
+    PROMPT=$'\n%F{15}%~%f\n%F{15}'"$icon"$'%f %(?.%F{15}.%F{1}):%f '
 fi
+unset distro_id icon
 
 # ▄▀▀▀ █  █ █▀▀▀ █    █    
 #  ▀▀▄ █▀▀█ █▀▀  █    █    

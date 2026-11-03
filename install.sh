@@ -84,7 +84,7 @@ check_system() {
     [ "$(id -u)" -ne 0 ] || error "do not run as root, run as your user"
 
     [ -f "$system_dir/distro.sh" ] ||
-        error "not supported: ${distro:-unknown distro} (only artix for now)"
+        error "not supported: ${distro:-unknown distro} (no system/${distro:-DISTRO}/distro.sh)"
 
     distro_check
     command -v sudo  >/dev/null || error "sudo is not installed"
@@ -184,37 +184,6 @@ install_packages() {
     done
 }
 
-# █   █ ▀█▀ █▀▀▄ ▀▀█▀▀ █  █ ▄▀▀▄ █        █▄ ▄█ ▄▀▀▄ ▄▀▀▀ █  █ ▀█▀ █▄  █ █▀▀▀ ▄▀▀▀ 
-# ▀▄ ▄▀  █  █▀█    █   █  █ █▀▀█ █        █ ▀ █ █▀▀█ █    █▀▀█  █  █ ▀▄█ █▀▀   ▀▀▄ 
-#   ▀   ▀▀▀ ▀  ▀   ▀    ▀▀  ▀  ▀ ▀▀▀▀     ▀   ▀ ▀  ▀  ▀▀▀ ▀  ▀ ▀▀▀ ▀   ▀ ▀▀▀▀ ▀▀▀  
-
-# auto-install vmware clipboard tools if in vmware (VM check: scripts/hardware)
-# https://github.com/krisztianfekete/clipway
-vmware_clipboard() {
-    step "VMware clipboard support"
-
-    if [ "$hardware" != vmware ]; then
-        info "not running in VMware, skipping"
-        return 0
-    fi
-
-    if command -v vmtoolsd >/dev/null 2>&1 && pkg_installed open-vm-tools-clipway; then
-        ok "already present"
-        return 0
-    fi
-
-    local log="$HOME/.local/state/shh/aur-open-vm-tools-clipway.log"
-    mkdir -p "$(dirname "$log")"
-
-    info "VMware detected, installing open-vm-tools-clipway (building from AUR)..."
-    info "This might take some time so don't panic!"
-    if aur_install open-vm-tools-clipway >"$log" 2>&1; then
-        ok "open-vm-tools-clipway installed"
-    else
-        warn "failed to install open-vm-tools-clipway (optional) - see $log"
-    fi
-}
-
 # ▄▀▀▀ ▄▀▀▄ █▄  █ █▀▀▀ ▀█▀ ▄▀▀▀ █  █ █▀▀▄ ▄▀▀▄ ▀▀█▀▀ ▀█▀ ▄▀▀▄ █▄  █ 
 # █    █  █ █ ▀▄█ █▀▀   █  █ ▀█ █  █ █▀█  █▀▀█   █    █  █  █ █ ▀▄█ 
 #  ▀▀▀  ▀▀  ▀   ▀ ▀    ▀▀▀  ▀▀▀  ▀▀  ▀  ▀ ▀  ▀   ▀   ▀▀▀  ▀▀  ▀   ▀ 
@@ -267,11 +236,6 @@ configure_network() {
         info "dhcpcd: commented out the old rule denyinterfaces wlan*"
     fi
     info "dhcpcd: wired only"
-
-    # an old install guide started dhcpcd from rc.local; the s6 service does it now
-    if grep -q '^[[:space:]]*dhcpcd' /etc/s6/rc.local 2>/dev/null; then
-        warn "/etc/s6/rc.local starts dhcpcd too, comment that line out"
-    fi
 
     ok "done"
 }
@@ -368,6 +332,7 @@ check_system
 choose_parts
 enable_nopasswd
 distro_prepare
+# vmware_clipboard: distro.sh
 vmware_clipboard
 install_packages
 configure_gpu

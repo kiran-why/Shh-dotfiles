@@ -46,6 +46,12 @@ mode=copy
 [ -f "$script_dir/lib.sh" ] || { echo "lib.sh not found in $script_dir" >&2; exit 1; }
 . "$script_dir/lib.sh"
 
+# distro_undo for print_system: next to this file in share, system/DISTRO/ in the repo.
+# loaded now: --uninstall removes share/distro.sh
+for distro_file in "$script_dir/distro.sh" "$dots_path/system/$distro/distro.sh"; do
+    [ ! -f "$distro_file" ] || { . "$distro_file"; break; }
+done
+
 backup_msg() { msg "$red" "$sym_bak" "$1"; }
 
 usage() {
@@ -206,18 +212,11 @@ remove_entry() {
     done
 }
 
-# system changes stay: a mistake here breaks the login (seatd, pam_rundir)
+# system changes stay: a mistake here breaks the login (seat, XDG_RUNTIME_DIR)
 print_system() {
     echo
     echo "install.sh also changed the system; undo by hand only what you need:"
-    echo "  packages   packages/*.csv        sudo pacman -Rs NAME"
-    echo "  services   services.txt          sudo s6 set disable NAME, sudo s6 set commit, sudo s6 live install"
-    echo "  shell      zsh                   chsh -s /bin/bash"
-    echo "  groups     seat, audio           sudo gpasswd -d $(id -un) GROUP"
-    echo "  /etc       pam.d/system-login (pam_rundir), dhcpcd.conf (denyinterfaces wl*),"
-    echo "             iwd/main.conf, modprobe.d/nobeep.conf, pacman.conf, makepkg.conf;"
-    echo "             older versions of some are next to them as FILE.bak-DATE"
-    echo "  without seatd or pam_rundir sway will not start"
+    ! command -v distro_undo >/dev/null || distro_undo
 }
 
 uninstall_all() {
@@ -272,7 +271,7 @@ install_all() {
     local system_dir="$dots_path/system/$distro"
     local components="$dots_path/components/${distro}_components.txt"
     [ -f "$system_dir/distro.sh" ] && [ -f "$components" ] ||
-        error "not supported: ${distro:-unknown distro} (only artix for now)"
+        error "not supported: ${distro:-unknown distro} (no system/${distro:-DISTRO}/distro.sh or its components file)"
 
     # files of the parts turned off, " a b ": install_tree skips them
     off_files=" $(off_items "$components" 3 | tr '\n' ' ') "

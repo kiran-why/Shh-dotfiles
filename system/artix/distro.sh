@@ -22,6 +22,11 @@ distro_check() {
         info "swap it: sudo pacman -S seatd-s6  (answer y to remove elogind-s6)"
         error "replace elogind-s6 with seatd-s6, then run install.sh again"
     fi
+
+    # an old install guide started dhcpcd from rc.local; the s6 service does it now
+    if grep -q '^[[:space:]]*dhcpcd' /etc/s6/rc.local 2>/dev/null; then
+        warn "/etc/s6/rc.local starts dhcpcd too, comment that line out"
+    fi
 }
 
 # █▀▀▄ ▄▀▀▄ ▄▀▀▀ █ ▄▀ ▄▀▀▄ ▄▀▀▀ █▀▀▀ ▄▀▀▀
@@ -160,6 +165,33 @@ distro_prepare() {
     install_aur_helper
 }
 
+# vmware_clipboard: the clipboard between VMware and the VM ($hardware: install.sh)
+# https://github.com/krisztianfekete/clipway
+vmware_clipboard() {
+    step "VMware clipboard support"
+
+    if [ "$hardware" != vmware ]; then
+        info "not running in VMware, skipping"
+        return 0
+    fi
+
+    if command -v vmtoolsd >/dev/null 2>&1 && pkg_installed open-vm-tools-clipway; then
+        ok "already present"
+        return 0
+    fi
+
+    local log="$HOME/.local/state/shh/aur-open-vm-tools-clipway.log"
+    mkdir -p "$(dirname "$log")"
+
+    info "VMware detected, installing open-vm-tools-clipway (building from AUR)..."
+    info "This might take some time so don't panic!"
+    if aur_install open-vm-tools-clipway >"$log" 2>&1; then
+        ok "open-vm-tools-clipway installed"
+    else
+        warn "failed to install open-vm-tools-clipway (optional) - see $log"
+    fi
+}
+
 # ▄▀▀▀ █▀▀▀ █▀▀▄ █   █ ▀█▀ ▄▀▀▀ █▀▀▀ ▄▀▀▀
 #  ▀▀▄ █▀▀  █▀█  ▀▄ ▄▀  █  █    █▀▀   ▀▀▄
 # ▀▀▀  ▀▀▀▀ ▀  ▀   ▀   ▀▀▀  ▀▀▀ ▀▀▀▀ ▀▀▀
@@ -210,4 +242,22 @@ session_setup() {
             sudo tee -a /etc/pam.d/system-login >/dev/null
     fi
     info "pam_rundir: XDG_RUNTIME_DIR at login"
+}
+
+# distro_settings: this distro's lines in shh config -> settings (line, yes_no: shh)
+distro_settings() {
+    line aur_helper '' 'aur helper' "$(setting aur_helper yay)"
+    yes_no pacman 'pacman colors and parallel downloads, AUR builds on all cpu cores'
+}
+
+# distro_undo: what install.sh changed in the system (link.sh --uninstall)
+distro_undo() {
+    echo "  packages   packages/*.csv        sudo pacman -Rs NAME"
+    echo "  services   services.txt          sudo s6 set disable NAME, sudo s6 set commit, sudo s6 live install"
+    echo "  shell      zsh                   chsh -s /bin/bash"
+    echo "  groups     seat, audio           sudo gpasswd -d $(id -un) GROUP"
+    echo "  /etc       pam.d/system-login (pam_rundir), dhcpcd.conf (denyinterfaces wl*),"
+    echo "             iwd/main.conf, modprobe.d/nobeep.conf, pacman.conf, makepkg.conf;"
+    echo "             older versions of some are next to them as FILE.bak-DATE"
+    echo "  without seatd or pam_rundir sway will not start"
 }

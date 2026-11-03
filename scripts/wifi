@@ -110,7 +110,7 @@ known_menu() {
 # https, not ping: ICMP is often blocked; a few sites, one can be down
 check_internet() {
     local site
-    for site in https://artixlinux.org https://archlinux.org https://github.com; do
+    for site in https://github.com https://kernel.org https://wikipedia.org; do
         if curl -s -o /dev/null -m 5 "$site"; then
             note='internet: ok'
             return
