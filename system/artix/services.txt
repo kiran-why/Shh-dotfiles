@@ -1,4 +1,4 @@
-# services.txt - s6 services started at boot; each *-s6 package is in common.csv
+# system/artix/services.txt - s6 services started at boot; each *-s6 package is in common.csv
 
 seatd
 # iwd needs dbus

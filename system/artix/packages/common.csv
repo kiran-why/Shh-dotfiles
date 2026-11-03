@@ -1,4 +1,4 @@
-# packages/common.csv - installed on every machine (drivers: packages/CARD.csv)
+# system/artix/packages/common.csv - installed on every machine (drivers: CARD.csv next to it)
 # tag,package,description: empty tag = pacman, A = AUR (yay).
 # check names: sh install.sh --check
 

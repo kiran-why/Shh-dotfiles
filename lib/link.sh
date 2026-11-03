@@ -7,7 +7,7 @@
 # link.sh - put the repo into $HOME: copies, or symlinks with --link
 #   config/ -> ~/.config   home/ -> ~   scripts/ -> ~/.local/bin
 #   wallpapers/ -> ~/wallpapers
-#   lib/*.sh system/services.txt system/packages/ components.txt -> ~/.local/share/shh (flat)
+#   lib/*.sh, this distro's system/DISTRO/ and components/DISTRO_components.txt -> ~/.local/share/shh (flat)
 # file by file; a file that is not ours goes to NAME.bak-DATE, never deleted.
 # ours = listed in ~/.local/state/shh/installed
 
@@ -210,8 +210,8 @@ remove_entry() {
 print_system() {
     echo
     echo "install.sh also changed the system; undo by hand only what you need:"
-    echo "  packages   system/packages/*.csv sudo pacman -Rs NAME"
-    echo "  services   system/services.txt   sudo s6 set disable NAME, sudo s6 set commit, sudo s6 live install"
+    echo "  packages   packages/*.csv        sudo pacman -Rs NAME"
+    echo "  services   services.txt          sudo s6 set disable NAME, sudo s6 set commit, sudo s6 live install"
     echo "  shell      zsh                   chsh -s /bin/bash"
     echo "  groups     seat, audio           sudo gpasswd -d $(id -un) GROUP"
     echo "  /etc       pam.d/system-login (pam_rundir), dhcpcd.conf (denyinterfaces wl*),"
@@ -268,8 +268,14 @@ install_input() {
 install_all() {
     [ -d "$dots_path/config" ] || error "run lib/link.sh from the repo, not from $script_dir"
 
+    # this distro's lists ($distro: lib.sh)
+    local system_dir="$dots_path/system/$distro"
+    local components="$dots_path/components/${distro}_components.txt"
+    [ -f "$system_dir/distro.sh" ] && [ -f "$components" ] ||
+        error "not supported: ${distro:-unknown distro} (only artix for now)"
+
     # files of the parts turned off, " a b ": install_tree skips them
-    off_files=" $(off_items "$dots_path/components.txt" 3 | tr '\n' ' ') "
+    off_files=" $(off_items "$components" 3 | tr '\n' ' ') "
 
     local f k dst
     install_entries "$dots_path/config"  "$config_dir"
@@ -280,9 +286,10 @@ install_all() {
     # flat in share: shh and installed systems expect these paths
     install_tree "$script_dir/lib.sh"              "$share_dir/lib.sh"
     install_tree "$script_dir/link.sh"             "$share_dir/link.sh"
-    install_tree "$dots_path/system/services.txt"  "$share_dir/services.txt"
-    install_tree "$dots_path/components.txt"       "$share_dir/components.txt"
-    install_tree "$dots_path/system/packages"      "$share_dir/packages"
+    install_tree "$system_dir/services.txt"        "$share_dir/services.txt"
+    install_tree "$components"                     "$share_dir/components.txt"
+    install_tree "$system_dir/packages"            "$share_dir/packages"
+    install_tree "$system_dir/distro.sh"           "$share_dir/distro.sh"
 
     # files that left the repo since the last run
     if [ -f "$list" ]; then

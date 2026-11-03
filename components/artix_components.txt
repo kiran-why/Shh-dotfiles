@@ -1,9 +1,9 @@
-# components.txt - parts shh config can turn off; everything else is always installed
+# components/artix_components.txt - parts shh config can turn off (Artix names); everything else is always installed
 # name|packages|files (repo paths)|services|group|default
 # group = the tab in shh config: empty = features, misc = programs we always use;
 # xwayland = settings > xwayland. Anything else: sudo pacman -S NAME yourself.
 # default: empty = on, no = off
-# packages stay in packages/common.csv too; sway lines of a part go in config/sway/features/NAME
+# packages stay in system/artix/packages/common.csv too; sway lines of a part go in config/sway/features/NAME
 
 record|wf-recorder|scripts/record config/sway/features/record|||
 bluetooth|bluez bluez-utils bluez-s6|scripts/bluetooth config/sway/features/bluetooth|bluetoothd||

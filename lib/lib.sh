@@ -67,6 +67,12 @@ without() {
 # █    █▀▀█ █  █  █  █    █▀▀   ▀▀▄ 
 #  ▀▀▀ ▀  ▀  ▀▀  ▀▀▀  ▀▀▀ ▀▀▀▀ ▀▀▀ 
 
+# the distro: ID from /etc/os-release (artix, void ...) picks system/ID/ and
+# components/ID_components.txt; SHH_DISTRO overrides it (tests on Windows)
+distro=${SHH_DISTRO:-}
+# "." on a missing file stops dash, so check first
+[ -n "$distro" ] || [ ! -r /etc/os-release ] || distro=$(. /etc/os-release && echo "${ID:-}")
+
 # what shh config picked: NAME=VALUE lines, editable by hand; not in the
 # repo, so shh update remembers it
 shh_config="$HOME/.config/shh/config"

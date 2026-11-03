@@ -1,4 +1,4 @@
-# packages/intel.csv - Intel graphics: built into Core CPUs, Arc (scripts/hardware prints "intel")
+# system/artix/packages/intel.csv - Intel graphics: built into Core CPUs, Arc (scripts/hardware prints "intel")
 # same format as common.csv
 
 ,linux-firmware-intel,firmware the i915 / xe drivers load at boot

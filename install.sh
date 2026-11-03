@@ -4,7 +4,7 @@
 # ▀ ▄▄▄   ▄▄▄ ▄█▄   ▄▄▄  █ █    ▄▄▄ █▄▄  
 # █ █  █ ▀▀▄▄  █   █  █  █ █   ▀▀▄▄ █  █ 
 # ▀ ▀  ▀ ▀▀▀    ▀▀  ▀▀▀▀ ▀ ▀ ▀ ▀▀▀  ▀  ▀                                       
-# Set up a fresh Artix (s6) system with these dotfiles.
+# Set up a fresh system with these dotfiles; what differs per distro is in system/DISTRO/.
 # Run as your user: sh install.sh. Use --check to check package names only.
 # Safe to run again. Steps are in MAIN at the bottom.
 
@@ -16,12 +16,6 @@ set -eu
 
 dots_path=$(cd "$(dirname "$0")" && pwd -P)
 
-packages_dir="$dots_path/system/packages"
-packages_file="$packages_dir/common.csv"
-services_file="$dots_path/system/services.txt"
-# the parts shh config can turn off
-components_file="$dots_path/components.txt"
-
 # temporary sudo rule (enable_nopasswd)
 sudoers_tmp="/etc/sudoers.d/dotfiles-temp"
 
@@ -31,8 +25,15 @@ stamp=$(date +%Y%m%d-%H%M%S)
 [ -f "$dots_path/lib/lib.sh" ] || { echo "lib/lib.sh not found in $dots_path" >&2; exit 1; }
 . "$dots_path/lib/lib.sh"
 
-# yay or paru (shh config)
-aur_helper=$(setting aur_helper yay)
+# the lists and steps of this distro ($distro: lib.sh)
+system_dir="$dots_path/system/$distro"
+packages_dir="$system_dir/packages"
+packages_file="$packages_dir/common.csv"
+services_file="$system_dir/services.txt"
+# the parts shh config can turn off
+components_file="$dots_path/components/${distro}_components.txt"
+# no distro.sh: check_system stops with "not supported"
+[ ! -f "$system_dir/distro.sh" ] || . "$system_dir/distro.sh"
 
 # a VM type or the graphics cards, one per line (scripts/hardware)
 hardware=$(sh "$dots_path/scripts/hardware" 2>/dev/null || true)
@@ -56,18 +57,6 @@ all_package_lines() {
     for list in "$packages_dir"/*.csv; do
         read_list "$list"
     done
-}
-
-is_installed() {
-    pacman -Qq "$1" >/dev/null 2>&1
-}
-
-# aur_install PKG: paru shows every PKGBUILD for review unless told not to.
-# </dev/null: it must not read the rest of a list we loop over
-aur_install() {
-    local review=''
-    [ "$aur_helper" != paru ] || review=--skipreview
-    "$aur_helper" -S --needed --noconfirm $review "$1" </dev/null
 }
 
 # write_root FILE TEXT: put TEXT into FILE as root. An old FILE with other
@@ -94,24 +83,18 @@ check_system() {
 
     [ "$(id -u)" -ne 0 ] || error "do not run as root, run as your user"
 
-    grep -q '^ID=artix' /etc/os-release 2>/dev/null ||
-        error "this is not Artix Linux"
+    [ -f "$system_dir/distro.sh" ] ||
+        error "not supported: ${distro:-unknown distro} (only artix for now)"
 
-    command -v s6-rc >/dev/null || error "s6 is not the init system here"
+    distro_check
     command -v sudo  >/dev/null || error "sudo is not installed"
     [ -f "$packages_file" ]     || error "not found: $packages_file"
     [ -f "$services_file" ]     || error "not found: $services_file"
+    [ -f "$components_file" ]   || error "not found: $components_file"
 
-    # seatd-s6 and elogind-s6 conflict; pacman --noconfirm can't swap them
-    if is_installed elogind-s6; then
-        warn "elogind-s6 is installed, this setup uses seatd instead"
-        info "swap it: sudo pacman -S seatd-s6  (answer y to remove elogind-s6)"
-        error "replace elogind-s6 with seatd-s6, then run install.sh again"
-    fi
-
-    # https, not ping: ICMP is often blocked; a few sites, one can be down or blocked
+    # online_sites: distro.sh
     local site online=0
-    for site in https://artixlinux.org https://archlinux.org https://github.com; do
+    for site in $online_sites; do
         if curl -s -o /dev/null -m 10 "$site"; then
             online=1
             break
@@ -119,7 +102,7 @@ check_system() {
     done
     [ "$online" = 1 ] || error "no internet connection"
 
-    ok "artix + s6, internet, sudo"
+    ok "$distro, internet, sudo"
 }
 
 # the menu on the first run; later shh config changes the choices
@@ -131,39 +114,24 @@ choose_parts() {
     else
         SHH_INSTALL=1 sh "$dots_path/scripts/shh" config || error "shh config failed"
     fi
-    aur_helper=$(setting aur_helper yay)
     ok "done"
-}
-
-# in_arch PKG: is PKG in Arch [extra]? pacman can't tell before enable_arch_repos
-in_arch() {
-    curl -s -m 10 "https://archlinux.org/packages/search/json/?name=$1&repo=Extra" |
-        grep -q '"pkgname"'
 }
 
 # --check: does every package exist? installs nothing
 check_packages() {
     step "checking package names"
 
-    local tag pkg desc missing=0 arch_on=1
-    grep -q '^\[extra\]' /etc/pacman.conf || arch_on=0
+    local tag pkg desc note rc missing=0
 
     while IFS=, read -r tag pkg desc; do
-        if [ "$tag" = "A" ] && ! command -v "$aur_helper" >/dev/null; then
-            warn "skipped (no $aur_helper yet): $pkg"
-            continue
-        fi
-        case "$tag" in
-            A) "$aur_helper" -Si "$pkg" >/dev/null 2>&1 ;;
-            *) pacman -Si "$pkg" >/dev/null 2>&1 ;;
-        esac && { ok "$pkg"; continue; }
-
-        if [ "$tag" != "A" ] && [ "$arch_on" = 0 ] && in_arch "$pkg"; then
-            ok "$pkg (arch [extra], install.sh enables it)"
-        else
-            warn "not found: $pkg"
-            missing=$((missing + 1))
-        fi
+        rc=0
+        note=$(pkg_exists "$tag" "$pkg") || rc=$?
+        case "$rc" in
+            0) ok "$pkg${note:+ ($note)}" ;;
+            2) warn "skipped ($note): $pkg" ;;
+            *) warn "not found: $pkg"
+               missing=$((missing + 1)) ;;
+        esac
     done <<EOF
 $(all_package_lines)
 EOF
@@ -196,70 +164,6 @@ enable_nopasswd() {
     ok "removed automatically when the script ends"
 }
 
-tweak_pacman() {
-    step "pacman and makepkg settings"
-
-    if [ "$(setting pacman yes)" = no ]; then
-        info "skipped (shh config)"
-        return 0
-    fi
-
-    sudo sed -i 's/^#Color$/Color/' /etc/pacman.conf
-    sudo sed -Ei 's/^#?(ParallelDownloads).*/\1 = 5/' /etc/pacman.conf
-    # build AUR packages on all cpu cores
-    sudo sed -i "s/^#\?MAKEFLAGS=.*/MAKEFLAGS=\"-j$(nproc)\"/" /etc/makepkg.conf
-
-    ok "Color, ParallelDownloads = 5, MAKEFLAGS = -j$(nproc)"
-}
-
-enable_arch_repos() {
-    step "arch repositories"
-
-    sudo pacman -S --needed --noconfirm artix-archlinux-support </dev/null ||
-        error "cannot install artix-archlinux-support"
-
-    # arch [extra] goes after the artix repos
-    if ! grep -q '^\[extra\]' /etc/pacman.conf; then
-        printf '\n[extra]\nInclude = /etc/pacman.d/mirrorlist-arch\n' |
-            sudo tee -a /etc/pacman.conf >/dev/null
-        info "added [extra] to /etc/pacman.conf"
-    fi
-
-    sudo pacman-key --populate archlinux
-    sudo pacman -Syu --noconfirm </dev/null || error "system update failed"
-    ok "arch [extra] enabled, system updated"
-}
-
-install_aur_helper() {
-    step "AUR helper: $aur_helper"
-
-    # the other one, after a switch in shh config
-    local other
-    for other in yay paru; do
-        [ "$other" = "$aur_helper" ] || ! is_installed "$other-bin" ||
-            info "$other-bin is not needed anymore: sudo pacman -Rs $other-bin"
-    done
-
-    if command -v "$aur_helper" >/dev/null; then
-        ok "already installed"
-        return
-    fi
-
-    sudo pacman -S --needed --noconfirm git base-devel </dev/null ||
-        error "cannot install git and base-devel"
-
-    # -bin: prebuilt, no need to compile Go (yay) or Rust (paru)
-    local build_dir
-    build_dir=$(mktemp -d)
-    git clone --depth 1 "https://aur.archlinux.org/$aur_helper-bin.git" "$build_dir" ||
-        error "cannot download $aur_helper"
-    (cd "$build_dir" && makepkg -si --noconfirm </dev/null) ||
-        error "cannot build $aur_helper"
-    rm -rf "$build_dir"
-
-    ok "$aur_helper installed"
-}
-
 install_packages() {
     step "packages"
 
@@ -270,17 +174,13 @@ install_packages() {
             info "off: $pkg"
             continue
         fi
-        if is_installed "$pkg"; then
+        if pkg_installed "$pkg"; then
             ok "$pkg"
             continue
         fi
 
         info "$pkg - $desc"
-        # </dev/null: pacman must not read the rest of our list
-        case "$tag" in
-            A) aur_install "$pkg" ;;
-            *) sudo pacman -S --needed --noconfirm "$pkg" </dev/null ;;
-        esac || error "cannot install $pkg"
+        pkg_install "$tag" "$pkg" || error "cannot install $pkg"
     done
 }
 
@@ -298,7 +198,7 @@ vmware_clipboard() {
         return 0
     fi
 
-    if command -v vmtoolsd >/dev/null 2>&1 && is_installed open-vm-tools-clipway; then
+    if command -v vmtoolsd >/dev/null 2>&1 && pkg_installed open-vm-tools-clipway; then
         ok "already present"
         return 0
     fi
@@ -319,7 +219,7 @@ vmware_clipboard() {
 # █    █  █ █ ▀▄█ █▀▀   █  █ ▀█ █  █ █▀█  █▀▀█   █    █  █  █ █ ▀▄█ 
 #  ▀▀▀  ▀▀  ▀   ▀ ▀    ▀▀▀  ▀▀▀  ▀▀  ▀  ▀ ▀  ▀   ▀   ▀▀▀  ▀▀  ▀   ▀ 
 
-# the drivers come from packages/CARD.csv; here only the settings they need
+# the drivers come from system/DISTRO/packages/CARD.csv; here only the settings they need
 configure_gpu() {
     step "graphics"
 
@@ -376,41 +276,24 @@ configure_network() {
     ok "done"
 }
 
-# services.txt: enable -> commit -> live install -> start, they also start at boot.
-# a one-time "unable to chdir to <svc>-srv" after it is harmless
+# services.txt: on and started, they also start at boot; a part turned off
+# in shh config: its service too (svc_apply: distro.sh)
 enable_services() {
-    step "s6 services from services.txt"
+    step "services from services.txt"
 
-    local svc services off_svcs disabled=''
+    local services off_svcs
     off_svcs=$(off_items "$components_file" 4)
     services=$(read_list "$services_file" | without "$off_svcs")
-    for svc in $services; do
-        sudo s6 set enable "$svc" || error "cannot enable $svc"
-        info "enabled $svc"
-    done
-    # a part turned off in shh config: its service too (only if it is on now)
-    for svc in $off_svcs; do
-        s6 set status 2>/dev/null | grep -qx "$svc-srv/active" || continue
-        sudo s6 set disable "$svc" || error "cannot disable $svc"
-        info "disabled $svc"
-        disabled="$disabled $svc"
-    done
-
-    sudo s6 set commit || error "s6 set commit failed"
-    sudo s6 live install || error "s6 live install failed"
-    # live install only swaps the db: services new to it stay down until reboot
-    sudo s6 live start $services || error "cannot start the services"
-    [ -z "$disabled" ] || sudo s6 live stop $disabled || warn "cannot stop$disabled"
+    svc_apply "$services" "$off_svcs"
 
     # sing-box (shh config: misc): our own s6 service; started from the vpn menu
     if part_on sing-box misc; then
         sh "$dots_path/scripts/vpn" setup || error "vpn setup failed"
     fi
 
-    # seat: screen and input for sway; audio: the sound card (no elogind)
-    local groups=seat,audio
-    sudo usermod -aG "$groups" "$USER"
-    ok "added $USER to groups $groups (relogin to apply)"
+    # seat_groups: distro.sh
+    sudo usermod -aG "$seat_groups" "$USER"
+    ok "added $USER to groups $seat_groups (relogin to apply)"
 }
 
 configure_system() {
@@ -421,12 +304,7 @@ configure_system() {
         info "login shell: zsh"
     fi
 
-    # XDG_RUNTIME_DIR at login, sway won't start without it (elogind did it before)
-    if ! grep -q pam_rundir /etc/pam.d/system-login; then
-        echo 'session    optional   pam_rundir.so' |
-            sudo tee -a /etc/pam.d/system-login >/dev/null
-    fi
-    info "pam_rundir: XDG_RUNTIME_DIR at login"
+    session_setup
 
     if [ "$(setting nobeep yes)" = yes ]; then
         write_root /etc/modprobe.d/nobeep.conf "blacklist pcspkr"
@@ -448,9 +326,9 @@ link_dotfiles() {
 leftovers() {
     local pkgs
     pkgs=$(off_items "$components_file" 2)
-    # pacman -Qq prints the installed ones (with no names: all of them)
-    [ -z "$pkgs" ] || pkgs=$(pacman -Qq $pkgs 2>/dev/null | tr '\n' ' ' || true)
-    [ -z "$pkgs" ] || warn "not needed anymore: sudo pacman -Rs $pkgs"
+    # with no names pkg_leftovers prints every installed package
+    [ -z "$pkgs" ] || pkgs=$(pkg_leftovers $pkgs)
+    [ -z "$pkgs" ] || warn "not needed anymore: $pkg_remove $pkgs"
 
     if [ "$(setting nobeep yes)" = no ] && [ -e /etc/modprobe.d/nobeep.conf ]; then
         warn "the pc speaker is still off: sudo rm /etc/modprobe.d/nobeep.conf"
@@ -489,9 +367,7 @@ fi
 check_system
 choose_parts
 enable_nopasswd
-tweak_pacman
-enable_arch_repos
-install_aur_helper
+distro_prepare
 vmware_clipboard
 install_packages
 configure_gpu
