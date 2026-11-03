@@ -1,4 +1,4 @@
-<p align="center"><img src="https://github.com/user-attachments/assets/bcb82a89-a01d-4a0f-9627-0b290b45c544" alt="Shh... dotfiles // quiet // minimal // no useless GUI" width="100%"></p>
+<p align="center"><img src="https://github.com/user-attachments/assets/10fbbe16-89c5-4a7d-8274-27bc7cc6fda3" alt="Shh... dotfiles // quiet // minimal // no useless GUI" width="100%"></p>
 
 <p align="center"><strong>Quiet, minimal Wayland setup for Artix Linux (s6). No useless GUI.</strong><br>Void, Gentoo and CRUX are on the way.</p>
 
