@@ -12,7 +12,7 @@
                                   // quiet  // minimal  // no useless GUI
 ```
 
-<p align="center"><strong>Quiet, minimal Wayland setup for Artix Linux (s6). No useless GUI.</strong></p>
+<p align="center"><strong>Quiet, minimal Wayland setup for Artix Linux (s6). No useless GUI.</strong><br>Void, Gentoo and CRUX are on the way.</p>
 
 <div align="center"><h2>• screenshots •</h2></div>
 
@@ -26,6 +26,18 @@
 - Dotfiles and an installer for Artix Linux with s6: packages, services, graphics drivers, configs
 - No systemd, no elogind: seatd and pam_rundir instead
 - Terminal first: a GUI only where there is no way around it (web pages, video, images)
+
+</details>
+
+<details>
+<summary>Supported distros</summary>
+
+| Distro | Init | Packages | Status |
+|---|---|---|---|
+| Artix Linux | s6 | pacman + AUR | works |
+| Void Linux | runit | xbps | planned |
+| Gentoo | OpenRC | Portage | planned |
+| CRUX | rc | prt-get | planned |
 
 </details>
 
