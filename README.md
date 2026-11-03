@@ -14,6 +14,10 @@
 
 <p align="center"><strong>Quiet, minimal Wayland setup for Artix Linux (s6). No useless GUI.</strong></p>
 
+<div align="center"><h2>• screenshots •</h2></div>
+
+<img width="2560" height="1440" alt="desktop" src="https://github.com/user-attachments/assets/8cbfed6a-b9ad-4028-8a53-2ce614a65485" />
+
 <div align="center"><h2>• overview •</h2></div>
 
 <details>
@@ -118,10 +122,6 @@ and how to undo it by hand. A config you changed after the install is kept. Remo
   `sudo mkinitcpio -P` (from the Arch wiki)
 
 </details>
-
-<div align="center"><h2>• screenshots •</h2></div>
-
-<img width="2560" height="1440" alt="desktop" src="https://github.com/user-attachments/assets/8cbfed6a-b9ad-4028-8a53-2ce614a65485" />
 
 <div align="center"><h2>• thanks •</h2></div>
 
