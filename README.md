@@ -74,8 +74,8 @@ stay plain consoles for rescue.
 
 `install.sh` checks the system, asks what to install (`shh config`, only on the first run),
 adds the Arch `[extra]` repo and `yay` or `paru`, installs
-`packages/common.csv` (without the parts you turned off) and the drivers for your graphics card, enables the s6 services from `services.txt`, sets a few system
-options and copies the configs with `link.sh`. It is safe to run again: a file you changed (or one that was there before)
+`system/packages/common.csv` (without the parts you turned off) and the drivers for your graphics card, enables the s6 services from `system/services.txt`, sets a few system
+options and copies the configs with `lib/link.sh`. It is safe to run again: a file you changed (or one that was there before)
 is never deleted, it goes to `name.bak-DATE`, and the list of them is printed at the end.
 `sh install.sh --check` only checks that every package exists.
 
@@ -125,26 +125,27 @@ and how to undo it by hand. A config you changed after the install is kept. Remo
 ## Layout
 
 ```
-install.sh link.sh lib.sh   installer, copies the files, shared messages
-packages/common.csv         packages: tag,package,description (empty tag = pacman, A = AUR)
-packages/CARD.csv           graphics drivers: amd, intel, nvidia, nvidia-580xx
-services.txt                s6 services
+install.sh                  the installer
+lib/link.sh lib/lib.sh      copies the files, shared messages
+system/packages/common.csv  packages: tag,package,description (empty tag = pacman, A = AUR)
+system/packages/CARD.csv    graphics drivers: amd, intel, nvidia, nvidia-580xx
+system/services.txt         s6 services
 components.txt              the parts shh config can turn off: packages, files, services
 config/     ->  ~/.config/     sway (features/: one file per part), swaybar, foot, fzf (the look of all menus), fastfetch, broot, nvim, mako, cliphist, imv, mimeapps.list
 home/       ->  ~/             .zprofile .zshrc
 scripts/    ->  ~/.local/bin/  shh, launcher, keys, clipboard, volume, wifi, bluetooth, vpn, sound, wallpaper, screenshot, record, autotile, screen, hardware
 wallpapers/ ->  ~/wallpapers/  the newest picture here is the wallpaper
-lib.sh link.sh services.txt components.txt packages/  ->  ~/.local/share/shh/  for shh
+lib/*.sh system/* components.txt  ->  ~/.local/share/shh/  for shh
 ```
 
 <details>
 <summary>Copies or links (for working on the dotfiles)</summary>
 
 What was installed is listed in `~/.local/state/shh/installed`.
-To work on the dotfiles, keep the repo and run `sh link.sh --link`: the files in `$HOME`
+To work on the dotfiles, keep the repo and run `sh lib/link.sh --link`: the files in `$HOME`
 become links to the repo, so an edit lands right in it, and `shh update` does a `git pull`.
 **Do not delete the repo then**: every link, `shh` too, points into it.
-`sh link.sh --copy` goes back to copies.
+`sh lib/link.sh --copy` goes back to copies.
 
 </details>
 

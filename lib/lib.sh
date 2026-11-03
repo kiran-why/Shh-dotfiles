@@ -4,7 +4,7 @@
 # █ █ █  █   ▀▀▄▄ █  █ 
 # ▀ ▀ ▀▀▀  ▀ ▀▀▀  ▀  ▀ 
 # lib.sh - colors, messages, lists and the logo for install.sh, link.sh and shh
-# not run on its own: loaded with  . "$dots_path/lib.sh"
+# not run on its own: loaded with  . "$dots_path/lib/lib.sh"
 
 # ▄▀▀▀ ▄▀▀▄ █    ▄▀▀▄ █▀▀▄ ▄▀▀▀ 
 # █    █  █ █    █  █ █▀█   ▀▀▄ 

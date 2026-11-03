@@ -16,9 +16,9 @@ set -eu
 
 dots_path=$(cd "$(dirname "$0")" && pwd -P)
 
-packages_dir="$dots_path/packages"
+packages_dir="$dots_path/system/packages"
 packages_file="$packages_dir/common.csv"
-services_file="$dots_path/services.txt"
+services_file="$dots_path/system/services.txt"
 # the parts shh config can turn off
 components_file="$dots_path/components.txt"
 
@@ -28,8 +28,8 @@ sudoers_tmp="/etc/sudoers.d/dotfiles-temp"
 # for backup names, like link.sh
 stamp=$(date +%Y%m%d-%H%M%S)
 
-[ -f "$dots_path/lib.sh" ] || { echo "lib.sh not found in $dots_path" >&2; exit 1; }
-. "$dots_path/lib.sh"
+[ -f "$dots_path/lib/lib.sh" ] || { echo "lib/lib.sh not found in $dots_path" >&2; exit 1; }
+. "$dots_path/lib/lib.sh"
 
 # yay or paru (shh config)
 aur_helper=$(setting aur_helper yay)
@@ -41,7 +41,7 @@ hardware=$(sh "$dots_path/scripts/hardware" 2>/dev/null || true)
 # █▀▀█ █▀▀  █    █▀▀  █▀▀  █▀█   ▀▀▄ 
 # ▀  ▀ ▀▀▀▀ ▀▀▀▀ ▀    ▀▀▀▀ ▀  ▀ ▀▀▀  
 
-# common.csv + packages/CARD.csv for every graphics card found
+# common.csv + system/packages/CARD.csv for every graphics card found
 package_lines() {
     local hw
     read_list "$packages_file"
@@ -441,7 +441,7 @@ link_dotfiles() {
     # no mode in shh config: link.sh keeps what is installed
     local mode
     mode=$(setting mode '')
-    DOTS_NO_LOGO=1 sh "$dots_path/link.sh" ${mode:+"--$mode"}
+    DOTS_NO_LOGO=1 sh "$dots_path/lib/link.sh" ${mode:+"--$mode"}
 }
 
 # what parts turned off in shh config left behind; removing is up to you

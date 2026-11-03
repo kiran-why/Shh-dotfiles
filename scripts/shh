@@ -9,19 +9,32 @@
 
 set -eu
 
-# link.sh puts lib.sh, services.txt and packages/ here, so the repo can go
+# where link.sh installs lib.sh, link.sh, the lists and packages/, so the repo can go
 share="$HOME/.local/share/shh"
 list="$HOME/.local/state/shh/installed"
 repo_url="https://github.com/kiran-why/Shh-dotfiles.git"
 tab=$(printf '\t')
 
-# started from the repo (sh scripts/shh config, install.sh): its files, they
-# can be newer than $share; ~/.local/bin/shh finds no lib.sh in ~/.local
-repo=$(cd "$(dirname "$0")/.." && pwd -P)
-[ ! -f "$repo/lib.sh" ] || share="$repo"
+# what shh reads: the installed copies
+lib_file="$share/lib.sh"
+link_file="$share/link.sh"
+components_file="$share/components.txt"
+services_file="$share/services.txt"
+packages_dir="$share/packages"
 
-[ -f "$share/lib.sh" ] || { echo "lib.sh not found in $share, run sh link.sh from the repo" >&2; exit 1; }
-. "$share/lib.sh"
+# started from the repo (sh scripts/shh config, install.sh): its files, they
+# can be newer than $share; ~/.local/bin/shh finds no lib/lib.sh in ~/.local
+repo=$(cd "$(dirname "$0")/.." && pwd -P)
+if [ -f "$repo/lib/lib.sh" ]; then
+    lib_file="$repo/lib/lib.sh"
+    link_file="$repo/lib/link.sh"
+    components_file="$repo/components.txt"
+    services_file="$repo/system/services.txt"
+    packages_dir="$repo/system/packages"
+fi
+
+[ -f "$lib_file" ] || { echo "lib.sh not found: $lib_file, run sh lib/link.sh from the repo" >&2; exit 1; }
+. "$lib_file"
 
 usage() {
     echo "usage: shh COMMAND"
@@ -174,7 +187,7 @@ settings_act() {
 
 # group GROUP: "name|default" of the parts in GROUP (components.txt)
 group() {
-    read_list "$share/components.txt" | awk -F'|' -v g="$1" '$5 == g { print $1 "|" $6 }'
+    read_list "$components_file" | awk -F'|' -v g="$1" '$5 == g { print $1 "|" $6 }'
 }
 
 # the tab of $tab_group: a line per part, Enter turns it on / off
@@ -237,7 +250,7 @@ layout_act() {
 # shh config: tabs settings, features, misc;
 # every change goes to $shh_config at once
 config() {
-    [ -f "$share/components.txt" ] || error "not found: $share/components.txt (sh link.sh)"
+    [ -f "$components_file" ] || error "not found: $components_file (sh lib/link.sh)"
     command -v fzf >/dev/null || sudo pacman -S --needed --noconfirm fzf || error "cannot install fzf"
     # the look of every menu; .zprofile sets it only after the install
     if [ -z "${FZF_DEFAULT_OPTS_FILE:-}" ] && [ -f "$repo/config/fzf/fzfrc" ]; then
@@ -265,7 +278,7 @@ update() {
 
     # installed with --link: update the repo the links point to
     if [ -L "$share/lib.sh" ]; then
-        repo=$(cd "$(dirname "$(readlink -f "$share/lib.sh")")" && pwd -P)
+        repo=$(cd "$(dirname "$(readlink -f "$share/lib.sh")")/.." && pwd -P)
         step "updating the repo: $repo"
         git -C "$repo" pull --ff-only ||
             error "git pull failed (local changes? see git -C $repo status)"
@@ -303,7 +316,7 @@ check_services() {
     }
 
     # a part turned off in shh config has its service off too
-    for svc in $(read_list "$share/services.txt" | without "$(off_items "$share/components.txt" 4)"); do
+    for svc in $(read_list "$services_file" | without "$(off_items "$components_file" 4)"); do
         parts=$(s6-rc list "$svc" 2>/dev/null) || {
             bad "$svc: unknown to s6, run sh install.sh"
             continue
@@ -324,25 +337,25 @@ check_services() {
 check_files() {
     step "files"
 
-    [ -f "$list" ] || { bad "no $list (sh link.sh)"; return 0; }
+    [ -f "$list" ] || { bad "no $list (sh lib/link.sh)"; return 0; }
     local k dst n=0 found=0
     while IFS="$tab" read -r k dst; do
         n=$((n + 1))
-        [ -e "$dst" ] || { bad "missing: $dst (sh link.sh)"; found=1; }
+        [ -e "$dst" ] || { bad "missing: $dst (sh lib/link.sh)"; found=1; }
     done <"$list"
     [ "$found" = 1 ] || ok "all $n files in place"
 }
 
-# common.csv + packages/CARD.csv, like install.sh
+# common.csv + system/packages/CARD.csv, like install.sh
 check_packages() {
     step "packages"
 
     local hw hardware csv names missing pkg
     hardware=$(sh "$HOME/.local/bin/hardware" 2>/dev/null || true)
     names=$(for hw in common $hardware; do
-        csv="$share/packages/$hw.csv"
+        csv="$packages_dir/$hw.csv"
         [ ! -f "$csv" ] || read_list "$csv" | cut -d, -f2
-    done | without "$(off_items "$share/components.txt" 2)")
+    done | without "$(off_items "$components_file" 2)")
 
     # pacman -T prints the missing ones
     missing=$(pacman -T $names || true)
@@ -397,7 +410,7 @@ doctor() {
 # the next update puts the repo colors back (yours stay in .bak files)
 color() {
     [ "$#" -eq 2 ] || { usage >&2; exit 1; }
-    [ -f "$list" ] || error "no $list (sh link.sh)"
+    [ -f "$list" ] || error "no $list (sh lib/link.sh)"
 
     local old new files c k f
     old=$(printf '%s' "${1#\#}" | tr 'A-F' 'a-f')
@@ -437,7 +450,7 @@ case "${1:-}" in
     update)         update ;;
     doctor)         doctor ;;
     color)          shift; color "$@" ;;
-    uninstall)      shift; exec sh "$share/link.sh" --uninstall "$@" ;;
+    uninstall)      shift; exec sh "$link_file" --uninstall "$@" ;;
     help|-h|--help) usage ;;
     "")             usage >&2; exit 1 ;;
     *)              usage >&2; error "unknown command: $1" ;;

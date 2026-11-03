@@ -2,7 +2,7 @@
 # hardware - what we run on, one word per line: the VM type (vmware,
 # virtualbox, qemu, hyperv, xen) or each graphics card: amd, intel,
 # nvidia (GTX 16xx, RTX+), nvidia-580xx (GTX 750-10xx), nvidia-legacy.
-# fails when nothing is found. install.sh installs packages/WORD.csv
+# fails when nothing is found. install.sh installs system/packages/WORD.csv
 
 set -eu
 

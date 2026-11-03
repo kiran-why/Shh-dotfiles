@@ -6,7 +6,8 @@
 # ▀ ▀ ▀  ▀ ▀  ▀ ▀ ▀▀▀  ▀  ▀ 
 # link.sh - put the repo into $HOME: copies, or symlinks with --link
 #   config/ -> ~/.config   home/ -> ~   scripts/ -> ~/.local/bin
-#   wallpapers/ -> ~/wallpapers   lib.sh link.sh services.txt components.txt packages/ -> ~/.local/share/shh
+#   wallpapers/ -> ~/wallpapers
+#   lib/*.sh system/services.txt system/packages/ components.txt -> ~/.local/share/shh (flat)
 # file by file; a file that is not ours goes to NAME.bak-DATE, never deleted.
 # ours = listed in ~/.local/state/shh/installed
 
@@ -16,8 +17,11 @@ set -eu
 #  ▀▀▄ █▀▀    █     █    █  █ ▀▄█ █ ▀█  ▀▀▄ 
 # ▀▀▀  ▀▀▀▀   ▀     ▀   ▀▀▀ ▀   ▀  ▀▀▀ ▀▀▀  
 
-# readlink -f: shh runs this file through ~/.local/share/shh/link.sh
-dots_path=$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)
+# readlink -f: shh runs this file through ~/.local/share/shh/link.sh.
+# lib.sh lies next to it: <repo>/lib or ~/.local/share/shh
+script_dir=$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)
+# the repo root; from ~/.local/share/shh it is ~/.local/share (install_all refuses it)
+dots_path=$(cd "$script_dir/.." && pwd -P)
 
 config_dir="$HOME/.config"
 bin_dir="$HOME/.local/bin"
@@ -39,8 +43,8 @@ backed_up=''
 mode=copy
 [ ! -L "$share_dir/lib.sh" ] || mode=link
 
-[ -f "$dots_path/lib.sh" ] || { echo "lib.sh not found in $dots_path" >&2; exit 1; }
-. "$dots_path/lib.sh"
+[ -f "$script_dir/lib.sh" ] || { echo "lib.sh not found in $script_dir" >&2; exit 1; }
+. "$script_dir/lib.sh"
 
 backup_msg() { msg "$red" "$sym_bak" "$1"; }
 
@@ -206,8 +210,8 @@ remove_entry() {
 print_system() {
     echo
     echo "install.sh also changed the system; undo by hand only what you need:"
-    echo "  packages   packages/*.csv        sudo pacman -Rs NAME"
-    echo "  services   services.txt          sudo s6 set disable NAME, sudo s6 set commit, sudo s6 live install"
+    echo "  packages   system/packages/*.csv sudo pacman -Rs NAME"
+    echo "  services   system/services.txt   sudo s6 set disable NAME, sudo s6 set commit, sudo s6 live install"
     echo "  shell      zsh                   chsh -s /bin/bash"
     echo "  groups     seat, audio           sudo gpasswd -d $(id -un) GROUP"
     echo "  /etc       pam.d/system-login (pam_rundir), dhcpcd.conf (denyinterfaces wl*),"
@@ -262,7 +266,7 @@ install_input() {
 }
 
 install_all() {
-    [ -d "$dots_path/config" ] || error "run link.sh from the repo, not from $dots_path"
+    [ -d "$dots_path/config" ] || error "run lib/link.sh from the repo, not from $script_dir"
 
     # files of the parts turned off, " a b ": install_tree skips them
     off_files=" $(off_items "$dots_path/components.txt" 3 | tr '\n' ' ') "
@@ -273,9 +277,12 @@ install_all() {
     install_entries "$dots_path/home"    "$HOME"
     install_entries "$dots_path/scripts" "$bin_dir"
     install_tree "$dots_path/wallpapers" "$HOME/wallpapers"
-    for f in lib.sh link.sh services.txt components.txt packages; do
-        install_tree "$dots_path/$f" "$share_dir/$f"
-    done
+    # flat in share: shh and installed systems expect these paths
+    install_tree "$script_dir/lib.sh"              "$share_dir/lib.sh"
+    install_tree "$script_dir/link.sh"             "$share_dir/link.sh"
+    install_tree "$dots_path/system/services.txt"  "$share_dir/services.txt"
+    install_tree "$dots_path/components.txt"       "$share_dir/components.txt"
+    install_tree "$dots_path/system/packages"      "$share_dir/packages"
 
     # files that left the repo since the last run
     if [ -f "$list" ]; then
