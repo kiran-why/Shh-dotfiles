@@ -277,12 +277,17 @@ install_all() {
     # files of the parts turned off, " a b ": install_tree skips them
     off_files=" $(off_items "$components" 3 | tr '\n' ' ') "
 
-    local f k dst
+    local f k dst first_wall=0
     install_entries "$dots_path/config"  "$config_dir"
     install_input
     install_entries "$dots_path/home"    "$HOME"
     install_entries "$dots_path/scripts" "$bin_dir"
+    # scripts/wallpaper takes the newest picture: on the first install make it
+    # wallpapers/DISTRO.jpg; later runs keep what you picked with touch
+    [ -e "$HOME/wallpapers/$distro.jpg" ] || first_wall=1
     install_tree "$dots_path/wallpapers" "$HOME/wallpapers"
+    [ "$first_wall" = 0 ] || [ "$dry_run" = 1 ] || [ ! -e "$HOME/wallpapers/$distro.jpg" ] ||
+        touch "$HOME/wallpapers/$distro.jpg"
     # flat in share: shh and installed systems expect these paths
     install_tree "$script_dir/lib.sh"              "$share_dir/lib.sh"
     install_tree "$script_dir/link.sh"             "$share_dir/link.sh"
