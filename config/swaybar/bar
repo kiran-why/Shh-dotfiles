@@ -3,7 +3,7 @@
 bar {
     position top
     # the text font, then the icons
-    font pango:Source Code Pro, Symbols Nerd Font 10
+    font pango:Fira Code, Symbols Nerd Font 10
     status_command ~/.config/swaybar/status.sh
 
     # show "●" instead of "1:●"
