@@ -45,7 +45,19 @@ links() {
             }
             return out
         }
-        function q(s) { gsub(/\\/, "\\\\", s); gsub(/"/, "\\\"", s); return "\"" s "\"" }
+        # q: a JSON string. Bytes 1-31 as \u00XX (%0A in a name broke the config);
+        # \ and " in the loop, not gsub: awks differ on "\\" in a gsub replacement
+        BEGIN { for (i = 1; i < 32; i++) ctl = ctl sprintf("%c", i) }
+        function q(s,   out, i, c, n) {
+            out = ""
+            for (i = 1; i <= length(s); i++) {
+                c = substr(s, i, 1)
+                if (c == "\\" || c == "\"") out = out "\\" c
+                else if ((n = index(ctl, c))) out = out sprintf("\\u%04x", n)
+                else out = out c
+            }
+            return "\"" out "\""
+        }
         function skip(why) { printf "skipped: %s (%s)\n", name, why > "/dev/stderr" }
 
         /^vless:\/\// {
