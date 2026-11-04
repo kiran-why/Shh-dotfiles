@@ -2,8 +2,8 @@
 # vpn - sing-box from a subscription (shh config: misc)
 # vpn: the menu: on/off, locations, add or update the subscription, start at boot
 # vpn update: download the subscription, make /etc/sing-box/config.json, check it
-# vpn setup: the s6 service sing-box (install.sh runs it)
-# update and setup run themselves as root with sudo
+# vpn setup: the service that runs sing-box (install.sh runs it; vpn_*: distro.sh)
+# update writes the files as root with sudo
 
 set -eu
 
@@ -12,6 +12,21 @@ dir=/etc/sing-box
 state=/var/lib/sing-box
 # the menu switches locations through it (localhost only)
 api=127.0.0.1:9090
+
+# the service is the distro's (distro.sh): from the repo when run from it
+# (install.sh), else the installed copies. Not as root: update's root part
+# needs none, and sudo may give another $HOME
+if [ "$(id -u)" -ne 0 ]; then
+    repo=$(cd "$(dirname "$0")/.." && pwd -P)
+    if [ -f "$repo/lib/lib.sh" ]; then
+        . "$repo/lib/lib.sh"
+        distro_file="$repo/system/$distro/distro.sh"
+    else
+        . "$HOME/.local/share/shh/lib.sh"
+        distro_file="$HOME/.local/share/shh/distro.sh"
+    fi
+    . "$distro_file"
+fi
 
 # links: vless:// links (one per line) -> sing-box outbounds, one
 # JSON object per line. What sing-box can't do is skipped with a message:
@@ -129,8 +144,12 @@ config() {
 }
 
 update() {
-    # sh: works without the +x bit too (sh scripts/vpn update)
-    [ "$(id -u)" -eq 0 ] || exec sudo sh "$0" update
+    # the files as root (sh: works without the +x bit too), then the running vpn takes them
+    if [ "$(id -u)" -ne 0 ]; then
+        sudo sh "$0" update
+        ! running || vpn_ctl restart
+        return 0
+    fi
 
     local url tmp secret
     [ -s "$dir/subscription" ] || { echo "no subscription link: vpn > paste the subscription link" >&2; exit 1; }
@@ -160,46 +179,19 @@ update() {
     [ -z "${SUDO_USER:-}" ] || chown "$SUDO_USER" "$state/secret"
     jq -r '.[].tag' "$tmp/outbounds.json" >"$state/locations"
     chmod 644 "$state/locations"
-    ! running || s6 live restart sing-box
     echo "$(jq length "$tmp/outbounds.json") locations"
 }
 
-# the s6 service: our own ones go in /etc/s6/adminsv (storelist in
-# /etc/s6-frontend.conf); the log part is like the one of dhcpcd-s6
+# known to the init system, but not started at boot (vpn > start at boot)
 setup() {
-    [ "$(id -u)" -eq 0 ] || exec sudo sh "$0" setup
-
-    local srv=/etc/s6/adminsv/sing-box-srv log=/etc/s6/adminsv/sing-box-log
-    mkdir -p "$srv" "$log"
-    echo longrun >"$srv/type"
-    echo sing-box-log >"$srv/producer-for"
-    printf '%s\n' '#!/bin/execlineb -P' 'fdmove -c 2 1' \
-        "exec sing-box run -c $dir/config.json -D $state" >"$srv/run"
-    echo longrun >"$log/type"
-    echo sing-box-srv >"$log/consumer-for"
-    echo sing-box >"$log/pipeline-name"
-    echo 3 >"$log/notification-fd"
-    cat >"$log/run" <<'EOF'
-#!/bin/execlineb -P
-ifelse { test -w /var/log } {
-	foreground { install -d -o s6log -g s6log /var/log/sing-box }
-	s6-setuidgid s6log exec -c s6-log -d3 -b -- n3 s2000000 T /var/log/sing-box
-}
-foreground { install -d -o s6log -g s6log /run/log/sing-box }
-s6-setuidgid s6log exec -c s6-log -d3 -b -- n3 s2000000 T /run/log/sing-box
-EOF
-    chmod 755 "$srv/run" "$log/run"
-
-    # known to s6 now, but not started at boot (vpn > start at boot)
-    s6 repository sync
-    s6 set commit
-    s6 live install
-    echo "s6 service sing-box ready"
+    vpn_setup "sing-box run -c $dir/config.json -D $state"
+    echo "service $vpn_svc ready"
 }
 
 # the menu
 
-running() { s6-rc -a list 2>/dev/null | grep -qx sing-box-srv; }
+# the same on every init system, no root needed
+running() { pgrep -x sing-box >/dev/null; }
 
 # api_call PATH [CURL OPTIONS]: the API with the secret from vpn update
 api_call() {
@@ -225,7 +217,7 @@ header() {
 # start and wait for the API (up to 5 s): picking a location needs it
 start() {
     local i=0
-    sudo s6 live start sing-box || { note='cannot start sing-box (vpn setup?)'; return 1; }
+    vpn_ctl start || { note="cannot start $vpn_svc (vpn setup?)"; return 1; }
     while [ "$i" -lt 10 ] && ! api_call /version -m 1 -f -o /dev/null; do
         sleep 0.5
         i=$((i + 1))
@@ -286,15 +278,11 @@ update_menu() {
     fi
 }
 
-# enabled = started at boot
-boot() { s6 set status 2>/dev/null | grep -qx 'sing-box-srv/active'; }
-
 boot_toggle() {
-    local how=enable
-    ! boot || how=disable
-    sudo sh -c "s6 set $how sing-box && s6 set commit && s6 live install" >/dev/null ||
-        { note="cannot $how sing-box"; return 0; }
-    note="start at boot: $(boot && echo yes || echo no)"
+    local to=yes
+    ! vpn_boot || to=no
+    vpn_boot_set "$to" || { note="cannot change start at boot"; return 0; }
+    note="start at boot: $(vpn_boot && echo yes || echo no)"
 }
 
 case "${1:-}" in
@@ -308,14 +296,14 @@ esac
 pos=1
 note=''
 while :; do
-    if boot; then atboot=yes; else atboot=no; fi
+    if vpn_boot; then atboot=yes; else atboot=no; fi
     pick=$(printf '%s\n' on/off locations 'add subscription' 'update subscription' "start at boot: $atboot" |
         menu --border-label=' vpn ' --header="$(header)$gap" --bind="load:pos($pos)") || exit 0
     note=''
     case "$pick" in
         on/off)
             pos=1
-            if running; then sudo s6 live stop sing-box || note='cannot stop sing-box'; else start || true; fi ;;
+            if running; then vpn_ctl stop || note="cannot stop $vpn_svc"; else start || true; fi ;;
         locations)             pos=2; locations_menu ;;
         'add subscription')    pos=3; add ;;
         'update subscription') pos=4; update_menu ;;

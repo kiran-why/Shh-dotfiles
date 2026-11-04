@@ -231,6 +231,57 @@ svc_check() {
     [ -z "$down" ] || { echo "$down"; return 1; }
 }
 
+# the vpn service (scripts/vpn): our own s6 service sing-box
+vpn_svc=sing-box
+
+# vpn_setup RUN: make the service that runs RUN. Our own services go in
+# /etc/s6/adminsv (storelist in /etc/s6-frontend.conf); the log part is like
+# the one of dhcpcd-s6. Known to s6 after this, but not started at boot
+vpn_setup() {
+    sudo sh -s -- "$1" <<'EOF' || error "cannot make the s6 service sing-box"
+set -e
+srv=/etc/s6/adminsv/sing-box-srv log=/etc/s6/adminsv/sing-box-log
+mkdir -p "$srv" "$log"
+echo longrun >"$srv/type"
+echo sing-box-log >"$srv/producer-for"
+printf '%s\n' '#!/bin/execlineb -P' 'fdmove -c 2 1' "exec $1" >"$srv/run"
+echo longrun >"$log/type"
+echo sing-box-srv >"$log/consumer-for"
+echo sing-box >"$log/pipeline-name"
+echo 3 >"$log/notification-fd"
+cat >"$log/run" <<'LOG'
+#!/bin/execlineb -P
+ifelse { test -w /var/log } {
+	foreground { install -d -o s6log -g s6log /var/log/sing-box }
+	s6-setuidgid s6log exec -c s6-log -d3 -b -- n3 s2000000 T /var/log/sing-box
+}
+foreground { install -d -o s6log -g s6log /run/log/sing-box }
+s6-setuidgid s6log exec -c s6-log -d3 -b -- n3 s2000000 T /run/log/sing-box
+LOG
+chmod 755 "$srv/run" "$log/run"
+s6 repository sync
+s6 set commit
+s6 live install
+EOF
+}
+
+# vpn_ctl start | stop | restart
+vpn_ctl() {
+    sudo s6 live "$1" sing-box >/dev/null
+}
+
+# vpn_boot: is it started at boot?
+vpn_boot() {
+    s6 set status 2>/dev/null | grep -qx 'sing-box-srv/active'
+}
+
+# vpn_boot_set yes | no
+vpn_boot_set() {
+    local how=disable
+    [ "$1" != yes ] || how=enable
+    sudo sh -c "s6 set $how sing-box && s6 set commit && s6 live install" >/dev/null
+}
+
 # ▄▀▀▀ █▀▀▀ ▄▀▀▀ ▄▀▀▀ ▀█▀ ▄▀▀▄ █▄  █
 #  ▀▀▄ █▀▀   ▀▀▄  ▀▀▄  █  █  █ █ ▀▄█
 # ▀▀▀  ▀▀▀▀ ▀▀▀  ▀▀▀  ▀▀▀  ▀▀  ▀   ▀
