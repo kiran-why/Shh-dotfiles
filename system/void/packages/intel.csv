@@ -1,0 +1,6 @@
+# system/void/packages/intel.csv - Intel graphics: built into Core CPUs, Arc (scripts/hardware prints "intel")
+# same format as common.csv
+
+,linux-firmware-intel,firmware the i915 / xe drivers load at boot
+,mesa-vulkan-intel,Vulkan for Intel (games and Vulkan programs)
+,intel-media-driver,video decoding on the graphics card (firefox videos)

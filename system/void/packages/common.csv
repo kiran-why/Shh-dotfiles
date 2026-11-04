@@ -1,0 +1,67 @@
+# system/void/packages/common.csv - installed on every machine (drivers: CARD.csv next to it)
+# tag,package,description: the tag stays empty, everything comes from xbps.
+# check names: sh install.sh --check
+# a runit service comes inside its package (/etc/sv), no *-s6 packages here
+
+# system: seatd instead of elogind
+,seatd,screen and input for sway without root (no elogind)
+,dumb_runtime_dir,creates XDG_RUNTIME_DIR at login (the PAM line is already in system-login)
+,dbus,message bus (iwd and bluetoothd need it; services.txt)
+
+# shell and terminal tools
+,zsh,login shell
+,zsh-autosuggestions,zsh: gray suggestions from the history while typing
+,zsh-syntax-highlighting,zsh: unknown commands turn gray while typing
+,neovim,text editor
+,fzf,fuzzy finder (launcher and the menus: volume, wifi, bluetooth, keys)
+,broot,file manager that shows folders as a tree (Super+F)
+,git,version control
+,fastfetch,system info when a terminal opens
+
+# desktop
+,sway,tiling wayland compositor (includes swaybar and swaymsg)
+,mesa-dri,OpenGL for sway on every graphics card and in a VM
+
+# wayland tools
+,foot,terminal emulator
+,libnotify,notify-send: send a notification from the shell or a script
+,swaybg,wallpaper
+,grim,screenshots
+,slurp,select a screen region (for grim and wf-recorder)
+,wf-recorder,screen recording (scripts/record on Ctrl+Print)
+,wl-clipboard,clipboard: wl-copy and wl-paste
+,cliphist,clipboard history (scripts/clipboard on Super+C)
+,xdg-utils,xdg-open and file types (config/mimeapps.list; cliphist keeps pictures as pictures)
+,jq,reads JSON (autotile, volume menu, bar clicks)
+,font-adobe-source-code-pro,Source Code Pro: the monospace font (foot, bar, mako, imv)
+,nerd-fonts-symbols-ttf,Symbols Nerd Font: icons only, the fallback for the bar and prompt
+,xdg-desktop-portal-wlr,screen sharing in the browser (sway/features/screenshare)
+
+# sound; pipewire has pipewire-pulse in it (PulseAudio programs: firefox and others)
+,pipewire,sound server
+,wireplumber,pipewire session manager
+,alsa-pipewire,ALSA programs play through pipewire (links in /etc/alsa/conf.d: distro.sh)
+
+# network
+,iwd,wifi daemon
+,openresolv,DNS config for iwd (no systemd-resolved)
+,dhcpcd,DHCP for wired network (iwd only does wifi)
+
+# bluetooth (headphones); bluetoothctl is in bluez
+,bluez,bluetooth daemon and bluetoothctl (scripts/bluetooth)
+,libspa-bluetooth,pipewire: sound to bluetooth headphones
+
+# misc (shh config: misc); man and man-pages are in base-system (mandoc)
+,firefox,browser (Super+B)
+,sing-box,vpn client for subscriptions (scripts/vpn)
+,mako,notifications (Super+N closes one)
+,mpv,video player
+,imv,image viewer (which program opens what: config/mimeapps.list)
+,btop,system monitor
+,7zip,archives: 7z x FILE
+,man-pages-devel,manual pages for the C library and system calls (man 2, man 3)
+,noto-fonts-emoji,emoji in the browser
+,noto-fonts-ttf,text font for pages and programs (latin, cyrillic, greek)
+
+# settings > xwayland
+,xorg-server-xwayland,X11 programs

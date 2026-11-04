@@ -1,0 +1,5 @@
+# system/void/packages/amd.csv - AMD graphics (scripts/hardware prints "amd")
+# same format as common.csv
+
+,linux-firmware-amd,firmware the amdgpu driver loads at boot
+,mesa-vulkan-radeon,Vulkan for AMD (games and Vulkan programs)

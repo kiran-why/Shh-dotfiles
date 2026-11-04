@@ -1,0 +1,33 @@
+# components/void_components.txt - parts shh config can turn off (Void names); everything else is always installed
+# name|packages|files (repo paths)|services|group|default
+# group = the tab in shh config: empty = features, misc = programs we always use;
+# xwayland = settings > xwayland. Anything else: sudo xbps-install NAME yourself.
+# default: empty = on, no = off
+# packages stay in system/void/packages/common.csv too; sway lines of a part go in config/sway/features/NAME
+
+record|wf-recorder|scripts/record config/sway/features/record|||
+bluetooth|bluez libspa-bluetooth|scripts/bluetooth config/sway/features/bluetooth|bluetoothd||
+clipboard|cliphist|scripts/clipboard config/cliphist config/sway/features/clipboard|||
+screenshare|xdg-desktop-portal-wlr|config/sway/features/screenshare|||
+autotile||scripts/autotile config/sway/features/autotile|||
+broot|broot|config/broot config/sway/features/broot|||
+fastfetch|fastfetch|config/fastfetch|||
+scratchpad||config/sway/features/scratchpad|||
+
+# misc: programs the setup counts on; sing-box: the vpn menu and our own
+# runit service shh-vpn (install.sh runs vpn setup; the package's sing-box service stays off)
+firefox|firefox|config/sway/features/firefox||misc|
+sing-box|sing-box|scripts/vpn config/sway/features/vpn|shh-vpn|misc|
+mpv|mpv|||misc|
+imv|imv|config/imv||misc|
+btop|btop|||misc|
+7zip|7zip|||misc|
+# man itself (mandoc) and man-pages come with base-system
+man|man-pages-devel|||misc|
+mako|mako|config/mako config/sway/features/mako||misc|
+emoji|noto-fonts-emoji|||misc|
+noto|noto-fonts-ttf|||misc|
+
+# settings > xwayland: noxwayland is on when xwayland is off (sway can't have both lines)
+noxwayland||config/sway/features/noxwayland||xwayland|
+xwayland|xorg-server-xwayland|||xwayland|
