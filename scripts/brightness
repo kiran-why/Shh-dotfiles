@@ -1,0 +1,91 @@
+#!/bin/sh
+# brightness - screen brightness menu: up / down, opened from the launcher.
+# brightness up | down: no menu, for the brightness keys, shows the level.
+# Writing needs the group video (install.sh: udev rule, relogin)
+
+set -eu
+
+# the step and the lowest level in %: 0 can turn the screen black
+step=5
+min=5
+
+menu() {
+    fzf --info=hidden --no-input "$@"
+}
+
+# the last header line: one space, so an empty line sits above the list
+gap=$(printf '\n ')
+
+# the screen backlights; a laptop with two graphics cards can have two
+devs=$(ls -d /sys/class/backlight/* 2>/dev/null || true)
+
+# level: the brightness of the first one in %
+level() {
+    local dev cur max
+    for dev in $devs; do
+        read -r cur <"$dev/brightness"
+        read -r max <"$dev/max_brightness"
+        echo $(((cur * 100 + max / 2) / max))
+        return
+    done
+}
+
+# set_level PERCENT: on every backlight, within min..100
+set_level() {
+    local pct="$1" dev max
+    [ "$pct" -ge "$min" ] || pct=$min
+    [ "$pct" -le 100 ] || pct=100
+    for dev in $devs; do
+        read -r max <"$dev/max_brightness"
+        # 2> first: a failed > would print before it
+        printf '%s\n' $(((pct * max + 50) / 100)) 2>/dev/null >"$dev/brightness" ||
+            { note='no permission: sh install.sh, then log in again'; return 1; }
+    done
+}
+
+# line PERCENT: ━━━━━─────
+line() {
+    local full=$((($1 + 5) / 10)) i=0 text=''
+    [ "$full" -gt 10 ] && full=10
+    while [ "$i" -lt 10 ]; do
+        if [ "$i" -lt "$full" ]; then text="$text━"; else text="$text─"; fi
+        i=$((i + 1))
+    done
+    printf '%s' "$text"
+}
+
+now() {
+    local pct
+    pct=$(level)
+    printf '󰃠 %s %s%%' "$(line "$pct")" "$pct"
+}
+
+# the same tag makes mako replace the last one instead of stacking them
+notify_level() {
+    notify-send -a brightness -t 1500 -h string:x-dunst-stack-tag:brightness "$(now)" "$note" || true
+}
+
+note=''
+if [ -z "$devs" ]; then
+    # the keys: nothing to do; the menu says why
+    [ -z "${1:-}" ] || exit 0
+    printf '' | menu --border-label=' brightness ' --header="no screen backlight here (a desktop monitor?)$gap" || true
+    exit 0
+fi
+
+case "${1:-}" in
+    up)   set_level $(($(level) + step)) || true; notify_level; exit 0 ;;
+    down) set_level $(($(level) - step)) || true; notify_level; exit 0 ;;
+esac
+
+# pos keeps the cursor on the last picked line
+pos=1
+while :; do
+    pick=$(printf '%s\n' '(+) brightness' '(-) brightness' |
+        menu --border-label=' brightness ' --header="$(now)${note:+
+$note}$gap" --bind="load:pos($pos)") || exit 0
+    case "$pick" in
+        '(+) brightness') pos=1; set_level $(($(level) + step)) || true ;;
+        '(-) brightness') pos=2; set_level $(($(level) - step)) || true ;;
+    esac
+done

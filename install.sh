@@ -307,6 +307,15 @@ configure_system() {
         info "pc speaker disabled"
     fi
 
+    # the group video may change the screen brightness (scripts/brightness);
+    # trigger: the rule works now, not after a reboot
+    write_root /etc/udev/rules.d/90-shh-backlight.rules \
+        "$(printf '%s\n%s' \
+            'ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chgrp video /sys/class/backlight/%k/brightness"' \
+            'ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chmod g+w /sys/class/backlight/%k/brightness"')"
+    ! command -v udevadm >/dev/null || sudo udevadm trigger --action=add --subsystem-match=backlight || true
+    info "brightness: group video"
+
     ok "done"
 }
 

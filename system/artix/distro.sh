@@ -6,8 +6,8 @@
 # distro.sh - what is Artix (s6) only: pacman, AUR, s6 services, the login
 # loaded after lib.sh by install.sh and shh; every distro has the same functions
 
-# seat: screen and input for sway; audio: the sound card (no elogind)
-seat_groups=seat,audio
+# seat: screen and input for sway; audio: the sound card (no elogind); video: the screen brightness
+seat_groups=seat,audio,video
 # https, not ping: ICMP is often blocked; a few sites, one can be down or blocked
 online_sites='https://artixlinux.org https://archlinux.org https://github.com'
 pkg_remove='sudo pacman -Rs'
