@@ -112,16 +112,21 @@ svc_apply() {
 }
 
 # svc_check SVC (shh doctor): 0 up, 1 down (prints the state), 2 not on,
-# 3 can't read the state (sv status may need root)
+# 3 can't read the state. sv status works for root only (runsv makes
+# supervise/ 0700), so a user looks at the processes: runsv SVC runs the
+# service as its child. A log/ would be a child too: then 3
 svc_check() {
-    local state
+    local state pid
     [ -e "/var/service/$1" ] || return 2
-    state=$(sv status "/var/service/$1" 2>/dev/null) || return 3
-    case "$state" in
-        run:*)    return 0 ;;
-        *denied*) return 3 ;;
-        *)        echo " ${state%%:*}"; return 1 ;;
-    esac
+    if state=$(sv status "/var/service/$1" 2>/dev/null); then
+        case "$state" in
+            run:*) return 0 ;;
+            *)     echo " ${state%%:*}"; return 1 ;;
+        esac
+    fi
+    [ ! -d "/var/service/$1/log" ] || return 3
+    pid=$(pgrep -x -f "runsv $1") || { echo " runsv not running"; return 1; }
+    pgrep -P "$pid" >/dev/null || { echo " down"; return 1; }
 }
 
 # the vpn service (scripts/vpn): our own, as root. The package's sing-box
