@@ -27,9 +27,12 @@ rec() {
 # cable, else wifi, else crossed out gray wifi.
 # tunnels and bridges have no "device", so they don't count as a cable
 net() {
-    local dev wired=0 wifi=0
+    local dev st wired=0 wifi=0
     for dev in /sys/class/net/*; do
-        [ "$(cat "$dev/operstate" 2>/dev/null)" = "up" ] || continue
+        # read, not cat: no process per interface every second
+        st=
+        read -r st 2>/dev/null <"$dev/operstate" || :
+        [ "$st" = "up" ] || continue
         if [ -d "$dev/wireless" ]; then
             wifi=1
         elif [ -e "$dev/device" ]; then
@@ -58,12 +61,21 @@ line() {
 
 # gray when muted or no pipewire
 vol() {
-    local out pct
+    local out v int frac pct
     if ! out=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null); then
         block vol "󰖁 $(line 0)" "$gray"
         return
     fi
-    pct=$(echo "$out" | awk '{printf "%.0f", $2 * 100}')
+    # "Volume: 0.57 [MUTED]": wpctl prints %.2f in the C locale, so
+    # int*100 + the two digits is exact; ${frac#0}: $((08)) is octal in dash
+    v=${out#Volume: }
+    v=${v%% *}
+    int=${v%.*}
+    frac=${v#*.}
+    case "$int$frac" in
+        *[!0-9]*|'') pct=$(echo "$out" | awk '{printf "%.0f", $2 * 100}') ;;
+        *) frac=${frac#0}; pct=$((int * 100 + ${frac:-0})) ;;
+    esac
     case "$out" in
         *MUTED*) block vol "󰖁 $(line "$pct")" "$gray" ;;
         *) block vol "󰕾 $(line "$pct")" "$white" ;;
@@ -98,10 +110,11 @@ bat() {
     local b cap status icon color low
     for b in /sys/class/power_supply/BAT*; do
         [ -r "$b/capacity" ] || continue
-        cap=$(cat "$b/capacity")
+        read -r cap <"$b/capacity"
         # some batteries report a bit over 100
         [ "$cap" -le 100 ] || cap=100
-        status=$(cat "$b/status" 2>/dev/null)
+        status=
+        read -r status 2>/dev/null <"$b/status" || :
         color=$white
         low=0
         if [ "$status" = Charging ]; then
