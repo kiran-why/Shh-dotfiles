@@ -222,11 +222,18 @@ print_system() {
 uninstall_all() {
     [ -f "$list" ] || error "nothing to remove: no $list"
 
-    local k dst
+    local k dst dir
     while IFS="$tab" read -r k dst; do
         remove_entry "$k" "$dst"
     done <"$list"
-    [ "$dry_run" = 1 ] || { rm "$list"; rmdir "${list%/*}" 2>/dev/null || true; }
+    if [ "$dry_run" = 0 ]; then
+        rm "$list"
+        # state/shh, then state and .local if they are empty now (like remove_entry)
+        dir="${list%/*}"
+        while [ "$dir" != "$HOME" ] && rmdir "$dir" 2>/dev/null; do
+            dir="${dir%/*}"
+        done
+    fi
 
     echo
     echo "done: $done_count removed, $backups restored, $skipped changed or not there"
