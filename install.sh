@@ -1,4 +1,5 @@
 #!/bin/sh
+# shellcheck disable=SC2154 # online_sites, seat_groups, pkg_remove: distro.sh
 # ASCII : https://patorjk.com/software/taag/#p=display&f=Linguaholic+Mini+Block&t=SHH-DOTFILES&x=none&v=4&h=4&w=80&we=false
 
 # ▀ ▄▄▄   ▄▄▄ ▄█▄   ▄▄▄  █ █    ▄▄▄ █▄▄  
@@ -294,6 +295,7 @@ leftovers() {
     local pkgs answer
     pkgs=$(off_items "$components_file" 2)
     # with no names pkg_leftovers prints every installed package
+    # shellcheck disable=SC2086 # the names, one per word
     [ -z "$pkgs" ] || pkgs=$(pkg_leftovers $pkgs)
     if [ -n "$pkgs" ]; then
         warn "not needed anymore: $pkg_remove $pkgs"
@@ -301,7 +303,9 @@ leftovers() {
         if [ -t 0 ]; then
             printf '  remove them now? [y/N] '
             read -r answer || answer=
-            # the package manager lists what goes (with deps) and asks again
+            # the package manager lists what goes (with deps) and asks again;
+            # unquoted: the command with its options, then one name per word
+            # shellcheck disable=SC2086
             case "$answer" in
                 y|Y) $pkg_remove $pkgs || warn "not removed" ;;
             esac

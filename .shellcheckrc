@@ -1,0 +1,7 @@
+# .shellcheckrc - shellcheck for the whole repo (CI: .github/workflows/check.yml)
+# POSIX sh, also for files without a #! line (lib/, distro.sh, .zprofile)
+shell=sh
+
+# SC3043 local: not POSIX, but dash, bash and busybox sh have it
+# SC1090, SC1091 ". FILE": the path is known only at run time (repo or share, the distro)
+disable=SC3043,SC1090,SC1091

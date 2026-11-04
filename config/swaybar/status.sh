@@ -126,7 +126,7 @@ bat() {
         else
             # empty to full, one per 10%
             set -- 󰂎 󰁺 󰁻 󰁼 󰁽 󰁾 󰁿 󰂀 󰂁 󰂂 󰁹
-            shift $((($cap + 5) / 10))
+            shift $(((cap + 5) / 10))
             icon=$1
         fi
 

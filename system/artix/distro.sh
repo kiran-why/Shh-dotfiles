@@ -1,3 +1,4 @@
+# shellcheck disable=SC2034,SC2154 # its variables are read by install.sh, shh, link.sh; hardware: install.sh
 # ASCII : https://patorjk.com/software/taag/#p=display&f=Linguaholic+Mini+Block&t=SHH-DOTFILES&x=none&v=4&h=4&w=80&we=false
 
 #  ▄▄█ ▀  ▄▄▄ ▄█▄  ▄ ▄▄  ▄▄     ▄▄▄ █▄▄
@@ -214,8 +215,11 @@ svc_apply() {
 
     sudo s6 set commit || error "s6 set commit failed"
     sudo s6 live install || error "s6 live install failed"
-    # live install only swaps the db: services new to it stay down until reboot
+    # live install only swaps the db: services new to it stay down until reboot.
+    # unquoted: one service per word
+    # shellcheck disable=SC2086
     sudo s6 live start $1 || error "cannot start the services"
+    # shellcheck disable=SC2086
     [ -z "$disabled" ] || sudo s6 live stop $disabled || warn "cannot stop$disabled"
 }
 

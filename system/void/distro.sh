@@ -1,3 +1,4 @@
+# shellcheck disable=SC2034,SC2154 # its variables are read by install.sh, shh, link.sh; hardware: install.sh
 # ASCII : https://patorjk.com/software/taag/#p=display&f=Linguaholic+Mini+Block&t=SHH-DOTFILES&x=none&v=4&h=4&w=80&we=false
 
 #  ▄▄█ ▀  ▄▄▄ ▄█▄  ▄ ▄▄  ▄▄     ▄▄▄ █▄▄
@@ -15,7 +16,7 @@ pkg_remove='sudo xbps-remove -R'
 
 # distro_check: stop when this system can't take the setup
 distro_check() {
-    [ -d /var/service ] && command -v sv >/dev/null || error "runit is not the init system here"
+    { [ -d /var/service ] && command -v sv >/dev/null; } || error "runit is not the init system here"
 
     # NVIDIA's driver is built for glibc only; on musl nouveau (mesa) runs the card
     case "$(xbps-uhelper arch 2>/dev/null)" in

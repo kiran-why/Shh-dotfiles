@@ -6,6 +6,7 @@ set -eu
 
 # the focused window and its parent:
 # "id type fullscreen width height parent_layout siblings"
+# shellcheck disable=SC2016 # $parent, $win: jq variables, not the shell's
 focused='
 [.. | objects | select(.nodes? and any(.nodes[]; .focused))]
 | first // empty
@@ -23,6 +24,7 @@ while read -r change; do
     info=$(swaymsg -t get_tree | jq -r "$focused") || continue
     [ -n "$info" ] || continue
 
+    # shellcheck disable=SC2086 # split the line into $1 ... $7
     set -- $info
     id=$1 type=$2 fullscreen=$3 width=$4 height=$5 layout=$6 siblings=$7
 

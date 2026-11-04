@@ -1,4 +1,5 @@
 #!/bin/sh
+# shellcheck disable=SC2154 # vpn_svc: distro.sh
 # vpn - sing-box from a subscription (shh config: misc)
 # vpn: the menu: on/off, locations, add or update the subscription, start at boot
 # vpn update: download the subscription, make /etc/sing-box/config.json, check it

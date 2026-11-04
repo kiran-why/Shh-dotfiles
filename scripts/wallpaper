@@ -6,6 +6,8 @@ set -eu
 
 dir="$HOME/wallpapers"
 
+# ls -t: the newest one; POSIX find can't sort by time, and the names are ours
+# shellcheck disable=SC2012
 pic=$(ls -t "$dir"/*.png "$dir"/*.PNG "$dir"/*.jpg "$dir"/*.JPG \
     "$dir"/*.jpeg "$dir"/*.JPEG 2>/dev/null | head -n 1) || true
 
