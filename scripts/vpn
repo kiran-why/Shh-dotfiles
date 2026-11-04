@@ -85,7 +85,12 @@ links() {
                     if (fp !~ /^(chrome|firefox|edge|safari|360|qq|ios|android|random|randomized)$/) fp = "chrome"
                     tls = tls ",\"utls\":{\"enabled\":true,\"fingerprint\":" q(fp) "}"
                 }
-                if (p["alpn"] != "") { a = p["alpn"]; gsub(/,/, "\",\"", a); tls = tls ",\"alpn\":[\"" a "\"]" }
+                # each value through q(): a link must not write raw JSON (this runs as root)
+                if (p["alpn"] != "") {
+                    m = split(p["alpn"], al, ","); a = q(al[1])
+                    for (k = 2; k <= m; k++) a = a "," q(al[k])
+                    tls = tls ",\"alpn\":[" a "]"
+                }
                 if (sec == "reality") tls = tls ",\"reality\":{\"enabled\":true,\"public_key\":" q(p["pbk"]) ",\"short_id\":" q(p["sid"]) "}"
                 out = out ",\"tls\":{" tls "}"
             }
