@@ -1,7 +1,7 @@
 # ~/.config/mako/config - notifications (man 5 mako)
 # try it: notify-send hello   /   notify-send -u critical oops
 
-font=JetBrainsMono Nerd Font 10
+font=Source Code Pro, Symbols Nerd Font 10
 background-color=#000000
 text-color=#e6e6e6
 border-color=#5a5a5a

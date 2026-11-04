@@ -3,6 +3,6 @@
 
 [options]
 background = 000000
-overlay_font = JetBrainsMono Nerd Font:10
+overlay_font = Source Code Pro:10
 overlay_text_color = e6e6e6
 overlay_background_color = 000000

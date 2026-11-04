@@ -32,7 +32,8 @@
 ,cliphist,clipboard history (scripts/clipboard on Super+C)
 ,xdg-utils,xdg-open and file types (config/mimeapps.list; cliphist keeps pictures as pictures)
 ,jq,reads JSON (autotile, volume menu, bar clicks)
-,ttf-jetbrains-mono-nerd,font with icons (bar)
+,adobe-source-code-pro-fonts,Source Code Pro: the monospace font (foot, bar, mako, imv)
+,ttf-nerd-fonts-symbols,Symbols Nerd Font: icons only, the fallback for the bar and prompt
 ,xdg-desktop-portal-wlr,screen sharing in the browser (sway/features/screenshare)
 
 # sound
