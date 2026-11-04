@@ -64,5 +64,5 @@
 ,noto-fonts-emoji,emoji in the browser
 ,noto-fonts-ttf,text font for pages and programs (latin, cyrillic, greek)
 
-# settings > xwayland
-,xorg-server-xwayland,X11 programs
+# no xorg-server-xwayland: Void's sway depends on it, so it is always there;
+# settings > xwayland only turns it on in sway (config/sway/features/noxwayland)
