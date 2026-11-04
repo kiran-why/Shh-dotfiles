@@ -288,7 +288,8 @@ config() {
 #  ▀▀  ▀    ▀▀▀  ▀  ▀   ▀   ▀▀▀▀ 
 
 update() {
-    local repo tmp
+    # tmp is not local: the EXIT trap runs after update returns
+    local repo
 
     # installed with --link: update the repo the links point to
     if [ -L "$share/lib.sh" ]; then

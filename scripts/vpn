@@ -168,7 +168,8 @@ update() {
         return 0
     fi
 
-    local url tmp secret
+    # tmp is not local: the EXIT trap runs after update returns
+    local url secret
     [ -s "$dir/subscription" ] || { echo "no subscription link: vpn > paste the subscription link" >&2; exit 1; }
     url=$(head -n 1 "$dir/subscription")
     tmp=$(mktemp -d)
