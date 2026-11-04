@@ -1,0 +1,25 @@
+#!/bin/sh
+# maxhz - every screen at the highest refresh rate of its resolution, also
+# a screen plugged in later. Started once by sway (sway/features/maxhz)
+
+set -eu
+
+# a command for each screen not at its highest rate yet: only a real change,
+# else the output event it sends would start this again and again
+faster='
+.[] | select(.active) | .name as $n | .current_mode as $c
+| [.modes[] | select(.width == $c.width and .height == $c.height)] | max_by(.refresh)
+| select(.refresh > $c.refresh)
+| "output \"\($n)\" mode \(.width)x\(.height)@\(.refresh / 1000)Hz"
+'
+
+apply() {
+    swaymsg -t get_outputs | jq -r "$faster" | while IFS= read -r cmd; do
+        swaymsg "$cmd" >/dev/null
+    done
+}
+
+apply
+swaymsg -t subscribe -m '["output"]' | while read -r _; do
+    apply
+done

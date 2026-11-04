@@ -173,6 +173,7 @@ settings_lines() {
     # distro_settings: distro.sh (Artix: aur helper, pacman)
     ! command -v distro_settings >/dev/null || distro_settings
     yes_no nobeep 'mute the motherboard beeper'
+    yes_no maxhz 'highest refresh rate of every screen'
     yes_no xwayland 'X11 programs; after a relogin' no
 }
 
