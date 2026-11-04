@@ -6,12 +6,11 @@
 {
     "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
     "logo": {
-        // the logo of the distro fastfetch detects; small or big per distro: ff_logo in ~/.zshrc.
-        // all of its colors white ($1, $2: the big Void logo has two)
-        "type": "small",
+        // our own logo on every distro: pick a file in logos/ (no "$" in it: $1 … $9 are colors)
+        "type": "file",
+        "source": "~/.config/fastfetch/logos/bloody.txt",
         "color": {
-            "1": "white",
-            "2": "white"
+            "1": "white"
         },
         "padding": {
             "right": 3
