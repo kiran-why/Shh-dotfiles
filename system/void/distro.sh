@@ -78,7 +78,7 @@ pkg_leftovers() {
 # xbps first: while it is old, xbps-install -u refuses to update anything else
 distro_prepare() {
     step "system update"
-    sudo xbps-install -Suy xbps </dev/null || error "cannot update xbps"
+    sudo xbps-install -Suy xbps </dev/null || error "cannot update xbps (no internet?)"
     sudo xbps-install -uy </dev/null || error "system update failed"
     ok "system updated"
 }

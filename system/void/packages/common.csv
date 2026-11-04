@@ -7,6 +7,7 @@
 ,seatd,screen and input for sway without root (no elogind)
 ,dumb_runtime_dir,creates XDG_RUNTIME_DIR at login (the PAM line is already in system-login)
 ,dbus,message bus (iwd and bluetoothd need it; services.txt)
+,curl,downloads: install.sh and wifi check the internet, vpn gets the subscription (not in base-system)
 
 # shell and terminal tools
 ,zsh,login shell

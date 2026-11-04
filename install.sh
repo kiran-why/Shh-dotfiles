@@ -92,17 +92,20 @@ check_system() {
     [ -f "$services_file" ]     || error "not found: $services_file"
     [ -f "$components_file" ]   || error "not found: $components_file"
 
-    # online_sites: distro.sh
+    # online_sites: distro.sh. No curl on a fresh system (Void base):
+    # skipped, the first download of the package manager fails without internet
     local site online=0
+    if ! command -v curl >/dev/null; then
+        info "no curl yet (it comes with the packages), internet not checked"
+        online=skipped
+    fi
     for site in $online_sites; do
-        if curl -s -o /dev/null -m 10 "$site"; then
-            online=1
-            break
-        fi
+        [ "$online" = 0 ] || break
+        ! curl -s -o /dev/null -m 10 "$site" || online=1
     done
-    [ "$online" = 1 ] || error "no internet connection"
+    [ "$online" != 0 ] || error "no internet connection"
 
-    ok "$distro, internet, sudo"
+    if [ "$online" = 1 ]; then ok "$distro, internet, sudo"; else ok "$distro, sudo"; fi
 }
 
 # the menu on the first run; later shh config changes the choices
