@@ -10,7 +10,7 @@
 ,zsh,login shell
 ,zsh-autosuggestions,zsh: gray suggestions from the history while typing
 ,zsh-syntax-highlighting,zsh: unknown commands turn gray while typing
-,neovim,text editor
+,vim,text editor (config/vim/vimrc)
 ,fzf,fuzzy finder (launcher and the menus: volume, wifi, bluetooth, keys)
 ,broot,file manager that shows folders as a tree (Super+F)
 ,git,version control

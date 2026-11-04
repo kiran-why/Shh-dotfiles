@@ -443,7 +443,7 @@ color() {
         sed -i --follow-symlinks "s/$old/$new/gI" "$f"
         ok "$f"
     done
-    info "to see it: Super+Shift+C (sway, bar), makoctl reload, new foot and nvim windows"
+    info "to see it: Super+Shift+C (sway, bar), makoctl reload, new foot and vim windows"
 }
 
 # █▄ ▄█ ▄▀▀▄ ▀█▀ █▄  █ 
