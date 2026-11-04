@@ -1,5 +1,4 @@
 #!/bin/sh
-# shellcheck disable=SC2154 # distro, red, sym_bak, shh_config: lib.sh
 # ASCII : https://patorjk.com/software/taag/#p=display&f=Linguaholic+Mini+Block&t=SHH-DOTFILES&x=none&v=4&h=4&w=80&we=false
 
 # █ ▀ ▄▄▄  █  ▄    ▄▄▄ █▄▄  
@@ -42,7 +41,7 @@ backed_up=''
 
 # copies by default; once installed with --link, it stays links
 mode=copy
-[ ! -L "$share_dir/lib.sh" ] || mode='link'
+[ ! -L "$share_dir/lib.sh" ] || mode=link
 
 [ -f "$script_dir/lib.sh" ] || { echo "lib.sh not found in $script_dir" >&2; exit 1; }
 . "$script_dir/lib.sh"
@@ -332,8 +331,8 @@ install_all() {
 for arg in "$@"; do
     case "$arg" in
         -n|--dry-run)   dry_run=1 ;;
-        --link)         mode='link' ;;
-        --copy)         mode='copy' ;;
+        --link)         mode=link ;;
+        --copy)         mode=copy ;;
         -u|--uninstall) uninstall=1 ;;
         -h|--help)      usage; exit 0 ;;
         *)              usage >&2; error "unknown option: $arg" ;;

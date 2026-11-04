@@ -1,5 +1,4 @@
 #!/bin/sh
-# shellcheck disable=SC2154 # distro, shh_config: lib.sh; seat_groups: distro.sh
 # ASCII : https://patorjk.com/software/taag/#p=display&f=Linguaholic+Mini+Block&t=SHH-DOTFILES&x=none&v=4&h=4&w=80&we=false
 
 #  ▄▄▄ █▄▄  █▄▄  
@@ -71,7 +70,7 @@ caps_toggle${tab}Caps Lock
 lalt_lshift_toggle${tab}Left Alt+Left Shift"
 
 # copies or links now: link.sh keeps what is installed
-if [ -L "$HOME/.local/share/shh/lib.sh" ]; then mode_now='link'; else mode_now='copy'; fi
+if [ -L "$HOME/.local/share/shh/lib.sh" ]; then mode_now=link; else mode_now=copy; fi
 
 # set_value NAME VALUE: change NAME in $shh_config, or add it
 set_value() {
@@ -357,7 +356,6 @@ check_packages() {
     done | without "$(off_items "$components_file" 2)")
 
     # pkg_missing (distro.sh) prints the missing ones
-    # shellcheck disable=SC2086 # the names, one per word
     missing=$(pkg_missing $names)
 
     for pkg in $missing; do
@@ -413,7 +411,7 @@ color() {
     [ "$#" -eq 2 ] || { usage >&2; exit 1; }
     [ -f "$list" ] || error "no $list (sh lib/link.sh)"
 
-    local old new files c f
+    local old new files c k f
     old=$(printf '%s' "${1#\#}" | tr 'A-F' 'a-f')
     new=$(printf '%s' "${2#\#}" | tr 'A-F' 'a-f')
     for c in "$old" "$new"; do
@@ -421,7 +419,7 @@ color() {
     done
 
     # configs and scripts; not shh itself (its help has a color in it)
-    files=$(while IFS="$tab" read -r _ f; do
+    files=$(while IFS="$tab" read -r k f; do
         case "$f" in "$share"/*|*/shh) continue ;; esac
         printf '%s\n' "$f"
     done <"$list")

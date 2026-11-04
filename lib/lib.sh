@@ -30,7 +30,6 @@ case "${TERM:-}" in
     *)     sym_ok='✓' sym_info='·' sym_fail='✗' ;;
 esac
 sym_warn='!'
-# shellcheck disable=SC2034 # link.sh uses it
 sym_bak='~'
 
 # msg COLOR SYMBOL TEXT
@@ -112,7 +111,6 @@ EOF
 $(read_list "$1")
 EOF
     # unquoted on purpose: one word per line
-    # shellcheck disable=SC2086
     printf '%s\n' $off | grep -v '^$' | without "$(printf '%s\n' $on | grep -v '^$')"
 }
 
@@ -159,7 +157,6 @@ EOF
 logo_small() {
     printf '%s%-26s%s  %s%s%s\n' "$white" '   _____ __    __' "$reset" "$white" '' "$reset"
     printf '%s%-26s%s  %s%s%s\n' "$white" '  / ___// /_  / /_' "$reset" "$white" '     __     __  ____ __' "$reset"
-    # shellcheck disable=SC1003 # ASCII art: the \ before ' is drawn, not an escape
     printf '%s%-26s%s  %s%s%s\n' "$white" '  \__ \/ __ \/ __ \' "$reset" "$white" ' ___/ /__  / /_/ _(_) /__ ___' "$reset"
     printf '%s%-26s%s  %s%s%s\n' "$white" ' ___/ / / / / / / / _ _ _' "$reset" "$white" '/ _  / _ \/ __/ _/ / / -_|_-<' "$reset"
     printf '%s%-26s%s  %s%s%s\n' "$white" '/____/_/ /_/_/ /_/ (_|_|_)' "$reset" "$white" '\_,_/\___/\__/_//_/_/\__/___/' "$reset"
