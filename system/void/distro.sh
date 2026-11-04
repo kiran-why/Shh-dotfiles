@@ -134,13 +134,16 @@ svc_check() {
 vpn_svc=shh-vpn
 
 # vpn_setup RUN: make the service that runs RUN. Known to runit after this,
-# but not started at boot: a "down" file in it (vpn > start at boot removes it)
+# but not started at boot: a "down" file in it (vpn > start at boot removes it).
+# log/ like Void's own services (vlogger to syslog): without it
+# sing-box writes over the login prompt on the console
 vpn_setup() {
     sudo sh -s -- "$1" <<'EOF' || error "cannot make the runit service shh-vpn"
 set -e
-mkdir -p /etc/sv/shh-vpn
+mkdir -p /etc/sv/shh-vpn/log
 printf '%s\n' '#!/bin/sh' 'exec 2>&1' "exec $1" >/etc/sv/shh-vpn/run
-chmod 755 /etc/sv/shh-vpn/run
+printf '%s\n' '#!/bin/sh' 'exec vlogger -t shh-vpn -p daemon' >/etc/sv/shh-vpn/log/run
+chmod 755 /etc/sv/shh-vpn/run /etc/sv/shh-vpn/log/run
 if [ ! -e /var/service/shh-vpn ]; then
     touch /etc/sv/shh-vpn/down
     ln -s /etc/sv/shh-vpn /var/service/
