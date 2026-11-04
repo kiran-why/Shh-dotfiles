@@ -107,7 +107,7 @@ shh color d7263d ff0000    # change a color in every config (the palette: config
 
 Your choices are in `~/.config/shh/config` (`shh config` or by hand), so `shh update` remembers them.
 A part turned off loses its keys, scripts and configs, its service is turned off; its packages stay,
-`shh update` prints the line to remove them (`pacman -Rs` / `xbps-remove -R`).
+`shh update` asks whether to remove them (`pacman -Rs` / `xbps-remove -R`, default no).
 
 `install.sh` also updates the whole system (`pacman -Syu`, `xbps-install -Su`): Artix and Void are rolling,
 new packages must not be installed on top of an outdated system.

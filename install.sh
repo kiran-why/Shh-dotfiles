@@ -289,13 +289,24 @@ link_dotfiles() {
     DOTS_NO_LOGO=1 sh "$dots_path/lib/link.sh" ${mode:+"--$mode"}
 }
 
-# what parts turned off in shh config left behind; removing is up to you
+# what parts turned off in shh config left behind; removed only on "y"
 leftovers() {
-    local pkgs
+    local pkgs answer
     pkgs=$(off_items "$components_file" 2)
     # with no names pkg_leftovers prints every installed package
     [ -z "$pkgs" ] || pkgs=$(pkg_leftovers $pkgs)
-    [ -z "$pkgs" ] || warn "not needed anymore: $pkg_remove $pkgs"
+    if [ -n "$pkgs" ]; then
+        warn "not needed anymore: $pkg_remove $pkgs"
+        # no terminal (run by a script): the hint only
+        if [ -t 0 ]; then
+            printf '  remove them now? [y/N] '
+            read -r answer || answer=
+            # the package manager lists what goes (with deps) and asks again
+            case "$answer" in
+                y|Y) $pkg_remove $pkgs || warn "not removed" ;;
+            esac
+        fi
+    fi
 
     if [ "$(setting nobeep yes)" = no ] && [ -e /etc/modprobe.d/nobeep.conf ]; then
         warn "the pc speaker is still off: sudo rm /etc/modprobe.d/nobeep.conf"
