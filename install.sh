@@ -240,6 +240,35 @@ configure_network() {
     fi
     info "dhcpcd: wired only"
 
+    # DNS (shh config -> settings -> dns): dhcp = the stock file, the network's servers
+    local dns conf
+    dns=$(setting dns dhcp)
+    conf='# Configuration for resolvconf(8)
+# See resolvconf.conf(5) for details
+
+resolv_conf=/etc/resolv.conf
+# If you run a local name server, you should uncomment the below line and
+# configure your subscribers configuration files below.
+#name_servers=127.0.0.1'
+    if [ "$dns" != dhcp ]; then
+        # root sources this file as sh: addresses only
+        case "$dns" in
+            *[!0-9A-Fa-f.:,]*) error "dns: not IP addresses: $dns (shh config)" ;;
+        esac
+        # only these: musl asks every nameserver at once and takes the first answer
+        conf="$conf
+
+# shh config: dns
+resolv_conf_passthrough=NULL
+name_servers=\"$(printf '%s' "$dns" | tr ',' ' ')\""
+    fi
+    # rewritten only on a change, so shh update leaves resolv.conf alone
+    if [ "$(cat /etc/resolvconf.conf 2>/dev/null)" != "$conf" ]; then
+        write_root /etc/resolvconf.conf "$conf"
+        sudo resolvconf -u || warn "resolvconf -u failed"
+    fi
+    info "dns: $dns"
+
     ok "done"
 }
 

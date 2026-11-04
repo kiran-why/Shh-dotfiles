@@ -68,6 +68,11 @@ ctrl_shift_toggle${tab}Ctrl+Shift
 win_space_toggle${tab}Super+Space
 caps_toggle${tab}Caps Lock
 lalt_lshift_toggle${tab}Left Alt+Left Shift"
+# DNS servers, comma-separated (install.sh: /etc/resolvconf.conf); others: by hand in $shh_config
+dns_list="dhcp${tab}dhcp         from the network
+1.1.1.1,1.0.0.1${tab}Cloudflare   1.1.1.1
+9.9.9.9,149.112.112.112${tab}Quad9        9.9.9.9
+8.8.8.8,8.8.4.4${tab}Google       8.8.8.8"
 
 # copies or links now: link.sh keeps what is installed
 if [ -L "$HOME/.local/share/shh/lib.sh" ]; then mode_now=link; else mode_now=copy; fi
@@ -164,6 +169,7 @@ settings_lines() {
     line mode '' mode "$(setting mode "$mode_now")"
     line layouts '' layouts "$(setting layouts us,ru)"
     line layout_toggle '' 'switch layout' "$(label_of "$toggles" "$(setting layout_toggle alt_shift_toggle)")"
+    line dns '' dns "$(setting dns dhcp)"
     # distro_settings: distro.sh (Artix: aur helper, pacman)
     ! command -v distro_settings >/dev/null || distro_settings
     yes_no nobeep 'mute the motherboard beeper'
@@ -176,6 +182,7 @@ settings_act() {
         mode)          value=$(choose mode "$modes") ;;
         layout_toggle) value=$(choose 'switch layout' "$toggles") ;;
         aur_helper)    value=$(choose 'aur helper' "$helpers") ;;
+        dns)           value=$(choose dns "$dns_list") ;;
         layouts)
             loop layouts 'Enter: on / off   Esc: back   the first one is the default' layout_lines layout_act
             note="layouts: $(setting layouts us,ru)"
