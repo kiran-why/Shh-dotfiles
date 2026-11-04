@@ -2,14 +2,17 @@
 // rows are "│ icon Name │ │ value │"; a value is padded to 34 columns
 // ({name<34}), keep that width when adding a row or the box breaks.
 // colors: {#90} border, {#37} names, {#97} values, {#} reset.
+// OS icon: {icon} = fastfetch's own for the platform (Linux: the penguin), the logo shows the distro.
 // check: fastfetch -c ~/.config/fastfetch/config.jsonc
 {
     "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
     "logo": {
-        // the small logo of the distro fastfetch detects; it has one color ($1)
+        // the logo of the distro fastfetch detects; small or big per distro: ff_logo in ~/.zshrc.
+        // all of its colors white ($1, $2: the big Void logo has two)
         "type": "small",
         "color": {
-            "1": "white"
+            "1": "white",
+            "2": "white"
         },
         "padding": {
             "right": 3
@@ -25,7 +28,7 @@
     "modules": [
         // one box: system and hardware
         { "type": "custom", "format": "{#90}┌────────────┐ ┌────────────────────────────────────┐" },
-        { "type": "os",         "key": "{#90}│{#37}  OS       {#90}│", "format": "{#90}│{#97} {pretty-name<34} {#90}│{#}" },
+        { "type": "os",         "key": "{#90}│{#37} {icon} OS       {#90}│", "format": "{#90}│{#97} {pretty-name<34} {#90}│{#}" },
         { "type": "kernel",     "key": "{#90}│{#37}  Kernel   {#90}│", "format": "{#90}│{#97} {release<34} {#90}│{#}" },
         { "type": "initsystem", "key": "{#90}│{#37}  Init     {#90}│", "format": "{#90}│{#97} {name<34} {#90}│{#}" },
         { "type": "uptime",     "key": "{#90}│{#37}  Uptime   {#90}│", "format": "{#90}│{#97} {formatted<34} {#90}│{#}" },

@@ -12,11 +12,13 @@
                                 
 # the folder, then "<distro icon> :" (red after an error); %F{N} = foot.ini color.
 # no icon on the TTY: no nerd font there
-# icons: Nerd Fonts nf-linux-*, picked by ID in /etc/os-release; others get tux
+# icons: Nerd Fonts nf-linux-*, picked by ID in /etc/os-release; others get tux.
+# ff_logo: the fastfetch logo at the bottom (small, or builtin = the big one)
 distro_id=$([ -r /etc/os-release ] && . /etc/os-release && echo "${ID:-}")
+ff_logo=small
 case "$distro_id" in
     artix)  icon=$'\uf31f' ;;
-    void)   icon=$'\uf32e' ;;
+    void)   icon=$'\uf32e'; ff_logo=builtin ;;
     gentoo) icon=$'\uf30d' ;;
     *)      icon=$'\uf31a' ;;
 esac
@@ -100,7 +102,8 @@ if [ -r "$plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]; then
 fi
 unset plugins style
 
-# system info in every new foot window
+# system info in every new foot window; ff_logo: the prompt block at the top
 if [ "$TERM" = foot ] && command -v fastfetch >/dev/null; then
-    fastfetch
+    fastfetch --logo-type "$ff_logo"
 fi
+unset ff_logo
