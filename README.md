@@ -120,6 +120,8 @@ and how to undo it by hand. A config you changed after the install is kept. Remo
 - NVIDIA is untested (no hardware). GTX 6xx / 7xx and older get no NVIDIA driver and run on nouveau
 - Black screen after boot on NVIDIA: remove `kms` from `HOOKS` in `/etc/mkinitcpio.conf`, then
   `sudo mkinitcpio -P` (from the Arch wiki)
+- VirtualBox: sway fails with `Could not initialize EGL` - turn on Settings → Display → Enable 3D Acceleration
+  (graphics controller VMSVGA)
 
 </details>
 
