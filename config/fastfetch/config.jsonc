@@ -12,7 +12,9 @@
         "color": {
             "1": "white"
         },
+        // top: (box rows 13 - logo rows) / 2, the logo sits in the middle
         "padding": {
+            "top": 2,
             "right": 3
         }
     },
