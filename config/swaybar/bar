@@ -7,6 +7,8 @@ bar {
     status_command ~/.config/swaybar/status.sh
     # space after the menu button at the right edge, px (default 3)
     status_edge_padding 6
+    # no tray: swaybar always draws it right of the menu button
+    tray_output none
 
     # show "●" instead of "1:●"
     strip_workspace_numbers yes
