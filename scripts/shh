@@ -62,6 +62,15 @@ modes="copy${tab}Copy   copies, the repo can be deleted
 link${tab}Link   links to the repo, edits land in it"
 helpers="yay${tab}yay
 paru${tab}paru"
+# the same look, options and keys in both (config/vim, config/nvim)
+editors="vim${tab}Vim      fewer dependencies
+nvim${tab}Neovim"
+# the graphics driver: auto = by the card (scripts/hardware)
+gpus="auto${tab}Auto     by the card, recommended
+amd${tab}AMD
+intel${tab}Intel
+nvidia${tab}NVIDIA   the NVIDIA driver (glibc only)
+nouveau${tab}Nouveau  the free NVIDIA driver"
 # xkb options for switching the layout
 toggles="alt_shift_toggle${tab}Alt+Shift
 ctrl_shift_toggle${tab}Ctrl+Shift
@@ -177,6 +186,8 @@ settings_lines() {
     line layouts '' layouts "$(setting layouts us,ru) >"
     line layout_toggle '' 'switch layout' "$(label_of "$toggles" "$(setting layout_toggle alt_shift_toggle)") >"
     line dns '' dns "$(setting dns dhcp) >"
+    line gpu '' graphics "$(setting gpu auto) >"
+    line editor '' editor "$(setting editor vim) >"
     # distro_settings: distro.sh (Artix: aur helper, pacman)
     ! command -v distro_settings >/dev/null || distro_settings
     yes_no nobeep 'Mute the motherboard beeper'
@@ -191,6 +202,8 @@ settings_act() {
         layout_toggle) value=$(choose 'switch layout' "$toggles") ;;
         aur_helper)    value=$(choose 'aur helper' "$helpers") ;;
         dns)           value=$(choose dns "$dns_list") ;;
+        gpu)           value=$(choose 'graphics driver' "$gpus") ;;
+        editor)        value=$(choose editor "$editors") ;;
         layouts)
             loop layouts 'Enter: on / off   Esc: back   the first one is the default' layout_lines layout_act
             note="Layouts: $(setting layouts us,ru)"
@@ -374,13 +387,13 @@ check_files() {
     [ "$found" = 1 ] || ok "all $n files in place"
 }
 
-# common.csv + system/packages/CARD.csv, like install.sh
+# common.csv + system/packages/DRIVER.csv, like install.sh
 check_packages() {
     step "packages"
 
     local hw hardware csv names missing pkg
     hardware=$(sh "$HOME/.local/bin/hardware" 2>/dev/null || true)
-    names=$(for hw in common $hardware; do
+    names=$(for hw in common $(gpu_drivers "$hardware"); do
         csv="$packages_dir/$hw.csv"
         [ ! -f "$csv" ] || read_list "$csv" | cut -d, -f2
     done | without "$(off_items "$components_file" 2)")
@@ -465,7 +478,7 @@ color() {
         sed -i --follow-symlinks "s/$old/$new/gI" "$f"
         ok "$f"
     done
-    info "to see it: Super+Shift+C (sway, bar), makoctl reload, new foot and vim windows"
+    info "to see it: Super+Shift+C (sway, bar), makoctl reload, new foot and vim / nvim windows"
 }
 
 # █▄ ▄█ ▄▀▀▄ ▀█▀ █▄  █ 

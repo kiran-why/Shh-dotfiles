@@ -42,11 +42,11 @@ hardware=$(sh "$dots_path/scripts/hardware" 2>/dev/null || true)
 # █▀▀█ █▀▀  █    █▀▀  █▀▀  █▀█   ▀▀▄ 
 # ▀  ▀ ▀▀▀▀ ▀▀▀▀ ▀    ▀▀▀▀ ▀  ▀ ▀▀▀  
 
-# common.csv + system/packages/CARD.csv for every graphics card found
+# common.csv + system/packages/DRIVER.csv for every graphics driver (gpu_drivers: lib.sh)
 package_lines() {
     local hw
     read_list "$packages_file"
-    for hw in $hardware; do
+    for hw in $(gpu_drivers "$hardware"); do
         [ ! -f "$packages_dir/$hw.csv" ] || read_list "$packages_dir/$hw.csv"
     done
 }
@@ -195,13 +195,21 @@ install_packages() {
 configure_gpu() {
     step "graphics"
 
-    if [ -z "$hardware" ]; then
+    local hw drivers
+    drivers=$(gpu_drivers "$hardware")
+    if [ -z "$drivers" ]; then
         warn "no graphics card found, only mesa is installed"
         return 0
     fi
+    [ "$(setting gpu auto)" = auto ] || info "driver from shh config: $(setting gpu auto)"
 
-    local hw
-    for hw in $hardware; do
+    for hw in $drivers; do
+        case "$hw" in
+            # picked in shh config on a distro without it (Void musl)
+            nvidia|nvidia-580xx) [ -f "$packages_dir/$hw.csv" ] || {
+                warn "no $hw driver for this system, nouveau (mesa) runs the card"
+                continue; } ;;
+        esac
         case "$hw" in
             nvidia|nvidia-580xx)
                 # sway needs kernel modesetting; the 580xx driver has it off by default
@@ -209,6 +217,9 @@ configure_gpu() {
                 info "$hw: kernel modesetting on (after reboot)" ;;
             nvidia-legacy)
                 warn "this NVIDIA card is too old for the NVIDIA driver, nouveau (mesa) runs it" ;;
+            nouveau)
+                info "nouveau: the free NVIDIA driver, in the kernel and mesa; nothing to install"
+                info "the NVIDIA driver blocks it: remove its packages (asked at the end), then reboot" ;;
             *)
                 info "$hw: nothing to set" ;;
         esac
@@ -327,10 +338,21 @@ link_dotfiles() {
     DOTS_NO_LOGO=1 sh "$dots_path/lib/link.sh" ${mode:+"--$mode"}
 }
 
+# the packages of graphics drivers not picked now (another pick in shh config
+# > settings > graphics driver): in a DRIVER.csv, but not in common.csv or a picked one
+driver_leftovers() {
+    local list keep
+    keep=$(package_lines | cut -d, -f2)
+    for list in "$packages_dir"/*.csv; do
+        [ "$list" != "$packages_file" ] || continue
+        read_list "$list" | cut -d, -f2
+    done | sort -u | without "$keep"
+}
+
 # what parts turned off in shh config left behind; removed only on "y"
 leftovers() {
     local pkgs answer
-    pkgs=$(off_items "$components_file" 2)
+    pkgs=$(off_items "$components_file" 2; driver_leftovers)
     # with no names pkg_leftovers prints every installed package
     [ -z "$pkgs" ] || pkgs=$(pkg_leftovers $pkgs)
     if [ -n "$pkgs" ]; then

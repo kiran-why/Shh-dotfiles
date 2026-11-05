@@ -1,7 +1,7 @@
 # components/void_components.txt - parts shh config can turn off (Void names); everything else is always installed
 # name|packages|files (repo paths)|services|group|default
 # group = the tab in shh config: empty = features, misc = programs we always use;
-# settings = its own line in settings (maxhz); xwayland = settings > xwayland. Anything else: sudo xbps-install NAME yourself.
+# settings = its own line in settings (maxhz); xwayland = settings > xwayland; editor = settings > editor. Anything else: sudo xbps-install NAME yourself.
 # default: empty = on, no = off
 # packages stay in system/void/packages/common.csv too; sway lines of a part go in config/sway/features/NAME
 
@@ -27,12 +27,15 @@ man|man-pages-devel|||misc|
 mako|mako|config/mako config/sway/features/mako||misc|
 emoji|noto-fonts-emoji|||misc|
 noto|noto-fonts-ttf|||misc|
-vim|vim|config/vim||misc|
 
 # settings > xwayland: noxwayland is on when xwayland is off (sway can't have both lines)
 noxwayland||config/sway/features/noxwayland||xwayland|
 # no package: Void's sway depends on xorg-server-xwayland, it can't be removed
 xwayland||||xwayland|
+
+# settings > editor: vim or nvim, the same look, options and keys
+vim|vim|config/vim||editor|
+nvim|neovim|config/nvim||editor|
 
 # settings > maxhz
 maxhz||scripts/maxhz config/sway/features/maxhz||settings|

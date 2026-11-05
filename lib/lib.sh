@@ -91,8 +91,28 @@ part_on() {
         # two parts: noxwayland (the sway line) or xwayland (the package)
         xwayland)
             if [ "$(setting xwayland no)" = yes ]; then [ "$1" = xwayland ]; else [ "$1" = noxwayland ]; fi ;;
+        # one of the two editors (settings > editor)
+        editor)   [ "$(setting editor vim)" = "$1" ] ;;
         *)        [ "$(setting "$1" "${3:-yes}")" = yes ] ;;
     esac
+}
+
+# gpu_drivers HARDWARE: the graphics drivers to install, one per line
+# (system/DISTRO/packages/WORD.csv): HARDWARE (scripts/hardware) on auto,
+# else the pick in shh config > settings > graphics. A pick changes only the
+# NVIDIA driver or adds a card: AMD and Intel cards found stay, without their
+# firmware a laptop screen can stay black
+gpu_drivers() {
+    local gpu others
+    gpu=$(setting gpu auto)
+    if [ "$gpu" = auto ]; then
+        printf '%s\n' "$1"
+        return 0
+    fi
+    others=$(printf '%s\n' "$1" | grep -v '^nvidia' || true)
+    # the open or the older 580xx driver: what fits the card, if one was found
+    [ "$gpu" != nvidia ] || gpu=$(printf '%s\n' "$1" nvidia | grep -x 'nvidia\|nvidia-580xx' | head -n 1)
+    printf '%s\n' "$others" "$gpu" | grep -v '^$' | sort -u
 }
 
 # off_items COMPONENTS FIELD: one per line, FIELD (2 packages, 3 files,
