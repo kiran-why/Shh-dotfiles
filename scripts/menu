@@ -8,6 +8,7 @@
 # A pick opens its menu in this window, Esc there comes back here.
 # A part turned off in shh config has no script in ~/.local/bin, so no line.
 # menu open: the window, as tall as the menu (the bar runs this)
+# menu --header NAME: the banner of a menu (header below)
 
 set -eu
 
@@ -21,14 +22,16 @@ lines() {
         'volume	󰕾  Volume >' \
         'bluetooth	  Bluetooth >' \
         'vpn	󰖂  VPN >' \
-        'brightness	󰃠  Brightness >'; do
+        'brightness	󰃠  Light >'; do
         [ ! -x "$bin/${s%%"$tab"*}" ] || printf '%s\n' "$s"
     done
 }
 
-# font Bloody (patorjk.com), like the fastfetch logo; N made narrower
+# art NAME: the banner of a menu. menu: font Bloody (patorjk.com), like the
+# fastfetch logo, N made narrower; the others: Linguaholic Mini Block
 art() {
-    cat <<'EOF'
+    case "$1" in
+        menu) cat <<'EOF'
  ███▄ ▄███▓▓█████  ███▄  █  █    ██
 ▓██▒▀█▀ ██▒▓█   ▀  ██ ▀█ █  ██  ▓██▒
 ▓██    ▓██░▒███   ▓██  ▀██▒▓██  ▒██░
@@ -39,26 +42,85 @@ art() {
 ░      ░      ░      ░  ░ ░ ░░░ ░ ░
        ░      ░  ░        ░   ░
 EOF
+            ;;
+        wifi) cat <<'EOF'
+▄   ▄ ▀  ▄▀▀ ▀
+█ █ █ █ ▀█▀  █
+ ▀ ▀  ▀  ▀   ▀
+EOF
+            ;;
+        volume) cat <<'EOF'
+▄   ▄  ▄▄  █ ▄  ▄ ▄▄▄▄   ▄▄
+▀▄ ▄▀ █  █ █ █  █ █ █ █ █▀▀▀
+  ▀    ▀▀  ▀  ▀▀▀ ▀ ▀ ▀  ▀▀▀
+EOF
+            ;;
+        bluetooth) cat <<'EOF'
+█▄▄  █ ▄  ▄  ▄▄  ▄█▄   ▄▄   ▄▄  ▄█▄  █▄▄
+█  █ █ █  █ █▀▀▀  █   █  █ █  █  █   █  █
+▀▀▀  ▀  ▀▀▀  ▀▀▀   ▀▀  ▀▀   ▀▀    ▀▀ ▀  ▀
+EOF
+            ;;
+        vpn) cat <<'EOF'
+▄   ▄ ▄▄▄  ▄▄▄
+▀▄ ▄▀ █  █ █  █
+  ▀   █▀▀  ▀  ▀
+      ▀
+EOF
+            ;;
+        light) cat <<'EOF'
+█ ▀  ▄▄▄ █▄▄  ▄█▄
+█ █ █  █ █  █  █
+▀ ▀  ▀▀█ ▀  ▀   ▀▀
+     ▀▀
+EOF
+            ;;
+    esac
 }
 
-# an empty line, the art in the middle, an empty line. fzf runs this on
-# start and on every resize: sway sets the width after the window opens.
-# 36 = the art width (dash counts bytes in ${#var}); 4 = the border and
-# the cursor column, like center() in shh
+# chars TEXT: its width; wc -m counts characters, ${#var} in dash bytes
+chars() {
+    printf '%s' "$1" | wc -m
+}
+
+# pad WIDTH: stdin moved to the middle of fzf (FZF_COLUMNS);
+# 4 = the border and the cursor column, like center() in shh
+pad() {
+    local p=$(( (${FZF_COLUMNS:-0} - 4 - $1) / 2 ))
+    [ "$p" -gt 0 ] || p=0
+    sed "s/^/$(printf '%*s' "$p" '')/"
+}
+
+# header NAME: an empty line, the art of NAME, an empty line, $MENU_TEXT,
+# all in the middle. fzf runs it on start and on every resize (sway sets
+# the width after the window opens): the menus bind
+# start,resize:transform-header:sh ~/.local/bin/menu --header NAME
 header() {
-    local pad=$(( (${FZF_COLUMNS:-0} - 4 - 36) / 2 ))
-    [ "$pad" -gt 0 ] || pad=0
+    local a l w=0
+    a=$(art "$1")
+    while IFS= read -r l; do
+        [ "$(chars "$l")" -le "$w" ] || w=$(chars "$l")
+    done <<EOF
+$a
+EOF
     echo ' '
-    art | sed "s/^/$(printf '%*s' "$pad" '')/"
+    printf '%s\n' "$a" | pad "$w"
     echo ' '
+    [ -n "${MENU_TEXT:-}" ] || return 0
+    printf '%s\n' "$MENU_TEXT" | while IFS= read -r l; do
+        printf '%s\n' "$l" | pad "$(chars "$l")"
+    done
 }
 
 case "${1:-}" in
-    --header) header; exit 0 ;;
+    --header) header "${2:-menu}"; exit 0 ;;
     # rows: the border, the header (11), the lines and one empty line;
     # sway/rules sets only the width
     open) exec footclient --app-id=menu --window-size-chars="50x$(($(lines | wc -l) + 13))" "$0" ;;
 esac
+
+# no text under the art here (a menu opened from here sets its own)
+export MENU_TEXT=
 
 # pos keeps the cursor on the last picked line
 pos=1
@@ -66,7 +128,7 @@ while :; do
     list=$(lines)
     pick=$(printf '%s\n' "$list" |
         fzf --info=hidden --no-input --delimiter="$tab" --with-nth=2 --border-label=' Menu ' \
-            --bind="start,resize:transform-header:sh '$0' --header" --bind="load:pos($pos)") || exit 0
+            --bind="start,resize:transform-header:sh '$0' --header menu" --bind="load:pos($pos)") || exit 0
     pos=$(printf '%s\n' "$list" | grep -nxF -- "$pick" | cut -d: -f1)
     # a menu that fails (no wifi device...) just comes back here
     "$bin/${pick%%"$tab"*}" || true

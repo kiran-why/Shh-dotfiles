@@ -226,6 +226,11 @@ menu() { fzf --info=hidden --no-input "$@"; }
 # the last header line: one space, so an empty line sits above the list
 gap=$(printf '\n ')
 
+# the banner of the main menu: scripts/menu draws it and $MENU_TEXT
+# under it in the middle, again on every resize
+banner="start,resize:transform-header:sh '$HOME/.local/bin/menu' --header vpn"
+export MENU_TEXT=
+
 header() {
     if running; then echo "VPN: on - $(now)"; else echo 'VPN: off'; fi
     if [ -s "$state/locations" ]; then echo 'Subscription: set'; else echo 'Subscription: not set'; fi
@@ -315,8 +320,9 @@ pos=1
 note=''
 while :; do
     if vpn_boot; then atboot=yes; else atboot=no; fi
+    MENU_TEXT="$(header)$gap"
     pick=$(printf '%s\n' On/off 'Locations >' 'Add subscription' 'Update subscription' "Start at boot: $atboot" |
-        menu --border-label=' VPN ' --header="$(header)$gap" --bind="load:pos($pos)") || exit 0
+        menu --border-label=' VPN ' --bind="$banner" --bind="load:pos($pos)") || exit 0
     note=''
     case "$pick" in
         On/off)

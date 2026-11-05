@@ -15,6 +15,11 @@ menu() {
 # the last header line: one space, so an empty line sits above the list
 gap=$(printf '\n ')
 
+# the banner of the main menu: scripts/menu draws it and $MENU_TEXT
+# under it in the middle, again on every resize
+banner="start,resize:transform-header:sh '$HOME/.local/bin/menu' --header bluetooth"
+export MENU_TEXT=
+
 # lines are "label<TAB>address<TAB>name", only the label shows
 device_menu() {
     menu --delimiter='\t' --with-nth=1 "$@"
@@ -70,7 +75,7 @@ now() {
     fi
     names=$(devices Connected | cut -d' ' -f2- |
         awk '{ printf "%s%s", (NR > 1 ? ", " : ""), $0 }')
-    printf '󰂯 on\nconnected: %s' "${names:-nothing}"
+    printf '󰂯 on\nConnected: %s' "${names:-nothing}"
 }
 
 # paired devices for device_menu, connected ones marked
@@ -153,8 +158,9 @@ unpair_menu() {
 pos=1
 while :; do
     if powered; then toggle='Power off'; else toggle='Power on'; fi
+    MENU_TEXT="$(now)$gap"
     pick=$(printf '%s\n' "$toggle" 'Pair a new device >' 'Paired devices >' 'Unpair a device >' |
-        menu --border-label=' Bluetooth ' --header="$(now)$gap" --bind="load:pos($pos)") || exit 0
+        menu --border-label=' Bluetooth ' --bind="$banner" --bind="load:pos($pos)") || exit 0
     case "$pick" in
         'Power on')  pos=1; bt power on >/dev/null || say 'could not turn it on (rfkill?)' ;;
         'Power off') pos=1; bt power off >/dev/null || true ;;

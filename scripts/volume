@@ -18,6 +18,11 @@ menu() {
 # the last header line: one space, so an empty line sits above the list
 gap=$(printf '\n ')
 
+# the banner of the main menu: scripts/menu draws it and $MENU_TEXT
+# under it in the middle, again on every resize
+banner="start,resize:transform-header:sh '$HOME/.local/bin/menu' --header volume"
+export MENU_TEXT=
+
 # wpctl prints harmless "RTKit error" lines that would mess up the menu
 wp() {
     wpctl "$@" 2>/dev/null
@@ -106,8 +111,9 @@ esac
 # pos keeps the cursor on the last picked line
 pos=1
 while :; do
+    MENU_TEXT="$(now)$gap"
     pick=$(printf '%s\n' '(+) Volume' '(-) Volume' 'Mute/unmute >' 'In/out devices >' |
-        menu --border-label=' Volume ' --header="$(now)$gap" --bind="load:pos($pos)") || exit 0
+        menu --border-label=' Volume ' --bind="$banner" --bind="load:pos($pos)") || exit 0
     case "$pick" in
         '(+) Volume')       pos=1; wp set-volume -l "$max" "$out" "$step+" ;;
         '(-) Volume')       pos=2; wp set-volume "$out" "$step-" ;;

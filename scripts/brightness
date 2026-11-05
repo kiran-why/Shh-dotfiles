@@ -16,6 +16,11 @@ menu() {
 # the last header line: one space, so an empty line sits above the list
 gap=$(printf '\n ')
 
+# the banner of the main menu: scripts/menu draws it and $MENU_TEXT
+# under it in the middle, again on every resize
+banner="start,resize:transform-header:sh '$HOME/.local/bin/menu' --header light"
+export MENU_TEXT=
+
 # the screen backlights; a laptop with two graphics cards can have two
 devs=$(ls -d /sys/class/backlight/* 2>/dev/null || true)
 
@@ -69,7 +74,8 @@ note=''
 if [ -z "$devs" ]; then
     # the keys: nothing to do; the menu says why
     [ -z "${1:-}" ] || exit 0
-    printf '' | menu --border-label=' Brightness ' --header="No screen backlight here (a desktop monitor?)$gap" || true
+    MENU_TEXT="No screen backlight here (a desktop monitor?)$gap"
+    printf '' | menu --border-label=' Light ' --bind="$banner" || true
     exit 0
 fi
 
@@ -81,9 +87,10 @@ esac
 # pos keeps the cursor on the last picked line
 pos=1
 while :; do
+    MENU_TEXT="$(now)${note:+
+$note}$gap"
     pick=$(printf '%s\n' '(+) Brightness' '(-) Brightness' |
-        menu --border-label=' Brightness ' --header="$(now)${note:+
-$note}$gap" --bind="load:pos($pos)") || exit 0
+        menu --border-label=' Light ' --bind="$banner" --bind="load:pos($pos)") || exit 0
     case "$pick" in
         '(+) Brightness') pos=1; set_level $(($(level) + step)) || true ;;
         '(-) Brightness') pos=2; set_level $(($(level) - step)) || true ;;

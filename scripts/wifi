@@ -11,6 +11,11 @@ menu() {
 # the last header line: one space, so an empty line sits above the list
 gap=$(printf '\n ')
 
+# the banner of the main menu: scripts/menu draws it and $MENU_TEXT
+# under it in the middle, again on every resize
+banner="start,resize:transform-header:sh '$HOME/.local/bin/menu' --header wifi"
+export MENU_TEXT=
+
 # iwctl colors its output
 plain() {
     sed 's/\x1b\[[0-9;]*m//g'
@@ -123,9 +128,10 @@ check_internet() {
 pos=1
 note=''
 while :; do
+    MENU_TEXT="$dev: $(current || true)${note:+
+$note}$gap"
     pick=$(printf '%s\n' 'Available networks >' 'Known networks >' 'Check internet' 'Disconnect' |
-        menu --border-label=' Wifi ' --header="$dev: $(current || true)${note:+
-$note}$gap" --bind="load:pos($pos)") || exit 0
+        menu --border-label=' Wifi ' --bind="$banner" --bind="load:pos($pos)") || exit 0
     note=''
     case "$pick" in
         'Available networks >') pos=1; available_menu ;;
