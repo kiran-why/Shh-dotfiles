@@ -92,6 +92,16 @@ nnoremap <leader>w <cmd>write<cr>
 nnoremap <leader>q <cmd>quit<cr>
 " clear search highlight
 nnoremap <Esc> <cmd>nohlsearch<cr>
+" file tree on the left: the built-in netrw (:help netrw), no plugin.
+" Enter opens a file in the window on the right, Ctrl+l / Ctrl+h move between them
+let g:netrw_banner = 0      " no help text on top
+let g:netrw_liststyle = 3   " a tree
+let g:netrw_winsize = -30   " 30 columns wide
+nnoremap <leader>e <cmd>Lexplore<cr>
+" netrw takes Ctrl+h / Ctrl+l (ours) unless its actions have other keys:
+" F5 refreshes the tree, Space+h edits the list of hidden files
+nmap <F5> <Plug>NetrwRefresh
+nmap <leader>h <Plug>NetrwHideEdit
 " Ctrl+h/j/k/l: move between split windows
 nnoremap <C-h> <C-w>h
 nnoremap <C-j> <C-w>j
