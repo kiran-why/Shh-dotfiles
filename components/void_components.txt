@@ -12,6 +12,8 @@ screenshare|xdg-desktop-portal-wlr|config/sway/features/screenshare|||
 autotile||scripts/autotile config/sway/features/autotile|||
 fastfetch|fastfetch|config/fastfetch|||
 scratchpad||config/sway/features/scratchpad|||
+# sleep on a closed lid (sway); off on a machine without a lid (shh config, scripts/hardware --lid)
+lid||config/sway/features/lid|||
 
 # misc: programs the setup counts on; sing-box: the vpn menu and our own
 # runit service shh-vpn (install.sh runs vpn setup; the package's sing-box service stays off)

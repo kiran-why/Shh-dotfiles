@@ -12,7 +12,7 @@ bindsym --to-code --no-repeat $mod+t exec $term
 # launcher
 bindsym --to-code --no-repeat $mod+r exec $menu
 
-# menu: wifi, volume, bluetooth, vpn, light (the bar button)
+# menu: wifi, volume, bluetooth, vpn, light, power (the bar button)
 bindsym --to-code --no-repeat $mod+m exec ~/.local/bin/menu open
 
 # close the window
@@ -24,8 +24,8 @@ bindsym --to-code --no-repeat $mod+Shift+f fullscreen
 # float / tile
 bindsym --to-code --no-repeat $mod+v floating toggle
 
-# leave sway, asks first
-bindsym --to-code --no-repeat $mod+l exec $exit
+# power: exit sway, power off, reboot, sleep
+bindsym --to-code --no-repeat $mod+l exec footclient --app-id=power ~/.local/bin/power
 
 # screenshot of a region, copied too
 bindsym --to-code --no-repeat Print exec ~/.local/bin/screenshot
@@ -33,8 +33,9 @@ bindsym --to-code --no-repeat Print exec ~/.local/bin/screenshot
 # screenshot of all screens
 bindsym --to-code --no-repeat Shift+Print exec ~/.local/bin/screenshot full
 
-# screens off / on
-bindsym --to-code --no-repeat $mod+Escape exec ~/.local/bin/screen
+# lock, screens off; again: screens on
+# --locked: works while locked too
+bindsym --to-code --no-repeat --locked $mod+Escape exec ~/.local/bin/lock
 
 # all keys (this list)
 bindsym --to-code --no-repeat $mod+slash exec footclient --app-id=keys ~/.local/bin/keys

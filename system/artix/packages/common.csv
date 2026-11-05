@@ -25,6 +25,7 @@
 # wayland tools
 # no swayidle: on Artix it depends on the elogind daemon
 ,foot,terminal emulator
+,swaylock,screen lock (scripts/lock on Super+Escape, before sleep)
 ,libnotify,notify-send: send a notification from the shell or a script
 ,swaybg,wallpaper
 ,grim,screenshots

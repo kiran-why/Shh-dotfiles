@@ -11,6 +11,17 @@ seat_groups=seat,audio,video
 # https, not ping: ICMP is often blocked; a few sites, one can be down or blocked
 online_sites='https://artixlinux.org https://archlinux.org https://github.com'
 pkg_remove='sudo pacman -Rs'
+# the root commands of power_run, for the sudoers rule (install.sh); "" = no arguments.
+# no zzz on Artix: suspend is "mem" written to /sys/power/state
+power_cmds='/usr/bin/poweroff "", /usr/bin/reboot "", /usr/bin/tee /sys/power/state'
+
+# power_run poweroff | reboot | suspend (scripts/power); -n: fail, don't ask for a password
+power_run() {
+    case "$1" in
+        suspend) echo mem | sudo -n /usr/bin/tee /sys/power/state >/dev/null ;;
+        *)       sudo -n "/usr/bin/$1" ;;
+    esac
+}
 
 # distro_check: stop when this system can't take the setup
 distro_check() {
@@ -309,6 +320,7 @@ distro_undo() {
     echo "  groups     seat, audio           sudo gpasswd -d $(id -un) GROUP"
     echo "  /etc       pam.d/system-login (pam_rundir), dhcpcd.conf (denyinterfaces wl*),"
     echo "             iwd/main.conf, modprobe.d/nobeep.conf, pacman.conf, makepkg.conf;"
+    echo "             sudoers.d/shh-power (poweroff, reboot, sleep): sudo rm /etc/sudoers.d/shh-power;"
     echo "             older versions of some are next to them as FILE.bak-DATE"
     echo "  without seatd or pam_rundir sway will not start"
 }

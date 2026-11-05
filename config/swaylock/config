@@ -1,0 +1,26 @@
+# ~/.config/swaylock/config - the lock screen (man swaylock); colors from sway/colors
+# black screen, the ring shows only while typing: white, red on a wrong password
+
+color=000000
+inside-color=000000
+inside-clear-color=000000
+inside-ver-color=000000
+inside-wrong-color=000000
+ring-color=e6e6e6
+ring-clear-color=5a5a5a
+ring-ver-color=5a5a5a
+ring-wrong-color=d7263d
+key-hl-color=5a5a5a
+bs-hl-color=d7263d
+line-color=00000000
+line-clear-color=00000000
+line-ver-color=00000000
+line-wrong-color=00000000
+separator-color=00000000
+text-color=e6e6e6
+text-clear-color=e6e6e6
+text-ver-color=e6e6e6
+text-wrong-color=d7263d
+# Enter with no password does nothing
+ignore-empty-password
+show-failed-attempts

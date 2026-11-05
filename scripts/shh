@@ -40,6 +40,9 @@ else
     packages_dir="$share/packages"
     distro_file="$share/distro.sh"
 fi
+# scripts/hardware: what the machine is (cards, a lid)
+if [ "$from_repo" = 1 ]; then hardware_script="$repo/scripts/hardware"; else hardware_script="$HOME/.local/bin/hardware"; fi
+
 # pkg_*, svc_check, seat_groups; missing: only doctor and installing fzf need it
 [ ! -f "$distro_file" ] || . "$distro_file"
 
@@ -268,9 +271,8 @@ layout_lines() {
 # found_cards: the cards scripts/hardware finds, as the choices below
 # (amd,nvidia); "nothing" in a VM or with no card
 found_cards() {
-    local script="$HOME/.local/bin/hardware" cards
-    [ "$from_repo" = 0 ] || script="$repo/scripts/hardware"
-    cards=$(sh "$script" 2>/dev/null |
+    local cards
+    cards=$(sh "$hardware_script" 2>/dev/null |
         sed 's/^nvidia-580xx$/nvidia/; s/^nvidia-legacy$/nouveau/' |
         grep -x 'amd\|intel\|nvidia\|nouveau' | paste -sd, -) || true
     printf '%s\n' "${cards:-nothing}"
@@ -352,10 +354,14 @@ config() {
     fi
 
     mkdir -p "${shh_config%/*}"
-    [ -f "$shh_config" ] || printf '%s\n' \
-        '# ~/.config/shh/config - your choices for install.sh and shh update' \
-        '# change: shh config, then shh update (or edit here); a missing line = the default' \
-        >"$shh_config"
+    if [ ! -f "$shh_config" ]; then
+        printf '%s\n' \
+            '# ~/.config/shh/config - your choices for install.sh and shh update' \
+            '# change: shh config, then shh update (or edit here); a missing line = the default' \
+            >"$shh_config"
+        # sleep on a closed lid: on by default only where there is a lid
+        sh "$hardware_script" --lid || echo lid=no >>"$shh_config"
+    fi
 
     # font Bloody (patorjk.com), like the fastfetch logo, N made narrower; 47 columns wide
     art=$(while IFS= read -r l; do center "$l" 47; done <<'EOF'

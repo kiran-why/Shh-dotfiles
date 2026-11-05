@@ -1,0 +1,51 @@
+#!/bin/sh
+# power - exit sway, power off, reboot, sleep ($mod+L, the bar menu).
+# Exit, power off and reboot ask first (swaynag), like exit always did.
+# power poweroff | reboot | suspend: no menu (swaynag, the lid, Sleep)
+
+set -eu
+
+bin="$HOME/.local/bin"
+
+menu() {
+    fzf --info=hidden --no-input "$@"
+}
+
+# the banner: scripts/menu draws it, again on every resize
+banner="start,resize:transform-header:sh '$bin/menu' --header power"
+export MENU_TEXT=
+
+# ask TEXT BUTTON COMMAND: a swaynag bar asks first; swaymsg exec: it stays after this window closes
+ask() {
+    swaymsg exec "swaynag -t warning -m '$1' -B '$2' '$3'" >/dev/null
+}
+
+# run ACTION: power_run (distro.sh) as root, the sudoers rule is from install.sh
+run() {
+    . "$HOME/.local/share/shh/distro.sh"
+    power_run "$1" ||
+        notify-send -a power -u critical power "$1 failed: no sudo rule? run shh update" || true
+}
+
+# lock first: swaylock -f returns once the screen is locked
+suspend_now() {
+    pgrep -x swaylock >/dev/null || swaylock -f
+    run suspend
+    # awake again: scripts/lock may have turned the screens off
+    swaymsg 'output * power on' >/dev/null
+}
+
+case "${1:-}" in
+    poweroff|reboot) run "$1"; exit 0 ;;
+    suspend)         suspend_now; exit 0 ;;
+esac
+
+pick=$(printf '%s\n' 'Exit' 'Power off' 'Reboot' 'Sleep' |
+    menu --border-label=' Power ' --bind="$banner") || exit 0
+case "$pick" in
+    'Exit')      ask 'exit sway?' 'yes, exit' 'swaymsg exit' ;;
+    'Power off') ask 'power off?' 'yes, power off' "$bin/power poweroff" ;;
+    'Reboot')    ask 'reboot?' 'yes, reboot' "$bin/power reboot" ;;
+    # outside this window: it closes now, not after the wake-up
+    'Sleep')     swaymsg exec "$bin/power suspend" >/dev/null ;;
+esac

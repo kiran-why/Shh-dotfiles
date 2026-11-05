@@ -343,6 +343,26 @@ configure_system() {
     ok "done"
 }
 
+# poweroff, reboot and sleep without a password (scripts/power), only these
+# commands (power_cmds: distro.sh); visudo checks the rule before sudo reads it
+configure_power() {
+    step "power"
+
+    local rule tmp
+    rule="$USER ALL=(root) NOPASSWD: $power_cmds"
+    tmp=$(mktemp) || error "cannot make a temporary file"
+    printf '%s\n' "$rule" >"$tmp"
+    if ! sudo visudo -cqf "$tmp"; then
+        rm -f "$tmp"
+        error "bad sudoers rule: $rule"
+    fi
+    rm -f "$tmp"
+
+    write_root /etc/sudoers.d/shh-power "$rule"
+    sudo chmod 440 /etc/sudoers.d/shh-power || error "cannot chmod /etc/sudoers.d/shh-power"
+    ok "poweroff, reboot, sleep: no password"
+}
+
 link_dotfiles() {
     step "dotfiles"
     # no mode in shh config: link.sh keeps what is installed
@@ -426,6 +446,7 @@ configure_gpu
 configure_network
 enable_services
 configure_system
+configure_power
 link_dotfiles
 leftovers
 

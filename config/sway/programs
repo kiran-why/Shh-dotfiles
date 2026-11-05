@@ -3,7 +3,6 @@
 # terminals are footclient windows of one foot server: a few MB each, not 25
 set $term footclient
 set $menu footclient --app-id=launcher ~/.local/bin/launcher
-set $exit swaynag -t warning -m 'exit sway?' -B 'yes, exit' 'swaymsg exit'
 
 # exec: once per session, exec_always: also on every reload
 # a running server makes the new one quit; a crashed one is restarted on reload

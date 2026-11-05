@@ -12,6 +12,17 @@ seat_groups=_seatd,audio,video
 # https, not ping: ICMP is often blocked; a few sites, one can be down or blocked
 online_sites='https://voidlinux.org https://github.com'
 pkg_remove='sudo xbps-remove -R'
+# the root commands of power_run, for the sudoers rule (install.sh); "" = no arguments
+power_cmds='/usr/bin/poweroff "", /usr/bin/reboot "", /usr/bin/zzz ""'
+
+# power_run poweroff | reboot | suspend (scripts/power); -n: fail, don't ask for a password.
+# zzz prints "Zzzz..."
+power_run() {
+    case "$1" in
+        suspend) sudo -n /usr/bin/zzz >/dev/null ;;
+        *)       sudo -n "/usr/bin/$1" ;;
+    esac
+}
 
 # distro_check: stop when this system can't take the setup
 distro_check() {
@@ -29,6 +40,12 @@ distro_check() {
     if [ -e /var/service/wpa_supplicant ]; then
         warn "wpa_supplicant is on, it fights with iwd over wifi"
         info "turn it off: sudo rm /var/service/wpa_supplicant"
+    fi
+    # its handler.sh (Void's acpid) suspends on a closed lid as root, unlocked;
+    # sway does it with the lock (config/sway/features/lid)
+    if [ -e /var/service/acpid ] && part_on lid; then
+        warn "acpid is on, it suspends on a closed lid without the screen lock"
+        info "turn it off: sudo rm /var/service/acpid"
     fi
     if [ -e /var/service/elogind ]; then
         warn "elogind is on, this setup uses seatd instead"
@@ -198,6 +215,7 @@ distro_undo() {
     echo "  shell      zsh                   chsh -s /bin/bash"
     echo "  groups     _seatd, audio, video  sudo gpasswd -d $(id -un) GROUP"
     echo "  /etc       dhcpcd.conf (denyinterfaces wl*), iwd/main.conf, modprobe.d/nobeep.conf,"
-    echo "             alsa/conf.d (pipewire links); older versions of some are next to them as FILE.bak-DATE"
+    echo "             alsa/conf.d (pipewire links), sudoers.d/shh-power (poweroff, reboot, zzz):"
+    echo "             sudo rm /etc/sudoers.d/shh-power; older versions of some are next to them as FILE.bak-DATE"
     echo "  without seatd or dumb_runtime_dir sway will not start"
 }

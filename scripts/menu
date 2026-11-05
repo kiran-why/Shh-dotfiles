@@ -4,7 +4,7 @@
 # ▄▄▄▄   ▄▄  ▄▄▄  ▄  ▄ 
 # █ █ █ █▀▀▀ █  █ █  █ 
 # ▀ ▀ ▀  ▀▀▀ ▀  ▀  ▀▀▀ 
-# menu - the bar button: wifi, volume, bluetooth, vpn, brightness.
+# menu - the bar button: wifi, volume, bluetooth, vpn, brightness, power.
 # A pick opens its menu in this window, Esc there comes back here.
 # A part turned off in shh config has no script in ~/.local/bin, so no line.
 # menu open: the window, as tall as the menu (the bar runs this)
@@ -22,7 +22,8 @@ lines() {
         'volume	󰕾  Volume >' \
         'bluetooth	  Bluetooth >' \
         'vpn	󰖂  VPN >' \
-        'brightness	󰃠  Light >'; do
+        'brightness	󰃠  Light >' \
+        'power	  Power >'; do
         [ ! -x "$bin/${s%%"$tab"*}" ] || printf '%s\n' "$s"
     done
 }
@@ -73,6 +74,13 @@ EOF
 █ █ █  █ █  █  █
 ▀ ▀  ▀▀█ ▀  ▀   ▀▀
      ▀▀
+EOF
+            ;;
+        power) cat <<'EOF'
+▄▄▄   ▄▄  ▄   ▄  ▄▄  ▄ ▄▄
+█  █ █  █ █ █ █ █▀▀▀ █▀
+█▀▀   ▀▀   ▀ ▀   ▀▀▀ ▀
+▀
 EOF
             ;;
     esac

@@ -55,14 +55,15 @@ Reboot and log in on tty1: sway starts by itself.
 |---|---|
 | `Super + T` | Terminal |
 | `Super + R` | Launcher |
-| `Super + M` | Menu: Wifi, Volume, Bluetooth, VPN, Light |
+| `Super + M` | Menu: Wifi, Volume, Bluetooth, VPN, Light, Power |
 | `Super + B` | Browser |
 | `Super + F` | Files |
 | `Super + Q` | Close Window |
 | `Super + Arrows` | Move Focus |
 | `Super + 1 … 0` | Go to Workspace |
 | `Super + Shift + 1 … 0` | Send Window to Workspace |
-| `Super + L` | Leave the Desktop |
+| `Super + L` | Power: Exit, Power off, Reboot, Sleep |
+| `Super + Escape` | Lock the Screen |
 | `Print` | Screenshot of a Region |
 
 Bar: click `● rec` to stop recording, the time to see the date, the button on the far right for the menu.

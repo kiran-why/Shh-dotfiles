@@ -1,0 +1,5 @@
+# ~/.config/sway/features/lid - sleep on a closed lid (shh config: lid)
+# sway sees the lid itself (libinput), no acpid; --locked: also when locked.
+# no --reload: a reload with the lid closed would put it to sleep
+
+bindswitch --locked lid:on exec ~/.local/bin/power suspend
