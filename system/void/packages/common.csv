@@ -50,6 +50,7 @@
 ,iwd,wifi daemon
 ,openresolv,DNS config for iwd (no systemd-resolved)
 ,dhcpcd,DHCP for wired network (iwd only does wifi)
+,chrony,network time: sets the clock at boot, both ways (makestep, rtcsync: default chrony.conf)
 
 # bluetooth (headphones); bluetoothctl is in bluez
 ,bluez,bluetooth daemon and bluetoothctl (scripts/bluetooth)

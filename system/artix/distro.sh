@@ -223,7 +223,8 @@ svc_apply() {
         disabled="$disabled $svc"
     done
 
-    sudo s6 set commit || error "s6 set commit failed"
+    # -f: after the clock went back (chrony steps it) commit thought the db up to date
+    sudo s6 set commit -f || error "s6 set commit failed"
     sudo s6 live install || error "s6 live install failed"
     # live install only swaps the db: services new to it stay down until reboot
     sudo s6 live start $1 || error "cannot start the services"
@@ -271,7 +272,7 @@ s6-setuidgid s6log exec -c s6-log -d3 -b -- n3 s2000000 T /run/log/sing-box
 LOG
 chmod 755 "$srv/run" "$log/run"
 s6 repository sync
-s6 set commit
+s6 set commit -f
 s6 live install
 EOF
 }
@@ -290,7 +291,7 @@ vpn_boot() {
 vpn_boot_set() {
     local how=disable
     [ "$1" != yes ] || how=enable
-    sudo sh -c "s6 set $how sing-box && s6 set commit && s6 live install" >/dev/null
+    sudo sh -c "s6 set $how sing-box && s6 set commit -f && s6 live install" >/dev/null
 }
 
 # ▄▀▀▀ █▀▀▀ ▄▀▀▀ ▄▀▀▀ ▀█▀ ▄▀▀▄ █▄  █
@@ -315,7 +316,7 @@ distro_settings() {
 # distro_undo: what install.sh changed in the system (link.sh --uninstall)
 distro_undo() {
     echo "  packages   packages/*.csv        sudo pacman -Rs NAME"
-    echo "  services   services.txt          sudo s6 set disable NAME, sudo s6 set commit, sudo s6 live install"
+    echo "  services   services.txt          sudo s6 set disable NAME, sudo s6 set commit -f, sudo s6 live install"
     echo "  shell      zsh                   chsh -s /bin/bash"
     echo "  groups     seat, audio           sudo gpasswd -d $(id -un) GROUP"
     echo "  /etc       pam.d/system-login (pam_rundir), dhcpcd.conf (denyinterfaces wl*),"

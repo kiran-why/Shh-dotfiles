@@ -7,5 +7,7 @@ dbus
 iwd
 # wired network (wifi is iwd's); dhcpcd-eth0 stays off
 dhcpcd
+# network time
+chronyd
 # bluetooth, needs dbus
 bluetoothd

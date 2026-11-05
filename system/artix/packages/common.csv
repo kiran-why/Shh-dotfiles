@@ -52,6 +52,8 @@
 ,openresolv,DNS config for iwd (no systemd-resolved)
 ,dhcpcd,DHCP for wired network (iwd only does wifi)
 ,dhcpcd-s6,dhcpcd service for s6
+,chrony,network time: sets the clock at boot, both ways (makestep, rtcsync: default chrony.conf)
+,chrony-s6,chronyd service for s6
 
 # bluetooth (headphones); sound to them comes with pipewire-pulse
 ,bluez,bluetooth daemon

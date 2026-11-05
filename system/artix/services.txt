@@ -6,5 +6,7 @@ dbus
 iwd
 # wired network (wifi is iwd's)
 dhcpcd
+# network time (chronyd)
+chrony
 # bluetooth, needs dbus
 bluetoothd
