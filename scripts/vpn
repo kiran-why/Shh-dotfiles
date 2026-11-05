@@ -227,15 +227,15 @@ menu() { fzf --info=hidden --no-input "$@"; }
 gap=$(printf '\n ')
 
 header() {
-    if running; then echo "vpn: on - $(now)"; else echo 'vpn: off'; fi
-    if [ -s "$state/locations" ]; then echo 'subscription: set'; else echo 'subscription: not set'; fi
+    if running; then echo "VPN: on - $(now)"; else echo 'VPN: off'; fi
+    if [ -s "$state/locations" ]; then echo 'Subscription: set'; else echo 'Subscription: not set'; fi
     [ -z "$note" ] || echo "$note"
 }
 
 # start and wait for the API (up to 5 s): picking a location needs it
 start() {
     local i=0
-    vpn_ctl start || { note="cannot start $vpn_svc (vpn setup?)"; return 1; }
+    vpn_ctl start || { note="Cannot start $vpn_svc (vpn setup?)"; return 1; }
     while [ "$i" -lt 10 ] && ! api_call /version -m 1 -f -o /dev/null; do
         sleep 0.5
         i=$((i + 1))
@@ -245,20 +245,20 @@ start() {
 # Enter picks a location; with the vpn off it starts it first
 locations_menu() {
     local pick cur
-    [ -s "$state/locations" ] || { note='no locations: add subscription first'; return 0; }
+    [ -s "$state/locations" ] || { note='No locations: add subscription first'; return 0; }
     while :; do
         cur=$(now)
         pick=$(awk -v now="$cur" '{ print ($0 == now ? "[x] " : "[ ] ") $0 }' "$state/locations" |
-            menu --border-label=' locations ' --header="${note:-Enter: use it   Esc: back}$gap") || return 0
+            menu --border-label=' Locations ' --header="${note:-Enter: use it   Esc: back}$gap") || return 0
         pick=${pick#????}
         running || start || return 0
         # names have spaces and flags: jq makes the JSON
         if jq -n --arg n "$pick" '{ name: $n }' |
             api_call /proxies/proxy -m 5 -o /dev/null -w '%{http_code}' -X PUT \
                 -H 'Content-Type: application/json' --data @- | grep -qx 204; then
-            note="location: $pick"
+            note="Location: $pick"
         else
-            note="cannot switch to $pick"
+            note="Cannot switch to $pick"
         fi
     done
 }
@@ -272,16 +272,16 @@ add() {
     stty echo 2>/dev/null || true
     echo
     case "$link" in
-        https://?*[[:space:]]*|https://) note='not a subscription link'; return 0 ;;
+        https://?*[[:space:]]*|https://) note='Not a subscription link'; return 0 ;;
         https://?*) ;;
-        '') note='no link pasted'; return 0 ;;
-        *) note='not a subscription link (https://...)'; return 0 ;;
+        '') note='No link pasted'; return 0 ;;
+        *) note='Not a subscription link (https://...)'; return 0 ;;
     esac
     printf '%s\n' "$link" | sudo sh -c "install -d -m 700 $dir && umask 077 && cat > $dir/subscription" ||
-        { note='cannot save the link'; return 0; }
+        { note='Cannot save the link'; return 0; }
     wl-copy --clear 2>/dev/null || true
     if out=$(sh "$0" update 2>&1); then
-        note="added, $(printf '%s\n' "$out" | tail -n 1); remove the link from Super+C"
+        note="Added, $(printf '%s\n' "$out" | tail -n 1); remove the link from Super+C"
     else
         note=$(printf '%s\n' "$out" | tail -n 1)
     fi
@@ -290,7 +290,7 @@ add() {
 update_menu() {
     local out
     if out=$(sh "$0" update 2>&1); then
-        note="updated, $(printf '%s\n' "$out" | tail -n 1)"
+        note="Updated, $(printf '%s\n' "$out" | tail -n 1)"
     else
         note=$(printf '%s\n' "$out" | tail -n 1)
     fi
@@ -299,8 +299,8 @@ update_menu() {
 boot_toggle() {
     local to=yes
     ! vpn_boot || to=no
-    vpn_boot_set "$to" || { note="cannot change start at boot"; return 0; }
-    note="start at boot: $(vpn_boot && echo yes || echo no)"
+    vpn_boot_set "$to" || { note="Cannot change start at boot"; return 0; }
+    note="Start at boot: $(vpn_boot && echo yes || echo no)"
 }
 
 case "${1:-}" in
@@ -315,16 +315,16 @@ pos=1
 note=''
 while :; do
     if vpn_boot; then atboot=yes; else atboot=no; fi
-    pick=$(printf '%s\n' on/off locations 'add subscription' 'update subscription' "start at boot: $atboot" |
-        menu --border-label=' vpn ' --header="$(header)$gap" --bind="load:pos($pos)") || exit 0
+    pick=$(printf '%s\n' On/off 'Locations >' 'Add subscription' 'Update subscription' "Start at boot: $atboot" |
+        menu --border-label=' VPN ' --header="$(header)$gap" --bind="load:pos($pos)") || exit 0
     note=''
     case "$pick" in
-        on/off)
+        On/off)
             pos=1
-            if running; then vpn_ctl stop || note="cannot stop $vpn_svc"; else start || true; fi ;;
-        locations)             pos=2; locations_menu ;;
-        'add subscription')    pos=3; add ;;
-        'update subscription') pos=4; update_menu ;;
-        'start at boot'*)      pos=5; boot_toggle ;;
+            if running; then vpn_ctl stop || note="Cannot stop $vpn_svc"; else start || true; fi ;;
+        'Locations >')         pos=2; locations_menu ;;
+        'Add subscription')    pos=3; add ;;
+        'Update subscription') pos=4; update_menu ;;
+        'Start at boot'*)      pos=5; boot_toggle ;;
     esac
 done

@@ -1,6 +1,6 @@
 #!/bin/sh
 # bluetooth - power, pair a new device, connect / disconnect, unpair
-# opened from the bluetooth icon in swaybar. Esc goes back.
+# opened from the bar menu (scripts/menu). Esc goes back.
 # no PIN prompt: pair a keyboard that asks for one in bluetoothctl
 
 set -eu
@@ -102,14 +102,14 @@ pair_new() {
         bt --timeout "$scan_time" scan on >/dev/null || true
         paired=$(devices Paired | cut -d' ' -f1)
 
-        pick=$({ printf 'look again\t\t\n'
+        pick=$({ printf 'Look again\t\t\n'
                  devices | while read -r mac name; do
                      has "$mac" "$paired" || printf '%s\t%s\t%s\n' "$name" "$mac" "$name"
                  done; } |
-            device_menu --border-label=' pair ' --header="devices nearby$gap") || return 0
+            device_menu --border-label=' Pair ' --header="Devices nearby$gap") || return 0
         mac=$(printf '%s\n' "$pick" | cut -f2)
         name=$(printf '%s\n' "$pick" | cut -f3)
-        [ -n "$mac" ] || continue    # "look again"
+        [ -n "$mac" ] || continue    # "Look again"
 
         echo "pairing with $name..."
         if bt pair "$mac" >/dev/null; then
@@ -126,7 +126,7 @@ pair_new() {
 paired_menu() {
     local pick mac name
     pick=$(paired_lines |
-        device_menu --border-label=' paired ' --header="connect / disconnect$gap") || return 0
+        device_menu --border-label=' Paired ' --header="Connect / disconnect$gap") || return 0
     mac=$(printf '%s\n' "$pick" | cut -f2)
     name=$(printf '%s\n' "$pick" | cut -f3)
     case "$pick" in
@@ -139,7 +139,7 @@ paired_menu() {
 unpair_menu() {
     local pick mac name
     pick=$(paired_lines |
-        device_menu --border-label=' unpair ' --header="forget a device$gap") || return 0
+        device_menu --border-label=' Unpair ' --header="Forget a device$gap") || return 0
     mac=$(printf '%s\n' "$pick" | cut -f2)
     name=$(printf '%s\n' "$pick" | cut -f3)
     if bt remove "$mac" >/dev/null; then
@@ -152,21 +152,21 @@ unpair_menu() {
 # pos keeps the cursor on the last picked line
 pos=1
 while :; do
-    if powered; then toggle='power off'; else toggle='power on'; fi
-    pick=$(printf '%s\n' "$toggle" 'pair a new device' 'paired devices' 'unpair a device' |
-        menu --border-label=' bluetooth ' --header="$(now)$gap" --bind="load:pos($pos)") || exit 0
+    if powered; then toggle='Power off'; else toggle='Power on'; fi
+    pick=$(printf '%s\n' "$toggle" 'Pair a new device >' 'Paired devices >' 'Unpair a device >' |
+        menu --border-label=' Bluetooth ' --header="$(now)$gap" --bind="load:pos($pos)") || exit 0
     case "$pick" in
-        'power on')  pos=1; bt power on >/dev/null || say 'could not turn it on (rfkill?)' ;;
-        'power off') pos=1; bt power off >/dev/null || true ;;
+        'Power on')  pos=1; bt power on >/dev/null || say 'could not turn it on (rfkill?)' ;;
+        'Power off') pos=1; bt power off >/dev/null || true ;;
         *)
             if ! powered; then
                 say 'the power is off'
                 continue
             fi
             case "$pick" in
-                'pair a new device') pos=2; pair_new ;;
-                'paired devices')    pos=3; paired_menu ;;
-                'unpair a device')   pos=4; unpair_menu ;;
+                'Pair a new device >') pos=2; pair_new ;;
+                'Paired devices >')    pos=3; paired_menu ;;
+                'Unpair a device >')   pos=4; unpair_menu ;;
             esac
             ;;
     esac

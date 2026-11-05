@@ -297,8 +297,8 @@ session_setup() {
 
 # distro_settings: this distro's lines in shh config -> settings (line, yes_no: shh)
 distro_settings() {
-    line aur_helper '' 'aur helper' "$(setting aur_helper yay)"
-    yes_no pacman 'pacman colors and parallel downloads, AUR builds on all cpu cores'
+    line aur_helper '' 'aur helper' "$(setting aur_helper yay) >"
+    yes_no pacman 'Pacman colors and parallel downloads, AUR builds on all cpu cores'
 }
 
 # distro_undo: what install.sh changed in the system (link.sh --uninstall)

@@ -58,8 +58,8 @@ usage() {
 #  ▀▀▀  ▀▀  ▀   ▀ ▀    ▀▀▀  ▀▀▀ 
 
 # choices for the small menus: "value<TAB>shown text"
-modes="copy${tab}copy   copies, the repo can be deleted
-link${tab}link   links to the repo, edits land in it"
+modes="copy${tab}Copy   copies, the repo can be deleted
+link${tab}Link   links to the repo, edits land in it"
 helpers="yay${tab}yay
 paru${tab}paru"
 # xkb options for switching the layout
@@ -69,7 +69,7 @@ win_space_toggle${tab}Super+Space
 caps_toggle${tab}Caps Lock
 lalt_lshift_toggle${tab}Left Alt+Left Shift"
 # DNS servers, comma-separated (install.sh: /etc/resolvconf.conf); others: by hand in $shh_config
-dns_list="dhcp${tab}dhcp         from the network
+dns_list="dhcp${tab}DHCP         from the network
 1.1.1.1,1.0.0.1${tab}Cloudflare   1.1.1.1
 9.9.9.9,149.112.112.112${tab}Quad9        9.9.9.9
 8.8.8.8,8.8.4.4${tab}Google       8.8.8.8"
@@ -90,7 +90,7 @@ set_value() {
 toggle() {
     local default="${2:-yes}"
     if [ "$(setting "$1" "$default")" = yes ]; then set_value "$1" no; else set_value "$1" yes; fi
-    note="$1: $(setting "$1" "$default")"
+    note="$(cap "$1"): $(setting "$1" "$default")"
 }
 
 # lines are "key<TAB>text": only the text shows, the key says what was picked
@@ -98,9 +98,14 @@ menu() {
     fzf --info=hidden --no-input --delimiter="$tab" --with-nth=2 "$@"
 }
 
+# cap TEXT: TEXT with a capital first letter (menus show it so, the keys stay)
+cap() {
+    printf '%s%s' "$(printf '%.1s' "$1" | tr '[:lower:]' '[:upper:]')" "${1#?}"
+}
+
 # line KEY BOX LABEL TEXT: a menu line
 line() {
-    printf '%s\t%-3s %-14s %s\n' "$1" "$2" "$3" "$4"
+    printf '%s\t%-3s %-14s %s\n' "$1" "$2" "$(cap "$3")" "$4"
 }
 
 # yes_no NAME TEXT [DEFAULT]: a line with [x] or [ ]
@@ -115,41 +120,43 @@ label_of() {
 
 # choose LABEL LIST: pick one, print its key (nothing on Esc)
 choose() {
-    printf '%s\n' "$2" | menu --border-label=" $1 " | cut -f1
+    printf '%s\n' "$2" | menu --border-label=" $(cap "$1") " | cut -f1
 }
 
-# center TEXT: TEXT in the middle of the menu (window width minus the
-# border and the cursor column); with no terminal as it is
+# center TEXT [WIDTH]: TEXT in the middle of the menu (window width minus the
+# border and the cursor column); with no terminal as it is. WIDTH: for
+# non-ASCII text, dash counts bytes in ${#1}
 center() {
     local cols pad
     cols=$(stty size 2>/dev/null </dev/tty | cut -d" " -f2)
-    pad=$(( (${cols:-0} - 4 - ${#1}) / 2 ))
+    pad=$(( (${cols:-0} - 4 - ${2:-${#1}}) / 2 ))
     [ "$pad" -gt 0 ] || pad=0
     printf '%*s%s\n' "$pad" '' "$1"
 }
 
-# loop LABEL HEADER LINES ACT: a menu that stays open. LINES prints the
-# lines, ACT KEY does the change and may set $note. Esc leaves
+# loop LABEL HEADER LINES ACT [ART]: a menu that stays open. LINES prints the
+# lines, ACT KEY does the change and may set $note. ART goes above HEADER,
+# under an empty line. Esc leaves
 loop() {
     local lines pick header pos=1
     note=''
     while :; do
         lines=$("$3")
         # a last line of one space: an empty line above the list
-        header=$(center "$2"; [ -z "$note" ] || center "$note"; echo ' ')
+        header=$([ -z "${5:-}" ] || printf ' \n%s\n' "$5"; center "$2"; [ -z "$note" ] || center "$note"; echo ' ')
         pick=$(printf '%s\n' "$lines" |
-            menu --border-label=" $1 " --header="$header" --bind="load:pos($pos)") || return 0
+            menu --border-label=" $(cap "$1") " --header="$header" --bind="load:pos($pos)") || return 0
         pos=$(printf '%s\n' "$lines" | grep -nxF -- "$pick" | cut -d: -f1)
         "$4" "${pick%%"$tab"*}"
     done
 }
 
 top_lines() {
-    line settings '' settings 'install options'
-    line features '' features 'desktop tools'
+    line settings '' settings 'Install options >'
+    line features '' features 'Desktop tools >'
     # an empty line between the two groups; Enter on it does nothing
     printf -- '-\t\n'
-    line misc '' misc 'additional packages'
+    line misc '' misc 'Additional packages >'
 }
 
 top_act() {
@@ -166,14 +173,14 @@ top_act() {
 }
 
 settings_lines() {
-    line mode '' mode "$(setting mode "$mode_now")"
-    line layouts '' layouts "$(setting layouts us,ru)"
-    line layout_toggle '' 'switch layout' "$(label_of "$toggles" "$(setting layout_toggle alt_shift_toggle)")"
-    line dns '' dns "$(setting dns dhcp)"
+    line mode '' mode "$(setting mode "$mode_now") >"
+    line layouts '' layouts "$(setting layouts us,ru) >"
+    line layout_toggle '' 'switch layout' "$(label_of "$toggles" "$(setting layout_toggle alt_shift_toggle)") >"
+    line dns '' dns "$(setting dns dhcp) >"
     # distro_settings: distro.sh (Artix: aur helper, pacman)
     ! command -v distro_settings >/dev/null || distro_settings
-    yes_no nobeep 'mute the motherboard beeper'
-    yes_no maxhz 'highest refresh rate of every screen'
+    yes_no nobeep 'Mute the motherboard beeper'
+    yes_no maxhz 'Highest refresh rate of every screen'
     yes_no xwayland 'X11 programs; after a relogin' no
 }
 
@@ -186,7 +193,7 @@ settings_act() {
         dns)           value=$(choose dns "$dns_list") ;;
         layouts)
             loop layouts 'Enter: on / off   Esc: back   the first one is the default' layout_lines layout_act
-            note="layouts: $(setting layouts us,ru)"
+            note="Layouts: $(setting layouts us,ru)"
             return 0 ;;
         xwayland)
             toggle xwayland no
@@ -197,7 +204,7 @@ settings_act() {
     esac
     [ -n "$value" ] || return 0
     set_value "$1" "$value"
-    note="$1: $value"
+    note="$(cap "$1"): $value"
 }
 
 # group GROUP: "name|default" of the parts in GROUP (components.txt)
@@ -251,7 +258,7 @@ layout_act() {
     case ",$now," in
         *",$1,"*)
             if [ "$now" = "$1" ]; then
-                note="one layout has to stay"
+                note="One layout has to stay"
                 return 0
             fi
             now=$(printf '%s\n' "$now" | tr ',' '\n' | grep -vxF -- "$1" | paste -sd, -) ;;
@@ -259,7 +266,7 @@ layout_act() {
             now="$now,$1" ;;
     esac
     set_value layouts "$now"
-    note="layouts: $now"
+    note="Layouts: $now"
 }
 
 # shh config: tabs settings, features, misc;
@@ -278,7 +285,21 @@ config() {
         '# change: shh config, then shh update (or edit here); a missing line = the default' \
         >"$shh_config"
 
-    loop 'shh config' 'Enter: open   Esc: done' top_lines top_act
+    # font Bloody (patorjk.com), like the fastfetch logo, N made narrower; 47 columns wide
+    art=$(while IFS= read -r l; do center "$l" 47; done <<'EOF'
+ ▄████▄   ▒█████   ███▄  █   █████▒ ██▓  ▄████
+▒██▀ ▀█  ▒██▒  ██▒ ██ ▀█ █ ▓██   ▒ ▓██▒ ██▒ ▀█▒
+▒▓█    ▄ ▒██░  ██▒▓██  ▀██▒▒████ ░ ▒██▒▒██░▄▄▄░
+▒▓▓▄ ▄██▒▒██   ██░▓██▒ ▐██▒░▓█▒  ░ ░██░░▓█  ██▓
+▒ ▓███▀ ░░ ████▓▒░▒██░  ██░░▒█░    ░██░░▒▓███▀▒
+░ ░▒ ▒  ░░ ▒░▒░▒░ ░ ▒░  ▒ ▒ ▒ ░    ░▓   ░▒   ▒
+  ░  ▒     ░ ▒ ▒░ ░ ░░  ░ ▒ ░       ▒ ░  ░   ░
+░        ░ ░ ░ ▒     ░  ░ ░ ░ ░     ▒ ░░ ░   ░
+░ ░          ░ ░          ░         ░        ░
+░
+EOF
+)
+    loop 'shh config' 'Enter: open   Esc: done' top_lines top_act "$art"
 
     info "saved in $shh_config"
     [ -n "${SHH_INSTALL:-}" ] || info "apply: shh update (before the first install: sh install.sh)"

@@ -1,0 +1,73 @@
+#!/bin/sh
+# ASCII : https://patorjk.com/software/taag/#p=display&f=Linguaholic+Mini+Block&t=SHH-DOTFILES&x=none&v=4&h=4&w=80&we=false
+
+# ▄▄▄▄   ▄▄  ▄▄▄  ▄  ▄ 
+# █ █ █ █▀▀▀ █  █ █  █ 
+# ▀ ▀ ▀  ▀▀▀ ▀  ▀  ▀▀▀ 
+# menu - the bar button: wifi, volume, bluetooth, vpn, brightness.
+# A pick opens its menu in this window, Esc there comes back here.
+# A part turned off in shh config has no script in ~/.local/bin, so no line.
+# menu open: the window, as tall as the menu (the bar runs this)
+
+set -eu
+
+bin="$HOME/.local/bin"
+tab=$(printf '\t')
+
+# "script<TAB>icon  Name >", only the installed ones
+lines() {
+    local s
+    for s in 'wifi	  Wifi >' \
+        'volume	󰕾  Volume >' \
+        'bluetooth	  Bluetooth >' \
+        'vpn	󰖂  VPN >' \
+        'brightness	󰃠  Brightness >'; do
+        [ ! -x "$bin/${s%%"$tab"*}" ] || printf '%s\n' "$s"
+    done
+}
+
+# font Bloody (patorjk.com), like the fastfetch logo; N made narrower
+art() {
+    cat <<'EOF'
+ ███▄ ▄███▓▓█████  ███▄  █  █    ██
+▓██▒▀█▀ ██▒▓█   ▀  ██ ▀█ █  ██  ▓██▒
+▓██    ▓██░▒███   ▓██  ▀██▒▓██  ▒██░
+▒██    ▒██ ▒▓█  ▄ ▓██▒ ▐██▒▓▓█  ░██░
+▒██▒   ░██▒░▒████▒▒██░  ██░▒▒█████▓
+░ ▒░   ░  ░░░ ▒░ ░░ ▒░  ▒ ▒░▒▓▒ ▒ ▒
+░  ░      ░ ░ ░  ░░ ░░  ░ ▒░░▒░ ░ ░
+░      ░      ░      ░  ░ ░ ░░░ ░ ░
+       ░      ░  ░        ░   ░
+EOF
+}
+
+# an empty line, the art in the middle, an empty line. fzf runs this on
+# start and on every resize: sway sets the width after the window opens.
+# 36 = the art width (dash counts bytes in ${#var}); 4 = the border and
+# the cursor column, like center() in shh
+header() {
+    local pad=$(( (${FZF_COLUMNS:-0} - 4 - 36) / 2 ))
+    [ "$pad" -gt 0 ] || pad=0
+    echo ' '
+    art | sed "s/^/$(printf '%*s' "$pad" '')/"
+    echo ' '
+}
+
+case "${1:-}" in
+    --header) header; exit 0 ;;
+    # rows: the border, the header (11), the lines and one empty line;
+    # sway/rules sets only the width
+    open) exec footclient --app-id=menu --window-size-chars="50x$(($(lines | wc -l) + 13))" "$0" ;;
+esac
+
+# pos keeps the cursor on the last picked line
+pos=1
+while :; do
+    list=$(lines)
+    pick=$(printf '%s\n' "$list" |
+        fzf --info=hidden --no-input --delimiter="$tab" --with-nth=2 --border-label=' Menu ' \
+            --bind="start,resize:transform-header:sh '$0' --header" --bind="load:pos($pos)") || exit 0
+    pos=$(printf '%s\n' "$list" | grep -nxF -- "$pick" | cut -d: -f1)
+    # a menu that fails (no wifi device...) just comes back here
+    "$bin/${pick%%"$tab"*}" || true
+done

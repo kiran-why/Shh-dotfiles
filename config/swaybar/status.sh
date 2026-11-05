@@ -1,14 +1,12 @@
 #!/bin/sh
 # ~/.config/swaybar/status.sh - the right side of swaybar:
-# recording dot, network, bluetooth, volume, clock, battery.
-# clicks open the menus, the wheel on the volume changes it
+# recording dot, clock, battery, the menu button (scripts/menu)
 
 # no "set -e": one failed check must not kill the bar
 set -u
 
 # same as sway/colors
 white='#e6e6e6'
-gray='#5a5a5a'
 red='#d7263d'
 
 # block NAME TEXT COLOR; 20 = gap between blocks in px
@@ -22,79 +20,6 @@ rec() {
     pgrep -x wf-recorder >/dev/null || return 0
     block rec '● rec' "$red"
     printf ','
-}
-
-# cable, else wifi, else crossed out gray wifi.
-# tunnels and bridges have no "device", so they don't count as a cable
-net() {
-    local dev st wired=0 wifi=0
-    for dev in /sys/class/net/*; do
-        # read, not cat: no process per interface every second
-        st=
-        read -r st 2>/dev/null <"$dev/operstate" || :
-        [ "$st" = "up" ] || continue
-        if [ -d "$dev/wireless" ]; then
-            wifi=1
-        elif [ -e "$dev/device" ]; then
-            wired=1
-        fi
-    done
-    if [ "$wired" = 1 ]; then
-        block net '󰈀' "$white"
-    elif [ "$wifi" = 1 ]; then
-        block net '󰖩' "$white"
-    else
-        block net '󰖪' "$gray"
-    fi
-}
-
-# line PERCENT: ━━━━━─────, the empty part gray
-line() {
-    local full=$((($1 + 5) / 10)) i=0 on='' off=''
-    [ "$full" -gt 10 ] && full=10
-    while [ "$i" -lt 10 ]; do
-        if [ "$i" -lt "$full" ]; then on="$on━"; else off="$off─"; fi
-        i=$((i + 1))
-    done
-    printf "%s<span foreground='%s'>%s</span>" "$on" "$gray" "$off"
-}
-
-# gray when muted or no pipewire
-vol() {
-    local out v int frac pct
-    if ! out=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null); then
-        block vol "󰖁 $(line 0)" "$gray"
-        return
-    fi
-    # "Volume: 0.57 [MUTED]": wpctl prints %.2f in the C locale, so
-    # int*100 + the two digits is exact; ${frac#0}: $((08)) is octal in dash
-    v=${out#Volume: }
-    v=${v%% *}
-    int=${v%.*}
-    frac=${v#*.}
-    case "$int$frac" in
-        *[!0-9]*|'') pct=$(echo "$out" | awk '{printf "%.0f", $2 * 100}') ;;
-        *) frac=${frac#0}; pct=$((int * 100 + ${frac:-0})) ;;
-    esac
-    case "$out" in
-        *MUTED*) block vol "󰖁 $(line "$pct")" "$gray" ;;
-        *) block vol "󰕾 $(line "$pct")" "$white" ;;
-    esac
-}
-
-# only with an adapter; white when connected (the kernel adds hci0:N per connection)
-blue() {
-    local d hci=0
-    # bluetooth turned off in shh config: no menu to open
-    [ -x ~/.local/bin/bluetooth ] || return 0
-    for d in /sys/class/bluetooth/hci*; do
-        [ -e "$d" ] || continue
-        case "${d##*/}" in
-            *:*) printf ','; block blue '󰂱' "$white"; return ;;
-            *)   hci=1 ;;
-        esac
-    done
-    [ "$hci" = 0 ] || { printf ','; block blue '󰂯' "$gray"; }
 }
 
 # date format: man date
@@ -143,7 +68,19 @@ bat() {
     done
 }
 
-# scripts wake the loop with USR1 to redraw now (record, volume);
+# far right: the logo of this distro (nf-linux-*), CRUX has none: tux.
+# no os-release: "." of a missing file kills dash
+id=
+[ ! -r /etc/os-release ] || id=$(. /etc/os-release; echo "${ID:-}")
+case "$id" in
+    artix)  logo='' ;;
+    void)   logo='' ;;
+    gentoo) logo='' ;;
+    *)      logo='' ;;
+esac
+menu_button=$(block menu "$logo" "$white")
+
+# scripts wake the loop with USR1 to redraw now (record);
 # the pid file is written after the trap, so an early signal can't kill it
 bar_pid="${XDG_RUNTIME_DIR:-/tmp}/shh-bar.pid"
 
@@ -151,7 +88,7 @@ status_loop() {
     trap : USR1
     sh -c 'echo "$PPID"' >"$bar_pid"
     while :; do
-        printf '[%s%s%s,%s,%s%s],\n' "$(rec)" "$(net)" "$(blue)" "$(vol)" "$(clock)" "$(bat)"
+        printf '[%s%s%s,%s],\n' "$(rec)" "$(clock)" "$(bat)" "$menu_button"
         # wait, unlike sleep, returns at once on a signal
         sleep 1 &
         wait $! || kill $! 2>/dev/null
@@ -167,16 +104,12 @@ trap 'kill "$loop_pid" 2>/dev/null
       [ "$(cat "$bar_pid" 2>/dev/null)" != "$loop_pid" ] || rm -f "$bar_pid"' EXIT
 trap 'exit' INT TERM
 
-# clicks: button 1 left, 4/5 wheel
+# clicks: button 1 is the left one
 while read -r click; do
     what=$(printf '%s\n' "${click#,}" | jq -r '"\(.name) \(.button)"' 2>/dev/null) || continue
     case "$what" in
         "rec 1") pkill -TERM -x wf-recorder ;;
-        "net 1") swaymsg exec 'footclient --app-id=wifi ~/.local/bin/wifi' >/dev/null ;;
-        "blue 1") swaymsg exec 'footclient --app-id=bluetooth ~/.local/bin/bluetooth' >/dev/null ;;
-        "vol 1") swaymsg exec 'footclient --app-id=volume ~/.local/bin/volume' >/dev/null ;;
-        "vol 4") wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+ 2>/dev/null ;;
-        "vol 5") wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- 2>/dev/null ;;
+        "menu 1") swaymsg exec '~/.local/bin/menu open' >/dev/null ;;
     esac
     kill -USR1 "$loop_pid" 2>/dev/null
 done

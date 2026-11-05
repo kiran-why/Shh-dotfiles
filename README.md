@@ -87,8 +87,8 @@ is never deleted, it goes to `name.bak-DATE`, and the list of them is printed at
 | `Super + L` | Leave the Desktop |
 | `Print` | Screenshot of a Region |
 
-**Bar:** a red `● rec` while recording (click it to stop), click wifi for the network menu, bluetooth (shown only with an adapter) for the bluetooth menu,
-the volume for the sound menu, scroll on it to change it.
+**Bar:** a red `● rec` while recording (click it to stop); the button on the far right opens the menu:
+wifi, bluetooth, volume, brightness and vpn (the ones turned on in `shh config`).
 
 **zsh:** `Tab` completes, `→` accepts the gray suggestion, `↑` / `↓` search the history by what
 you typed, `Ctrl + ←` / `→` jump by words.

@@ -1,6 +1,6 @@
 #!/bin/sh
 # volume - sound menu: volume up / down, mute, input and output devices
-# opened from the volume icon in swaybar.
+# opened from the bar menu (scripts/menu).
 # volume up | down | mute: no menu, for the volume keys, shows the level
 
 set -eu
@@ -21,11 +21,6 @@ gap=$(printf '\n ')
 # wpctl prints harmless "RTKit error" lines that would mess up the menu
 wp() {
     wpctl "$@" 2>/dev/null
-}
-
-# redraw the bar now, not on its next second (status.sh)
-wake_bar() {
-    kill -USR1 "$(cat "${XDG_RUNTIME_DIR:-/tmp}/shh-bar.pid" 2>/dev/null)" 2>/dev/null || true
 }
 
 # line PERCENT: ━━━━━─────
@@ -68,26 +63,26 @@ pick_device() {
              | select(.info.props["media.class"] == "Audio/Sink" or .info.props["media.class"] == "Audio/Source")]
         | sort_by(.info.props["media.class"] != "Audio/Sink")
         | .[]
-        | (if .info.props["media.class"] == "Audio/Sink" then "out" else "in " end) as $kind
+        | (if .info.props["media.class"] == "Audio/Sink" then "Out" else "In " end) as $kind
         | (if (.id | tostring) == $o or (.id | tostring) == $i then "  (now)" else "" end) as $now
         | "\(.id)\t\($kind)  \(.info.props["node.description"] // .info.props["node.name"])\($now)"' |
-        menu --border-label=' in/out devices ' --delimiter='\t' --with-nth=2 |
+        menu --border-label=' In/out devices ' --delimiter='\t' --with-nth=2 |
         cut -f1) || return 0
     if [ -n "$id" ]; then
         wp set-default "$id"
     fi
 }
 
-# action NODE: "mute" or "unmute", what a pick will do
+# action NODE: "Mute" or "Unmute", what a pick will do
 action() {
-    case "$(wp get-volume "$1" || true)" in *MUTED*) echo unmute ;; *) echo mute ;; esac
+    case "$(wp get-volume "$1" || true)" in *MUTED*) echo Unmute ;; *) echo Mute ;; esac
 }
 
 # mute or unmute the sound or the mic, Esc goes back
 mute_menu() {
     local pick
     pick=$(printf '%s\n' "$(action "$out") volume" "$(action "$mic") mic" |
-        menu --border-label=' mute/unmute ' --header="$(now)$gap") || return 0
+        menu --border-label=' Mute/unmute ' --header="$(now)$gap") || return 0
     case "$pick" in
         *volume) wp set-mute "$out" toggle ;;
         *mic)    wp set-mute "$mic" toggle ;;
@@ -103,21 +98,20 @@ notify_level() {
 }
 
 case "${1:-}" in
-    up)   wp set-volume -l "$max" "$out" "$step+"; wake_bar; notify_level; exit 0 ;;
-    down) wp set-volume "$out" "$step-"; wake_bar; notify_level; exit 0 ;;
-    mute) wp set-mute "$out" toggle; wake_bar; notify_level; exit 0 ;;
+    up)   wp set-volume -l "$max" "$out" "$step+"; notify_level; exit 0 ;;
+    down) wp set-volume "$out" "$step-"; notify_level; exit 0 ;;
+    mute) wp set-mute "$out" toggle; notify_level; exit 0 ;;
 esac
 
 # pos keeps the cursor on the last picked line
 pos=1
 while :; do
-    pick=$(printf '%s\n' '(+) volume' '(-) volume' 'mute/unmute' 'in/out devices' |
-        menu --border-label=' volume ' --header="$(now)$gap" --bind="load:pos($pos)") || exit 0
+    pick=$(printf '%s\n' '(+) Volume' '(-) Volume' 'Mute/unmute >' 'In/out devices >' |
+        menu --border-label=' Volume ' --header="$(now)$gap" --bind="load:pos($pos)") || exit 0
     case "$pick" in
-        '(+) volume')     pos=1; wp set-volume -l "$max" "$out" "$step+" ;;
-        '(-) volume')     pos=2; wp set-volume "$out" "$step-" ;;
-        'mute/unmute')    pos=3; mute_menu ;;
-        'in/out devices') pos=4; pick_device ;;
+        '(+) Volume')       pos=1; wp set-volume -l "$max" "$out" "$step+" ;;
+        '(-) Volume')       pos=2; wp set-volume "$out" "$step-" ;;
+        'Mute/unmute >')    pos=3; mute_menu ;;
+        'In/out devices >') pos=4; pick_device ;;
     esac
-    wake_bar
 done

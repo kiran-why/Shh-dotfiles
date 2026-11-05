@@ -1,5 +1,5 @@
 #!/bin/sh
-# brightness - screen brightness menu: up / down, opened from the launcher.
+# brightness - screen brightness menu: up / down, opened from the bar menu (scripts/menu).
 # brightness up | down: no menu, for the brightness keys, shows the level.
 # Writing needs the group video (install.sh: udev rule, relogin)
 
@@ -39,7 +39,7 @@ set_level() {
         read -r max <"$dev/max_brightness"
         # 2> first: a failed > would print before it
         printf '%s\n' $(((pct * max + 50) / 100)) 2>/dev/null >"$dev/brightness" ||
-            { note='no permission: sh install.sh, then log in again'; return 1; }
+            { note='No permission: sh install.sh, then log in again'; return 1; }
     done
 }
 
@@ -69,7 +69,7 @@ note=''
 if [ -z "$devs" ]; then
     # the keys: nothing to do; the menu says why
     [ -z "${1:-}" ] || exit 0
-    printf '' | menu --border-label=' brightness ' --header="no screen backlight here (a desktop monitor?)$gap" || true
+    printf '' | menu --border-label=' Brightness ' --header="No screen backlight here (a desktop monitor?)$gap" || true
     exit 0
 fi
 
@@ -81,11 +81,11 @@ esac
 # pos keeps the cursor on the last picked line
 pos=1
 while :; do
-    pick=$(printf '%s\n' '(+) brightness' '(-) brightness' |
-        menu --border-label=' brightness ' --header="$(now)${note:+
+    pick=$(printf '%s\n' '(+) Brightness' '(-) Brightness' |
+        menu --border-label=' Brightness ' --header="$(now)${note:+
 $note}$gap" --bind="load:pos($pos)") || exit 0
     case "$pick" in
-        '(+) brightness') pos=1; set_level $(($(level) + step)) || true ;;
-        '(-) brightness') pos=2; set_level $(($(level) - step)) || true ;;
+        '(+) Brightness') pos=1; set_level $(($(level) + step)) || true ;;
+        '(-) Brightness') pos=2; set_level $(($(level) - step)) || true ;;
     esac
 done

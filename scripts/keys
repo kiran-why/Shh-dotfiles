@@ -68,4 +68,4 @@ for f in "$sway_dir"/features/*; do
 done
 
 list "$@" |
-    fzf --ansi --border-label=' keys ' >/dev/null || true
+    fzf --ansi --border-label=' Keys ' >/dev/null || true

@@ -10,12 +10,12 @@ gap=$(printf '\n ')
 
 # cliphist lines are "id<TAB>preview", newest first; --expect prints the key first
 menu() {
-    fzf --border-label=' clipboard ' --header="enter: copy   ctrl-d: delete$gap" \
+    fzf --border-label=' Clipboard ' --header="Enter: copy   Ctrl-D: delete$gap" \
         --no-sort --delimiter='\t' --with-nth=2.. --expect=ctrl-d
 }
 
 # empty id, so it can't be a cliphist line
-clear_all='	clear history'
+clear_all='	Clear history'
 
 while :; do
     out=$({ printf '%s\n' "$clear_all"; cliphist list; } | menu) || exit 0
