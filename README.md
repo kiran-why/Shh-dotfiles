@@ -87,7 +87,7 @@ is never deleted, it goes to `name.bak-DATE`, and the list of them is printed at
 | `Super + L` | Leave the Desktop |
 | `Print` | Screenshot of a Region |
 
-**Bar:** a red `● rec` while recording (click it to stop); the button on the far right opens the menu:
+**Bar:** a red `● rec` while recording (click it to stop), click the time to see the date instead; the button on the far right opens the menu:
 wifi, bluetooth, volume, brightness and vpn (the ones turned on in `shh config`).
 
 **zsh:** `Tab` completes, `→` accepts the gray suggestion, `↑` / `↓` search the history by what

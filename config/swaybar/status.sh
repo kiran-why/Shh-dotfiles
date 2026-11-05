@@ -22,9 +22,18 @@ rec() {
     printf ','
 }
 
+# a click on the clock shows the date instead of the time, the next one the
+# time again; a file, because clock() runs in a subshell and the clicks in
+# the main process
+date_flag="${XDG_RUNTIME_DIR:-/tmp}/shh-bar-date"
+
 # date format: man date
 clock() {
-    block clock "$(date +'%d.%m  %H:%M')" "$white"
+    if [ -e "$date_flag" ]; then
+        block clock "$(date +%d.%m)" "$white"
+    else
+        block clock "$(date +%H:%M)" "$white"
+    fi
 }
 
 # the low battery notification shows once per discharge
@@ -109,6 +118,7 @@ while read -r click; do
     what=$(printf '%s\n' "${click#,}" | jq -r '"\(.name) \(.button)"' 2>/dev/null) || continue
     case "$what" in
         "rec 1") pkill -TERM -x wf-recorder ;;
+        "clock 1") if [ -e "$date_flag" ]; then rm -f "$date_flag"; else : >"$date_flag"; fi ;;
         "menu 1") swaymsg exec '~/.local/bin/menu open' >/dev/null ;;
     esac
     kill -USR1 "$loop_pid" 2>/dev/null
