@@ -3,16 +3,8 @@
 # virtualbox, qemu, hyperv, xen) or each graphics card: amd, intel,
 # nvidia (GTX 16xx, RTX+), nvidia-580xx (GTX 750-10xx), nvidia-legacy.
 # fails when nothing is found. install.sh installs system/DISTRO/packages/WORD.csv
-# hardware --lid: 0 when the machine has a lid (the ACPI lid button)
 
 set -eu
-
-if [ "${1:-}" = --lid ]; then
-    for lid in /proc/acpi/button/lid/*; do
-        [ ! -e "$lid" ] || exit 0
-    done
-    exit 1
-fi
 
 dmi=/sys/devices/virtual/dmi/id
 id=$(cat "$dmi/sys_vendor" "$dmi/product_name" "$dmi/board_name" 2>/dev/null |

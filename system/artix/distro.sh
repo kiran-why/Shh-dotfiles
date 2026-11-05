@@ -313,6 +313,16 @@ distro_settings() {
     yes_no pacman 'Pacman colors and parallel downloads, AUR builds on all cpu cores'
 }
 
+# distro_act KEY (shh config): the value picked on this distro's line KEY
+# (choose: shh); 1 = not a line of ours
+distro_act() {
+    case "$1" in
+        aur_helper) choose 'aur helper' "yay${tab}yay
+paru${tab}paru" ;;
+        *)          return 1 ;;
+    esac
+}
+
 # distro_undo: what install.sh changed in the system (link.sh --uninstall)
 distro_undo() {
     echo "  packages   packages/*.csv        sudo pacman -Rs NAME"

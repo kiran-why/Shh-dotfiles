@@ -41,9 +41,8 @@ distro_check() {
         warn "wpa_supplicant is on, it fights with iwd over wifi"
         info "turn it off: sudo rm /var/service/wpa_supplicant"
     fi
-    # its handler.sh (Void's acpid) suspends on a closed lid as root, unlocked;
-    # sway does it with the lock (config/sway/features/lid)
-    if [ -e /var/service/acpid ] && part_on lid; then
+    # its handler.sh (Void's acpid) suspends on a closed lid as root, unlocked
+    if [ -e /var/service/acpid ]; then
         warn "acpid is on, it suspends on a closed lid without the screen lock"
         info "turn it off: sudo rm /var/service/acpid"
     fi

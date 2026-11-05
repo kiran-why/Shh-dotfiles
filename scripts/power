@@ -1,7 +1,7 @@
 #!/bin/sh
 # power - exit sway, power off, reboot, sleep ($mod+L, the bar menu).
 # A pick runs at once, no "are you sure".
-# power poweroff | reboot | suspend: no menu (a terminal, the lid, Sleep)
+# power poweroff | reboot | suspend: no menu (a terminal, Sleep)
 
 set -eu
 

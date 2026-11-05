@@ -40,7 +40,7 @@ else
     packages_dir="$share/packages"
     distro_file="$share/distro.sh"
 fi
-# scripts/hardware: what the machine is (cards, a lid)
+# scripts/hardware: what the machine is (cards)
 if [ "$from_repo" = 1 ]; then hardware_script="$repo/scripts/hardware"; else hardware_script="$HOME/.local/bin/hardware"; fi
 
 # pkg_*, svc_check, seat_groups; missing: only doctor and installing fzf need it
@@ -63,8 +63,6 @@ usage() {
 # choices for the small menus: "value<TAB>shown text"
 modes="copy${tab}Copy   copies, the repo can be deleted
 link${tab}Link   links to the repo, edits land in it"
-helpers="yay${tab}yay
-paru${tab}paru"
 # the same look, options and keys in both (config/vim, config/nvim)
 editors="vim${tab}Vim      fewer dependencies
 nvim${tab}Neovim"
@@ -200,7 +198,6 @@ settings_act() {
     case "$1" in
         mode)          value=$(choose mode "$modes") ;;
         layout_toggle) value=$(choose 'switch layout' "$toggles") ;;
-        aur_helper)    value=$(choose 'aur helper' "$helpers") ;;
         dns)           value=$(choose dns "$dns_list") ;;
         editor)        value=$(choose editor "$editors") ;;
         files)         value=$(choose 'file manager' "$file_managers") ;;
@@ -216,8 +213,11 @@ settings_act() {
             toggle xwayland no
             return 0 ;;
         *)
-            toggle "$1"
-            return 0 ;;
+            # distro_act: distro.sh (Artix: aur helper); not its line: a yes / no
+            if ! command -v distro_act >/dev/null || ! value=$(distro_act "$1"); then
+                toggle "$1"
+                return 0
+            fi ;;
     esac
     [ -n "$value" ] || return 0
     set_value "$1" "$value"
@@ -359,8 +359,6 @@ config() {
             '# ~/.config/shh/config - your choices for install.sh and shh update' \
             '# change: shh config, then shh update (or edit here); a missing line = the default' \
             >"$shh_config"
-        # sleep on a closed lid: on by default only where there is a lid
-        sh "$hardware_script" --lid || echo lid=no >>"$shh_config"
     fi
 
     # font Bloody (patorjk.com), like the fastfetch logo, N made narrower; 47 columns wide

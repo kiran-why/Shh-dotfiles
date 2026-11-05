@@ -19,6 +19,9 @@ dots_path=$(cd "$(dirname "$0")" && pwd -P)
 # temporary sudo rule (enable_nopasswd)
 sudoers_tmp="/etc/sudoers.d/dotfiles-temp"
 
+# start_log: a copy of the output, the last run only
+install_log="$HOME/.local/state/shh/install.log"
+
 # for backup names, like link.sh
 stamp=$(date +%Y%m%d-%H%M%S)
 
@@ -146,6 +149,21 @@ EOF
 # ▀█▀ █▄  █ ▄▀▀▀ ▀▀█▀▀ ▄▀▀▄ █    █    
 #  █  █ ▀▄█  ▀▀▄   █   █▀▀█ █    █    
 # ▀▀▀ ▀   ▀ ▀▀▀    ▀   ▀  ▀ ▀▀▀▀ ▀▀▀▀ 
+
+# start_log: from here on the output also goes to $install_log (tee reads a
+# fifo). After the menu: fzf draws on the terminal. Programs see no terminal
+# now, so pacman prints no progress bars
+start_log() {
+    local fifo
+    mkdir -p "$(dirname "$install_log")"
+    fifo=$(mktemp -u) || error "cannot make a temporary name"
+    mkfifo "$fifo" || error "cannot make $fifo"
+    tee "$install_log" <"$fifo" &
+    exec >"$fifo" 2>&1
+    # both ends are open, the name is not needed
+    rm -f "$fifo"
+    info "log: $install_log"
+}
 
 # AUR builds would ask for the password again and again (trick from LARBS)
 enable_nopasswd() {
@@ -437,6 +455,7 @@ fi
 
 check_system
 choose_parts
+start_log
 enable_nopasswd
 distro_prepare
 # vmware_clipboard: distro.sh
@@ -452,3 +471,4 @@ leftovers
 
 echo
 ok "all done - reboot and log in on the TTY"
+info "log: $install_log"
