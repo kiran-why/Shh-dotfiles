@@ -99,20 +99,19 @@ part_on() {
 
 # gpu_drivers HARDWARE: the graphics drivers to install, one per line
 # (system/DISTRO/packages/WORD.csv): HARDWARE (scripts/hardware) on auto,
-# else the pick in shh config > settings > graphics. A pick changes only the
-# NVIDIA driver or adds a card: AMD and Intel cards found stay, without their
-# firmware a laptop screen can stay black
+# else the ones picked in shh config > settings > graphics (gpu=amd,nvidia)
 gpu_drivers() {
-    local gpu others
+    local gpu card
     gpu=$(setting gpu auto)
     if [ "$gpu" = auto ]; then
         printf '%s\n' "$1"
         return 0
     fi
-    others=$(printf '%s\n' "$1" | grep -v '^nvidia' || true)
-    # the open or the older 580xx driver: what fits the card, if one was found
-    [ "$gpu" != nvidia ] || gpu=$(printf '%s\n' "$1" nvidia | grep -x 'nvidia\|nvidia-580xx' | head -n 1)
-    printf '%s\n' "$others" "$gpu" | grep -v '^$' | sort -u
+    for card in $(printf '%s\n' "$gpu" | tr , ' '); do
+        # the open or the older 580xx driver: what fits the card, if one was found
+        [ "$card" != nvidia ] || card=$(printf '%s\n' "$1" nvidia | grep -x 'nvidia\|nvidia-580xx' | head -n 1)
+        echo "$card"
+    done
 }
 
 # off_items COMPONENTS FIELD: one per line, FIELD (2 packages, 3 files,

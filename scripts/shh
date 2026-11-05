@@ -65,12 +65,6 @@ paru${tab}paru"
 # the same look, options and keys in both (config/vim, config/nvim)
 editors="vim${tab}Vim      fewer dependencies
 nvim${tab}Neovim"
-# the graphics driver: auto = by the card (scripts/hardware)
-gpus="auto${tab}Auto     by the card, recommended
-amd${tab}AMD
-intel${tab}Intel
-nvidia${tab}NVIDIA   the NVIDIA driver (glibc only)
-nouveau${tab}Nouveau  the free NVIDIA driver"
 # xkb options for switching the layout
 toggles="alt_shift_toggle${tab}Alt+Shift
 ctrl_shift_toggle${tab}Ctrl+Shift
@@ -202,8 +196,11 @@ settings_act() {
         layout_toggle) value=$(choose 'switch layout' "$toggles") ;;
         aur_helper)    value=$(choose 'aur helper' "$helpers") ;;
         dns)           value=$(choose dns "$dns_list") ;;
-        gpu)           value=$(choose 'graphics driver' "$gpus") ;;
         editor)        value=$(choose editor "$editors") ;;
+        gpu)
+            loop graphics "Enter: on / off   Esc: back   found: $(found_cards | sed 's/,/, /g')" gpu_lines gpu_act
+            note="Graphics: $(setting gpu auto)"
+            return 0 ;;
         layouts)
             loop layouts 'Enter: on / off   Esc: back   the first one is the default' layout_lines layout_act
             note="Layouts: $(setting layouts us,ru)"
@@ -262,6 +259,64 @@ layout_lines() {
             for (i = 1; i <= n; i++)
                 if (!(order[i] in used)) printf "%s\t[ ] %-14s %s\n", order[i], order[i], name[order[i]]
         }'
+}
+
+# found_cards: the cards scripts/hardware finds, as the choices below
+# (amd,nvidia); "nothing" in a VM or with no card
+found_cards() {
+    local script="$HOME/.local/bin/hardware" cards
+    [ "$from_repo" = 0 ] || script="$repo/scripts/hardware"
+    cards=$(sh "$script" 2>/dev/null |
+        sed 's/^nvidia-580xx$/nvidia/; s/^nvidia-legacy$/nouveau/' |
+        grep -x 'amd\|intel\|nvidia\|nouveau' | paste -sd, -) || true
+    printf '%s\n' "${cards:-nothing}"
+}
+
+# graphics: auto, or the drivers picked by hand (gpu=amd,nvidia; gpu_drivers: lib.sh)
+gpu_lines() {
+    local now card label text
+    now=$(setting gpu auto)
+    if [ "$now" = auto ]; then line auto '[x]' auto 'By the card, recommended'
+    else line auto '[ ]' auto 'By the card, recommended'; fi
+    for card in amd intel nvidia nouveau; do
+        case "$card" in
+            amd)     label=AMD;     text='' ;;
+            intel)   label=Intel;   text='' ;;
+            nvidia)  label=NVIDIA;  text='The NVIDIA driver' ;;
+            nouveau) label=Nouveau; text='The free NVIDIA driver' ;;
+        esac
+        case ",$now," in
+            *",$card,"*) line "$card" '[x]' "$label" "$text" ;;
+            *)           line "$card" '[ ]' "$label" "$text" ;;
+        esac
+    done
+}
+
+# gpu_act KEY: auto; or a card on <-> off, starting from the cards found.
+# The NVIDIA driver and nouveau can't be both; none left = auto
+gpu_act() {
+    local now
+    if [ "$1" = auto ]; then
+        set_value gpu auto
+        note="Graphics: auto"
+        return 0
+    fi
+    now=$(setting gpu auto)
+    if [ "$now" = auto ]; then
+        now=$(found_cards)
+        [ "$now" != nothing ] || now=''
+    fi
+    case ",$now," in
+        *",$1,"*) now=$(printf '%s\n' "$now" | tr , '\n' | grep -vxF -- "$1" | paste -sd, -) ;;
+        *)
+            case "$1" in
+                nvidia)  now=$(printf '%s\n' "$now" | tr , '\n' | grep -vx nouveau | paste -sd, -) ;;
+                nouveau) now=$(printf '%s\n' "$now" | tr , '\n' | grep -vx nvidia | paste -sd, -) ;;
+            esac
+            now="${now:+$now,}$1" ;;
+    esac
+    set_value gpu "${now:-auto}"
+    note="Graphics: ${now:-auto}"
 }
 
 # layout_act CODE: on -> off (one has to stay), off -> on at the end

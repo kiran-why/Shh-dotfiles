@@ -195,13 +195,26 @@ install_packages() {
 configure_gpu() {
     step "graphics"
 
-    local hw drivers
+    local hw drivers want
     drivers=$(gpu_drivers "$hardware")
     if [ -z "$drivers" ]; then
         warn "no graphics card found, only mesa is installed"
         return 0
     fi
-    [ "$(setting gpu auto)" = auto ] || info "driver from shh config: $(setting gpu auto)"
+    if [ "$(setting gpu auto)" != auto ]; then
+        info "picked in shh config: $(setting gpu auto)"
+        # a card found, but left out by hand: it runs on mesa only, and its
+        # firmware may be offered for removal at the end
+        for hw in $hardware; do
+            case "$hw" in
+                amd|intel) want=$hw ;;
+                nvidia*)   want='nvidia\|nvidia-580xx\|nouveau' ;;
+                *)         continue ;;
+            esac
+            printf '%s\n' "$drivers" | grep -qx "$want" ||
+                warn "$hw card found, but its driver is not picked (shh config > settings > graphics)"
+        done
+    fi
 
     for hw in $drivers; do
         case "$hw" in
