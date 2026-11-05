@@ -78,6 +78,7 @@ is never deleted, it goes to `name.bak-DATE`, and the list of them is printed at
 |---|---|
 | `Super + T` | Terminal |
 | `Super + R` | Launcher |
+| `Super + M` | Menu: Wifi, Volume, Bluetooth, VPN, Light |
 | `Super + B` | Browser |
 | `Super + F` | Files |
 | `Super + Q` | Close Window |

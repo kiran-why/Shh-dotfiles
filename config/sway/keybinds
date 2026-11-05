@@ -12,6 +12,9 @@ bindsym --to-code --no-repeat $mod+t exec $term
 # launcher
 bindsym --to-code --no-repeat $mod+r exec $menu
 
+# menu: wifi, volume, bluetooth, vpn, light (the bar button)
+bindsym --to-code --no-repeat $mod+m exec ~/.local/bin/menu open
+
 # close the window
 bindsym --to-code --no-repeat $mod+q kill
 
