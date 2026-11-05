@@ -1,7 +1,7 @@
 # components/void_components.txt - parts shh config can turn off (Void names); everything else is always installed
 # name|packages|files (repo paths)|services|group|default
 # group = the tab in shh config: empty = features, misc = programs we always use;
-# settings = its own line in settings (maxhz); xwayland = settings > xwayland; editor = settings > editor. Anything else: sudo xbps-install NAME yourself.
+# settings = its own line in settings (maxhz); xwayland = settings > xwayland; editor = settings > editor; files = settings > file manager. Anything else: sudo xbps-install NAME yourself.
 # default: empty = on, no = off
 # packages stay in system/void/packages/common.csv too; sway lines of a part go in config/sway/features/NAME
 
@@ -10,7 +10,6 @@ bluetooth|bluez libspa-bluetooth|scripts/bluetooth config/sway/features/bluetoot
 clipboard|cliphist|scripts/clipboard config/cliphist config/sway/features/clipboard|||
 screenshare|xdg-desktop-portal-wlr|config/sway/features/screenshare|||
 autotile||scripts/autotile config/sway/features/autotile|||
-broot|broot|config/broot config/sway/features/broot|||
 fastfetch|fastfetch|config/fastfetch|||
 scratchpad||config/sway/features/scratchpad|||
 
@@ -36,6 +35,10 @@ xwayland||||xwayland|
 # settings > editor: vim or nvim, the same look, options and keys
 vim|vim|config/vim||editor|
 nvim|neovim|config/nvim||editor|
+
+# settings > file manager: broot or yazi on Super+F
+broot|broot|config/broot config/sway/features/broot||files|
+yazi|yazi|config/yazi config/sway/features/yazi||files|
 
 # settings > maxhz
 maxhz||scripts/maxhz config/sway/features/maxhz||settings|

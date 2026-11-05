@@ -17,6 +17,7 @@
 ,neovim,text editor (config/nvim/init.lua)
 ,fzf,fuzzy finder (launcher and the menus: volume, wifi, bluetooth, keys)
 ,broot,file manager that shows folders as a tree (Super+F)
+,yazi,file manager with previews (Super+F)
 ,git,version control
 ,fastfetch,system info when a terminal opens
 

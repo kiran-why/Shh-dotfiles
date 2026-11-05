@@ -75,6 +75,19 @@ if command -v broot >/dev/null; then
     eval "$(broot --print-shell-function zsh)"
 fi
 
+# y: yazi that cds into the folder it was closed in (q; Q quits without),
+# from the yazi docs (quick start, shell wrapper)
+if command -v yazi >/dev/null; then
+    y() {
+        local tmp cwd
+        tmp=$(mktemp -t yazi-cwd.XXXXXX)
+        command yazi "$@" --cwd-file="$tmp"
+        IFS= read -r -d '' cwd <"$tmp"
+        [ "$cwd" != "$PWD" ] && [ -d "$cwd" ] && builtin cd -- "$cwd"
+        command rm -f -- "$tmp"
+    }
+fi
+
 # █▀▀▄ █    █  █ ▄▀▀▀ ▀█▀ █▄  █ ▄▀▀▀ 
 # █▀▀  █    █  █ █ ▀█  █  █ ▀▄█  ▀▀▄ 
 # ▀    ▀▀▀▀  ▀▀   ▀▀▀ ▀▀▀ ▀   ▀ ▀▀▀  

@@ -93,6 +93,8 @@ part_on() {
             if [ "$(setting xwayland no)" = yes ]; then [ "$1" = xwayland ]; else [ "$1" = noxwayland ]; fi ;;
         # one of the two editors (settings > editor)
         editor)   [ "$(setting editor vim)" = "$1" ] ;;
+        # one of the two file managers (settings > file manager)
+        files)    [ "$(setting files broot)" = "$1" ] ;;
         *)        [ "$(setting "$1" "${3:-yes}")" = yes ] ;;
     esac
 }

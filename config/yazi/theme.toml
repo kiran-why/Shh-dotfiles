@@ -1,0 +1,108 @@
+# ~/.config/yazi/theme.toml - black and white, red only for errors and cut;
+# the keys not set here stay default (yazi 26.9: theme-dark.toml in its repo)
+
+# same palette as foot.ini:
+# black #000000  dark #2a2a2a  gray #5a5a5a  light #a0a0a0
+# white #e6e6e6  bright #ffffff  red #d7263d
+
+[mgr]
+cwd = { fg = "#ffffff", bold = true }
+find_keyword  = { fg = "#ffffff", bold = true, underline = true }
+find_position = { fg = "#a0a0a0" }
+# the bar on the left of a marked file
+marker_copied   = { fg = "#a0a0a0", bg = "#a0a0a0" }
+marker_cut      = { fg = "#d7263d", bg = "#d7263d" }
+marker_marked   = { fg = "#5a5a5a", bg = "#5a5a5a" }
+marker_selected = { fg = "#ffffff", bg = "#ffffff" }
+count_copied   = { fg = "#000000", bg = "#a0a0a0" }
+count_cut      = { fg = "#ffffff", bg = "#d7263d" }
+count_selected = { fg = "#000000", bg = "#ffffff" }
+border_style = { fg = "#5a5a5a" }
+
+[tabs]
+active   = { fg = "#000000", bg = "#e6e6e6", bold = true }
+inactive = { fg = "#a0a0a0", bg = "#2a2a2a" }
+
+# the mode on the left of the status line
+[mode]
+normal_main = { fg = "#000000", bg = "#e6e6e6", bold = true }
+normal_alt  = { fg = "#e6e6e6", bg = "#2a2a2a" }
+select_main = { fg = "#000000", bg = "#a0a0a0", bold = true }
+select_alt  = { fg = "#a0a0a0", bg = "#2a2a2a" }
+unset_main  = { fg = "#000000", bg = "#5a5a5a", bold = true }
+unset_alt   = { fg = "#5a5a5a", bg = "#2a2a2a" }
+
+[status]
+perm_sep   = { fg = "#5a5a5a" }
+perm_type  = { fg = "#e6e6e6" }
+perm_read  = { fg = "#a0a0a0" }
+perm_write = { fg = "#a0a0a0" }
+perm_exec  = { fg = "#e6e6e6" }
+progress_normal = { fg = "#e6e6e6", bg = "#2a2a2a" }
+progress_error  = { fg = "#ffffff", bg = "#d7263d" }
+
+# popups: gray borders like sway and fzf
+[which]
+border          = { fg = "#5a5a5a" }
+cand            = { fg = "#ffffff" }
+rest            = { fg = "#5a5a5a" }
+desc            = { fg = "#a0a0a0" }
+separator_style = { fg = "#5a5a5a" }
+
+[confirm]
+border = { fg = "#5a5a5a" }
+title  = { fg = "#e6e6e6" }
+
+[spot]
+border   = { fg = "#5a5a5a" }
+title    = { fg = "#e6e6e6" }
+tbl_col  = { fg = "#e6e6e6" }
+tbl_cell = { reversed = true }
+
+[notify]
+title_info  = { fg = "#e6e6e6" }
+title_warn  = { fg = "#a0a0a0" }
+title_error = { fg = "#d7263d" }
+
+[pick]
+border = { fg = "#5a5a5a" }
+active = { fg = "#ffffff", bold = true }
+
+[input]
+border = { fg = "#5a5a5a" }
+
+[cmp]
+border = { fg = "#5a5a5a" }
+
+[tasks]
+border  = { fg = "#5a5a5a" }
+hovered = { fg = "#ffffff", bold = true }
+
+[help]
+border = { fg = "#5a5a5a" }
+chord  = { fg = "#ffffff" }
+
+# file names: folders bold, broken links red, everything else white
+[filetype]
+rules = [
+	{ url = "*", is = "orphan", fg = "#d7263d" },
+	{ url = "*", is = "dummy", fg = "#d7263d" },
+	{ url = "*/", fg = "#ffffff", bold = true },
+	{ url = "*", fg = "#e6e6e6" },
+]
+
+# no per-type icons and colors: the empty lists replace the default ones,
+# the icon takes the color of its name
+[icon]
+globs = []
+dirs  = []
+files = []
+exts  = []
+conds = [
+	{ if = "orphan", text = "" },
+	{ if = "link", text = "" },
+	{ if = "dir & hovered", text = "" },
+	{ if = "dir", text = "" },
+	{ if = "exec", text = "" },
+	{ if = "!dir", text = "" },
+]

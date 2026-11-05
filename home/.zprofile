@@ -24,6 +24,11 @@ esac
 fzfrc="$HOME/.config/fzf/fzfrc"
 [ -r "$fzfrc" ] && export FZF_DEFAULT_OPTS_FILE="$fzfrc"
 
+# the editor picked in shh config (vim by default); yazi, git and others open it
+EDITOR=vim
+grep -q '^editor=nvim' "$HOME/.config/shh/config" 2>/dev/null && EDITOR=nvim
+export EDITOR
+
 # █   █ ▀█▀ █▀▀▄ ▀▀█▀▀ █  █ ▄▀▀▄ █        █▄ ▄█ ▄▀▀▄ ▄▀▀▀ █  █ ▀█▀ █▄  █ █▀▀▀ ▄▀▀▀ 
 # ▀▄ ▄▀  █  █▀█    █   █  █ █▀▀█ █        █ ▀ █ █▀▀█ █    █▀▀█  █  █ ▀▄█ █▀▀   ▀▀▄ 
 #   ▀   ▀▀▀ ▀  ▀   ▀    ▀▀  ▀  ▀ ▀▀▀▀     ▀   ▀ ▀  ▀  ▀▀▀ ▀  ▀ ▀▀▀ ▀   ▀ ▀▀▀▀ ▀▀▀  

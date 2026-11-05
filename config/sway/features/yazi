@@ -1,0 +1,6 @@
+# ~/.config/sway/features/yazi - the file manager (shh config: file manager)
+
+# file manager
+bindsym --to-code --no-repeat $mod+f exec footclient --app-id=files yazi
+
+for_window [app_id="files"] floating enable, resize set 1000 650, move position center

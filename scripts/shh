@@ -65,6 +65,8 @@ paru${tab}paru"
 # the same look, options and keys in both (config/vim, config/nvim)
 editors="vim${tab}Vim      fewer dependencies
 nvim${tab}Neovim"
+file_managers="broot${tab}Broot    folders as a tree
+yazi${tab}Yazi     previews, tabs"
 # xkb options for switching the layout
 toggles="alt_shift_toggle${tab}Alt+Shift
 ctrl_shift_toggle${tab}Ctrl+Shift
@@ -182,6 +184,7 @@ settings_lines() {
     line dns '' dns "$(setting dns dhcp) >"
     line gpu '' graphics "$(setting gpu auto) >"
     line editor '' editor "$(setting editor vim) >"
+    line files '' 'file manager' "$(setting files broot) >"
     # distro_settings: distro.sh (Artix: aur helper, pacman)
     ! command -v distro_settings >/dev/null || distro_settings
     yes_no nobeep 'Mute the motherboard beeper'
@@ -197,6 +200,7 @@ settings_act() {
         aur_helper)    value=$(choose 'aur helper' "$helpers") ;;
         dns)           value=$(choose dns "$dns_list") ;;
         editor)        value=$(choose editor "$editors") ;;
+        files)         value=$(choose 'file manager' "$file_managers") ;;
         gpu)
             loop graphics "Enter: on / off   Esc: back   found: $(found_cards | sed 's/,/, /g')" gpu_lines gpu_act
             note="Graphics: $(setting gpu auto)"
