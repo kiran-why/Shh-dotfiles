@@ -145,6 +145,14 @@ svc_check() {
     pgrep -l -P "$pid" | grep -qvE ' (vlogger|svlogd)$' || { echo " down"; return 1; }
 }
 
+# svc_ctl start | stop SVC (settings > Services): now, till the reboot
+# (sv up / down; runit has no dependencies: with dbus off iwd fails and restarts)
+svc_ctl() {
+    local cmd=up
+    [ "$1" = start ] || cmd=down
+    sudo sv "$cmd" "/var/service/$2" >/dev/null
+}
+
 # the vpn service (scripts/vpn): our own, as root. The package's sing-box
 # service runs as _sing_box and can't read the root-only config
 vpn_svc=shh-vpn

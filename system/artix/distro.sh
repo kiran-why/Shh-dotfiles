@@ -243,6 +243,12 @@ svc_check() {
     [ -z "$down" ] || { echo "$down"; return 1; }
 }
 
+# svc_ctl start | stop SVC (settings > Services): now, till the reboot.
+# s6-rc stops what needs SVC too (dbus: iwd, bluetoothd) and starts what SVC needs
+svc_ctl() {
+    sudo s6 live "$1" "$2" >/dev/null
+}
+
 # the vpn service (scripts/vpn): our own s6 service sing-box
 vpn_svc=sing-box
 
