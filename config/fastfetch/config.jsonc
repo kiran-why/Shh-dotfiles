@@ -38,9 +38,9 @@
         { "type": "shell",      "key": "{#90}│{#37}  Shell    {#90}│", "format": "{#90}│{#97} {pretty-name} {version<30} {#90}│{#}" },
         { "type": "cpu",        "key": "{#90}│{#37}  CPU      {#90}│", "format": "{#90}│{#97} {name<34} {#90}│{#}" },
         { "type": "gpu",        "key": "{#90}│{#37}  GPU      {#90}│", "format": "{#90}│{#97} {name<34} {#90}│{#}" },
-        { "type": "memory",     "key": "{#90}│{#37}  RAM      {#90}│", "format": "{#90}│{#97} {used>10} / {total<21} {#90}│{#}" },
+        { "type": "memory",     "key": "{#90}│{#37}  RAM      {#90}│", "format": "{#90}│{#97} {used<9} / {total<22} {#90}│{#}" },
         { "type": "disk", "folders": "/",
-                                "key": "{#90}│{#37}  Disk     {#90}│", "format": "{#90}│{#97} {size-used>10} / {size-total<10} - {filesystem<8} {#90}│{#}" },
+                                "key": "{#90}│{#37}  Disk     {#90}│", "format": "{#90}│{#97} {size-used<10} / {size-total<10} - {filesystem<8} {#90}│{#}" },
         { "type": "custom", "format": "{#90}└────────────┘ └────────────────────────────────────┘" }
     ]
 }
