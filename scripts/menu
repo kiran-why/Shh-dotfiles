@@ -4,11 +4,11 @@
 # ▄▄▄▄   ▄▄  ▄▄▄  ▄  ▄ 
 # █ █ █ █▀▀▀ █  █ █  █ 
 # ▀ ▀ ▀  ▀▀▀ ▀  ▀  ▀▀▀ 
-# menu - the bar button: wifi, volume, bluetooth, vpn, brightness, power.
+# menu - the bar button: wifi, volume, bluetooth, vpn, settings, power.
 # A pick opens its menu in this window, Esc there comes back here.
 # A part turned off in shh config has no script in ~/.local/bin, so no line.
-# menu open: the window, as tall as the menu (the bar runs this)
-# menu --header NAME: the banner of a menu (header below)
+# menu open: the window (the bar runs this)
+# menu --header NAME: the banner of a menu, the window fits the menu (header below)
 
 set -eu
 
@@ -20,67 +20,121 @@ lines() {
     local s
     for s in 'wifi	  Wifi >' \
         'volume	󰕾  Volume >' \
-        'bluetooth	  Bluetooth >' \
+        'bluetooth	  Bluez >' \
         'vpn	󰖂  VPN >' \
-        'brightness	󰃠  Light >' \
+        'settings	󰒓  Prefs >' \
         'power	  Power >'; do
         [ ! -x "$bin/${s%%"$tab"*}" ] || printf '%s\n' "$s"
     done
 }
 
-# art NAME: the banner of a menu. menu: font Bloody (patorjk.com), like the
-# fastfetch logo, N made narrower; the others: Linguaholic Mini Block
+# art NAME: the banner of a menu: font Bloody (patorjk.com) like the fastfetch
+# logo, lowercase drawn by hand (Bloody has none); shorter words where the
+# window is too narrow: bluetooth = bluez, settings = prefs, services = svc
 art() {
     case "$1" in
         menu) cat <<'EOF'
- ███▄ ▄███▓▓█████  ███▄  █  █    ██
-▓██▒▀█▀ ██▒▓█   ▀  ██ ▀█ █  ██  ▓██▒
-▓██    ▓██░▒███   ▓██  ▀██▒▓██  ▒██░
-▒██    ▒██ ▒▓█  ▄ ▓██▒ ▐██▒▓▓█  ░██░
-▒██▒   ░██▒░▒████▒▒██░  ██░▒▒█████▓
-░ ▒░   ░  ░░░ ▒░ ░░ ▒░  ▒ ▒░▒▓▒ ▒ ▒
-░  ░      ░ ░ ░  ░░ ░░  ░ ▒░░▒░ ░ ░
-░      ░      ░      ░  ░ ░ ░░░ ░ ░
-       ░      ░  ░        ░   ░
+ ██▄██▄ ▄██▄     ▄███▄    ██▄██▄    ██   ██
+▓██▀ ▀███▀▀██▒ ▓██▀ ▀██▒ ▓██▀ ▀██▒ ▓██  ▓██▒
+▓██   ▓██  ██▒ ▒███▀▀▀   ▓██   ██▒ ▓▓█  ▒██░
+▒██▒  ▒██  ██░ ░▒████▄▒  ▒██░  ██░ ▒▒████▓█▄
+░ ▒░  ░ ▒  ▒ ░ ░░ ▒░ ░   ░ ▒░  ▒ ░ ░▒▓▒ ▒ ▒
+░  ░  ░ ░  ░ ░  ░ ░  ░   ░ ░░  ░ ░ ░░▒░ ░ ░
+░     ░    ░      ░         ░  ░    ░░░ ░ ░
+      ░           ░  ░         ░      ░
 EOF
             ;;
         wifi) cat <<'EOF'
-▄   ▄ ▀  ▄▀▀ ▀
-█ █ █ █ ▀█▀  █
- ▀ ▀  ▀  ▀   ▀
+              ▀▀    ▄███▒  ▀▀
+▓█▓  ▄  ▓█▓   ▄▄   ▓██▀    ▄▄
+▒██ ▐█▌ ██▒  ▓██▒ ▒████▒  ▓██▒
+░██▄███▄██░  ▒██░ ░▓██░   ▒██░
+ ▀██▀ ▀██▀   ░██░ ░▒██░   ░██░
+ ░▓░ ▒ ▒░    ░▓    ▒▓░    ░▓
+  ▒ ░ ░ ░     ▒ ░  ░▒      ▒ ░
+  ░   ░       ░     ░      ░
+    ░         ░     ░      ░
 EOF
             ;;
         volume) cat <<'EOF'
-▄   ▄  ▄▄  █ ▄  ▄ ▄▄▄▄   ▄▄
-▀▄ ▄▀ █  █ █ █  █ █ █ █ █▀▀▀
-  ▀    ▀▀  ▀  ▀▀▀ ▀ ▀ ▀  ▀▀▀
+                   ▓██
+▓██   █▓  ▄████▄   ▒██    ██   ██   ██▄██▄ ▄██▄     ▄███▄
+▒██░ ██▒ ▒██▀ ▀██▒ ▒██░  ▓██  ▓██▒ ▓██▀ ▀███▀▀██▒ ▓██▀ ▀██▒
+ ▓██ █░  ▒██   ██░ ░██░  ▓▓█  ▒██░ ▓██   ▓██  ██▒ ▒███▀▀▀
+  ▀██▀   ░▀████▓▀  ░▓██▄ ▒▒████▓█▄ ▒██▒  ▒██  ██░ ░▒████▄▒
+  ░▐░    ░ ▒░▒░▒░  ░▒▓ ░ ░▒▓▒ ▒ ▒  ░ ▒░  ░ ▒  ▒ ░ ░░ ▒░ ░
+  ░░       ░ ▒ ▒░   ░▒   ░░▒░ ░ ░  ░  ░  ░ ░  ░ ░  ░ ░  ░
+   ░     ░ ░ ░      ░     ░░░ ░ ░  ░     ░    ░      ░
+  ░          ░        ░     ░            ░           ░  ░
 EOF
             ;;
         bluetooth) cat <<'EOF'
-█▄▄  █ ▄  ▄  ▄▄  ▄█▄   ▄▄   ▄▄  ▄█▄  █▄▄
-█  █ █ █  █ █▀▀▀  █   █  █ █  █  █   █  █
-▀▀▀  ▀  ▀▀▀  ▀▀▀   ▀▀  ▀▀   ▀▀    ▀▀ ▀  ▀
+ ██▓      ▓██
+▓██▒▄██▄  ▒██    ██   ██    ▄███▄   ▒██████▒
+▒██▀  ▀██ ▒██░  ▓██  ▓██▒ ▓██▀ ▀██▒ ░ ▒ ▄█▀░
+░██▄  ▄██ ░██░  ▓▓█  ▒██░ ▒███▀▀▀     ▄█▀▒ ░
+░▓█▒███▀  ░▓██▄ ▒▒████▓█▄ ░▒████▄▒  ▒██████▒
+░▒▓▒░ ░   ░▒▓ ░ ░▒▓▒ ▒ ▒  ░░ ▒░ ░   ░▒▒ ▓░▒░
+▒░▒ ░ ░    ░▒   ░░▒░ ░ ░   ░ ░  ░   ░░▒ ▒ ░
+ ░  ░      ░     ░░░ ░ ░     ░      ░ ░ ░ ░
+ ░           ░     ░         ░  ░     ░
 EOF
             ;;
         vpn) cat <<'EOF'
-▄   ▄ ▄▄▄  ▄▄▄
-▀▄ ▄▀ █  █ █  █
-  ▀   █▀▀  ▀  ▀
-      ▀
+▓██   █▓ ▓██▄██▄    ██▄██▄
+▒██░ ██▒ ▓██▀ ▀██▒ ▓██▀ ▀██▒
+ ▓██ █░  ▒██▄ ▄██░ ▓██   ██▒
+  ▀██▀   ▒██▀██▀   ▒██░  ██░
+  ░▐░    ▒██░      ░ ▒░  ▒ ░
+  ░░     ░▓█░      ░ ░░  ░ ░
+   ░      ░▒ ░        ░  ░
+  ░        ░             ░
 EOF
             ;;
         light) cat <<'EOF'
-█ ▀  ▄▄▄ █▄▄  ▄█▄
-█ █ █  █ █  █  █
-▀ ▀  ▀▀█ ▀  ▀   ▀▀
-     ▀▀
+▓██    ▀▀             ██▓       ▄██
+▒██    ▄▄   ▄████▄▄  ▓██▒▄██▄  ▓█████▒
+▒██░  ▓██▒ ▓██▀ ▀██▒ ▒██▀ ▀██▒  ▓██
+░██░  ▒██░ ▒██▄ ▄██░ ░██  ░██░  ▒██
+░▓██▄ ░██░  ▀█████▓  ░▓█▒ ░██▓  ░▀██▄▒
+░▒▓ ░ ░▓    ▄▄  ▓██   ▒ ░ ▒░▒    ▒ ░░
+ ░▒    ▒ ░  ▀████▀    ▒ ░ ░ ░    ░ ░
+ ░     ░     ░▒ ░     ░   ░        ░
+   ░   ░      ░       ░     ░    ░
+EOF
+            ;;
+        settings) cat <<'EOF'
+                              ▄███▒
+▓██▄██▄    ██▄██▄   ▄███▄    ▓██▀    ▄████▒
+▓██▀ ▀██▒ ▓██▀ ▀▀ ▓██▀ ▀██▒ ▒████▒  ▒██▄  ▀
+▒██▄ ▄██░ ▓██     ▒███▀▀▀   ░▓██░    ▀▀███▄
+▒██▀██▀   ▒██░    ░▒████▄▒  ░▒██░   ▒██████▒
+▒██░      ░ ▒▓    ░░ ▒░ ░    ▒▓░    ▒ ▒▓▒ ▒
+░▓█░        ░▒ ░   ░ ░  ░    ░▒     ░ ░▒  ░
+ ░▒ ░       ░        ░        ░     ░  ░
+  ░          ░       ░  ░     ░          ░
+EOF
+            ;;
+        services) cat <<'EOF'
+ ▄████▒  ▓██   █▓  ▄████▄
+▒██▄  ▀  ▒██░ ██▒ ▒██▀ ▀█
+ ▀▀███▄   ▓██ █░  ▒▓█    ▄
+▒██████▒   ▀██▀   ▒ ▓███▀ ░
+▒ ▒▓▒ ▒    ░▐░    ░ ░▒ ▒  ░
+░ ░▒  ░    ░░       ░  ▒
+░  ░        ░     ░
+     ░     ░      ░ ░
 EOF
             ;;
         power) cat <<'EOF'
-▄▄▄   ▄▄  ▄   ▄  ▄▄  ▄ ▄▄
-█  █ █  █ █ █ █ █▀▀▀ █▀
-█▀▀   ▀▀   ▀ ▀   ▀▀▀ ▀
-▀
+▓██▄██▄    ▄████▄   ▓█▓  ▄  ▓█▓    ▄███▄    ██▄██▄
+▓██▀ ▀██▒ ▒██▀ ▀██▒ ▒██ ▐█▌ ██▒  ▓██▀ ▀██▒ ▓██▀ ▀▀
+▒██▄ ▄██░ ▒██   ██░ ░██▄███▄██░  ▒███▀▀▀   ▓██
+▒██▀██▀   ░▀████▓▀   ▀██▀ ▀██▀   ░▒████▄▒  ▒██░
+▒██░      ░ ▒░▒░▒░   ░▓░ ▒ ▒░    ░░ ▒░ ░   ░ ▒▓
+░▓█░        ░ ▒ ▒░    ▒ ░ ░ ░     ░ ░  ░     ░▒ ░
+ ░▒ ░     ░ ░ ░       ░   ░         ░        ░
+  ░           ░         ░           ░  ░      ░
 EOF
             ;;
     esac
@@ -100,9 +154,10 @@ pad() {
 }
 
 # header NAME: an empty line, the art of NAME, an empty line, $MENU_TEXT,
-# all in the middle. fzf runs it on start and on every resize (sway sets
-# the width after the window opens): the menus bind
-# start,resize:transform-header:sh ~/.local/bin/menu --header NAME
+# all in the middle. fzf runs it when the list is ready and on every resize
+# (sway sets the width after the window opens): the menus bind
+# result,resize:transform-header:sh ~/.local/bin/menu --header NAME
+# (not load: their own load:pos(N) would replace it)
 header() {
     local a l w=0
     a=$(art "$1")
@@ -120,11 +175,31 @@ EOF
     done
 }
 
+# fit ROWS: the floating window fzf runs in gets ROWS rows, its top stays put
+# (resize set keeps the middle, so move it back): rows come and go at the bottom.
+# One row in px from its height now; 16 = pad=8x8 in foot.ini, 2 = the sway border (look).
+# Our own resize runs header again, then the rows match and it stops
+fit() {
+    local win id x y h
+    [ "${FZF_LINES:-0}" -gt 0 ] && [ "$1" -ne "$FZF_LINES" ] || return 0
+    win=$(swaymsg -t get_tree | jq -r '.. | objects | select(.focused and .type == "floating_con")
+        | "\(.id) \(.rect.x) \(.rect.y) \(.window_rect.height)"' 2>/dev/null) || return 0
+    [ -n "$win" ] || return 0
+    read -r id x y h <<EOF
+$win
+EOF
+    swaymsg "[con_id=$id] resize set height $(( (h - 16) / FZF_LINES * $1 + 18 )) px, move absolute position $x px $y px" >/dev/null 2>&1 || true
+}
+
 case "${1:-}" in
-    --header) header "${2:-menu}"; exit 0 ;;
-    # rows: the border, the header (11), the lines and one empty line;
-    # sway/rules sets only the width
-    open) exec footclient --app-id=menu --window-size-chars="50x$(($(lines | wc -l) + 13))" "$0" ;;
+    # rows: the header, the lines and one empty line at the bottom
+    --header)
+        out=$(header "${2:-menu}")
+        printf '%s\n' "$out"
+        fit $(( $(printf '%s\n' "$out" | wc -l) + ${FZF_TOTAL_COUNT:-0} + 1 ))
+        exit 0 ;;
+    # as tall as this menu (header 10 rows) from the start; sway/rules sets the width
+    open) exec footclient --app-id=menu --window-size-chars="50x$(($(lines | wc -l) + 11))" "$0" ;;
 esac
 
 # no text under the art here (a menu opened from here sets its own)
@@ -135,8 +210,8 @@ pos=1
 while :; do
     list=$(lines)
     pick=$(printf '%s\n' "$list" |
-        fzf --info=hidden --no-input --delimiter="$tab" --with-nth=2 --border-label=' Menu ' \
-            --bind="start,resize:transform-header:sh '$0' --header menu" --bind="load:pos($pos)") || exit 0
+        fzf --info=hidden --no-input --border=none --delimiter="$tab" --with-nth=2 \
+            --bind="result,resize:transform-header:sh '$0' --header menu" --bind="load:pos($pos)") || exit 0
     pos=$(printf '%s\n' "$list" | grep -nxF -- "$pick" | cut -d: -f1)
     # a menu that fails (no wifi device...) just comes back here
     "$bin/${pick%%"$tab"*}" || true

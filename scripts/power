@@ -8,11 +8,11 @@ set -eu
 bin="$HOME/.local/bin"
 
 menu() {
-    fzf --info=hidden --no-input "$@"
+    fzf --info=hidden --no-input --border=none "$@"
 }
 
 # the banner: scripts/menu draws it, again on every resize
-banner="start,resize:transform-header:sh '$bin/menu' --header power"
+banner="result,resize:transform-header:sh '$bin/menu' --header power"
 export MENU_TEXT=
 
 # run ACTION: power_run (distro.sh) as root, the sudoers rule is from install.sh
@@ -36,7 +36,7 @@ case "${1:-}" in
 esac
 
 pick=$(printf '%s\n' 'Exit' 'Power off' 'Reboot' 'Sleep' |
-    menu --border-label=' Power ' --bind="$banner") || exit 0
+    menu --bind="$banner") || exit 0
 case "$pick" in
     'Exit')      swaymsg exit >/dev/null ;;
     'Power off') run poweroff ;;

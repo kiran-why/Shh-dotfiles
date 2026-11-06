@@ -5,7 +5,7 @@
 set -eu
 
 menu() {
-    fzf --info=hidden --no-input "$@"
+    fzf --info=hidden --no-input --border=none "$@"
 }
 
 # the last header line: one space, so an empty line sits above the list
@@ -13,7 +13,7 @@ gap=$(printf '\n ')
 
 # the banner of the main menu: scripts/menu draws it and $MENU_TEXT
 # under it in the middle, again on every resize
-banner="start,resize:transform-header:sh '$HOME/.local/bin/menu' --header wifi"
+banner="result,resize:transform-header:sh '$HOME/.local/bin/menu' --header wifi"
 export MENU_TEXT=
 
 # iwctl colors its output
@@ -31,7 +31,7 @@ if [ -z "$devices" ]; then
 fi
 # more than one (a usb wifi stick): ask which
 if [ "$(echo "$devices" | wc -l)" -gt 1 ]; then
-    dev=$(echo "$devices" | menu --border-label=' Device ') || exit 0
+    dev=$(echo "$devices" | menu) || exit 0
 else
     dev=$devices
 fi
@@ -84,7 +84,7 @@ available_menu() {
     scan
     while :; do
         pick=$({ printf 'rescan\tRescan\n'; networks; } |
-            menu --border-label=' Available networks ' --header="$dev: $(current || true)$gap" \
+            menu --header="$dev: $(current || true)$gap" \
                 --delimiter='\t' --with-nth=2 | cut -f1) || return 0
         case "$pick" in
             '')     return 0 ;;
@@ -106,7 +106,7 @@ available_menu() {
 known_menu() {
     local pick
     while :; do
-        pick=$(known | menu --border-label=' Known networks ' --header="Enter: forget$gap") || return 0
+        pick=$(known | menu --header="Enter: forget$gap") || return 0
         iwctl known-networks "$pick" forget || true
         notify-send -a wifi 'wifi: forgot' "$pick" || true
     done
@@ -131,7 +131,7 @@ while :; do
     MENU_TEXT="$dev: $(current || true)${note:+
 $note}$gap"
     pick=$(printf '%s\n' 'Available networks >' 'Known networks >' 'Check internet' 'Disconnect' |
-        menu --border-label=' Wifi ' --bind="$banner" --bind="load:pos($pos)") || exit 0
+        menu --bind="$banner" --bind="load:pos($pos)") || exit 0
     note=''
     case "$pick" in
         'Available networks >') pos=1; available_menu ;;

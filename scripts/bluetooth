@@ -9,7 +9,7 @@ set -eu
 scan_time=8
 
 menu() {
-    fzf --info=hidden --no-input "$@"
+    fzf --info=hidden --no-input --border=none "$@"
 }
 
 # the last header line: one space, so an empty line sits above the list
@@ -17,7 +17,7 @@ gap=$(printf '\n ')
 
 # the banner of the main menu: scripts/menu draws it and $MENU_TEXT
 # under it in the middle, again on every resize
-banner="start,resize:transform-header:sh '$HOME/.local/bin/menu' --header bluetooth"
+banner="result,resize:transform-header:sh '$HOME/.local/bin/menu' --header bluetooth"
 export MENU_TEXT=
 
 # lines are "label<TAB>address<TAB>name", only the label shows
@@ -111,7 +111,7 @@ pair_new() {
                  devices | while read -r mac name; do
                      has "$mac" "$paired" || printf '%s\t%s\t%s\n' "$name" "$mac" "$name"
                  done; } |
-            device_menu --border-label=' Pair ' --header="Devices nearby$gap") || return 0
+            device_menu --header="Devices nearby$gap") || return 0
         mac=$(printf '%s\n' "$pick" | cut -f2)
         name=$(printf '%s\n' "$pick" | cut -f3)
         [ -n "$mac" ] || continue    # "Look again"
@@ -131,7 +131,7 @@ pair_new() {
 paired_menu() {
     local pick mac name
     pick=$(paired_lines |
-        device_menu --border-label=' Paired ' --header="Connect / disconnect$gap") || return 0
+        device_menu --header="Connect / disconnect$gap") || return 0
     mac=$(printf '%s\n' "$pick" | cut -f2)
     name=$(printf '%s\n' "$pick" | cut -f3)
     case "$pick" in
@@ -144,7 +144,7 @@ paired_menu() {
 unpair_menu() {
     local pick mac name
     pick=$(paired_lines |
-        device_menu --border-label=' Unpair ' --header="Forget a device$gap") || return 0
+        device_menu --header="Forget a device$gap") || return 0
     mac=$(printf '%s\n' "$pick" | cut -f2)
     name=$(printf '%s\n' "$pick" | cut -f3)
     if bt remove "$mac" >/dev/null; then
@@ -160,7 +160,7 @@ while :; do
     if powered; then toggle='Power off'; else toggle='Power on'; fi
     MENU_TEXT="$(now)$gap"
     pick=$(printf '%s\n' "$toggle" 'Pair a new device >' 'Paired devices >' 'Unpair a device >' |
-        menu --border-label=' Bluetooth ' --bind="$banner" --bind="load:pos($pos)") || exit 0
+        menu --bind="$banner" --bind="load:pos($pos)") || exit 0
     case "$pick" in
         'Power on')  pos=1; bt power on >/dev/null || say 'could not turn it on (rfkill?)' ;;
         'Power off') pos=1; bt power off >/dev/null || true ;;

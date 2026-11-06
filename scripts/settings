@@ -1,0 +1,82 @@
+#!/bin/sh
+# settings - the bar menu's Prefs: Svc, Light (scripts/brightness)
+# Svc: our services (services.txt and the vpn) on or off now;
+# after a reboot they start as shh config says
+
+set -eu
+
+bin="$HOME/.local/bin"
+share="$HOME/.local/share/shh"
+. "$share/lib.sh"
+. "$share/distro.sh"
+
+menu() {
+    fzf --info=hidden --no-input --border=none "$@"
+}
+
+# banner NAME: scripts/menu draws it and $MENU_TEXT, again on every resize
+banner() {
+    printf '%s' "result,resize:transform-header:sh '$bin/menu' --header $1"
+}
+export MENU_TEXT=
+# the last header line: one space, so an empty line sits above the list
+gap=$(printf '\n ')
+
+# warning SVC: what breaks when SVC goes off (seatd, dbus: the same name on every distro)
+warning() {
+    case "$1" in
+        seatd) echo '! sway needs it' ;;
+        dbus)  echo '! wifi, bluetooth need it' ;;
+    esac
+}
+
+# "name (on|off)  warning" for each service the init knows; one not installed is left out
+service_lines() {
+    local svc rc state
+    for svc in $(read_list "$share/services.txt") "$vpn_svc"; do
+        rc=0
+        svc_check "$svc" >/dev/null || rc=$?
+        case "$rc" in
+            0) state=on ;;
+            1) state=off ;;
+            *) continue ;;
+        esac
+        printf '%-18s%s\n' "$svc ($state)" "$(warning "$svc")"
+    done
+}
+
+# Enter turns the picked one on or off (svc_ctl: distro.sh, asks for sudo)
+services() {
+    local list pick svc pos=1 note=''
+    while :; do
+        MENU_TEXT="${note:-Enter: on / off   Esc: back}$gap"
+        list=$(service_lines)
+        [ -n "$list" ] || list='No services found'
+        pick=$(printf '%s\n' "$list" |
+            menu --bind="$(banner services)" --bind="load:pos($pos)") || return 0
+        pos=$(printf '%s\n' "$list" | grep -nxF -- "$pick" | cut -d: -f1)
+        svc=${pick%% *}
+        case "$pick" in
+            *' (on)'*) svc_ctl stop "$svc" && note="$svc: off" || note="Cannot stop $svc" ;;
+            *' (off)'*) svc_ctl start "$svc" && note="$svc: on" || note="Cannot start $svc" ;;
+        esac
+    done
+}
+
+# Light only when scripts/brightness is installed
+lines() {
+    echo 'Svc >'
+    [ ! -x "$bin/brightness" ] || echo 'Light >'
+}
+
+pos=1
+while :; do
+    MENU_TEXT=
+    pick=$(lines |
+        menu --bind="$(banner settings)" --bind="load:pos($pos)") || exit 0
+    case "$pick" in
+        'Svc >')   pos=1; services ;;
+        # a menu that fails just comes back here
+        'Light >') pos=2; "$bin/brightness" || true ;;
+    esac
+done

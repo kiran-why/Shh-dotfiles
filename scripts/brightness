@@ -10,7 +10,7 @@ step=5
 min=5
 
 menu() {
-    fzf --info=hidden --no-input "$@"
+    fzf --info=hidden --no-input --border=none "$@"
 }
 
 # the last header line: one space, so an empty line sits above the list
@@ -18,7 +18,7 @@ gap=$(printf '\n ')
 
 # the banner of the main menu: scripts/menu draws it and $MENU_TEXT
 # under it in the middle, again on every resize
-banner="start,resize:transform-header:sh '$HOME/.local/bin/menu' --header light"
+banner="result,resize:transform-header:sh '$HOME/.local/bin/menu' --header light"
 export MENU_TEXT=
 
 # the screen backlights; a laptop with two graphics cards can have two
@@ -75,7 +75,7 @@ if [ -z "$devs" ]; then
     # the keys: nothing to do; the menu says why
     [ -z "${1:-}" ] || exit 0
     MENU_TEXT="No screen backlight here (a desktop monitor?)$gap"
-    printf '' | menu --border-label=' Light ' --bind="$banner" || true
+    printf '' | menu --bind="$banner" || true
     exit 0
 fi
 
@@ -90,7 +90,7 @@ while :; do
     MENU_TEXT="$(now)${note:+
 $note}$gap"
     pick=$(printf '%s\n' '(+) Brightness' '(-) Brightness' |
-        menu --border-label=' Light ' --bind="$banner" --bind="load:pos($pos)") || exit 0
+        menu --bind="$banner" --bind="load:pos($pos)") || exit 0
     case "$pick" in
         '(+) Brightness') pos=1; set_level $(($(level) + step)) || true ;;
         '(-) Brightness') pos=2; set_level $(($(level) - step)) || true ;;

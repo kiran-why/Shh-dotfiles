@@ -12,7 +12,7 @@ step=5%
 max=1.0
 
 menu() {
-    fzf --info=hidden --no-input "$@"
+    fzf --info=hidden --no-input --border=none "$@"
 }
 
 # the last header line: one space, so an empty line sits above the list
@@ -20,7 +20,7 @@ gap=$(printf '\n ')
 
 # the banner of the main menu: scripts/menu draws it and $MENU_TEXT
 # under it in the middle, again on every resize
-banner="start,resize:transform-header:sh '$HOME/.local/bin/menu' --header volume"
+banner="result,resize:transform-header:sh '$HOME/.local/bin/menu' --header volume"
 export MENU_TEXT=
 
 # wpctl prints harmless "RTKit error" lines that would mess up the menu
@@ -71,7 +71,7 @@ pick_device() {
         | (if .info.props["media.class"] == "Audio/Sink" then "Out" else "In " end) as $kind
         | (if (.id | tostring) == $o or (.id | tostring) == $i then "  (now)" else "" end) as $now
         | "\(.id)\t\($kind)  \(.info.props["node.description"] // .info.props["node.name"])\($now)"' |
-        menu --border-label=' In/out devices ' --delimiter='\t' --with-nth=2 |
+        menu --delimiter='\t' --with-nth=2 |
         cut -f1) || return 0
     if [ -n "$id" ]; then
         wp set-default "$id"
@@ -87,7 +87,7 @@ action() {
 mute_menu() {
     local pick
     pick=$(printf '%s\n' "$(action "$out") volume" "$(action "$mic") mic" |
-        menu --border-label=' Mute/unmute ' --header="$(now)$gap") || return 0
+        menu --header="$(now)$gap") || return 0
     case "$pick" in
         *volume) wp set-mute "$out" toggle ;;
         *mic)    wp set-mute "$mic" toggle ;;
@@ -113,7 +113,7 @@ pos=1
 while :; do
     MENU_TEXT="$(now)$gap"
     pick=$(printf '%s\n' '(+) Volume' '(-) Volume' 'Mute/unmute >' 'In/out devices >' |
-        menu --border-label=' Volume ' --bind="$banner" --bind="load:pos($pos)") || exit 0
+        menu --bind="$banner" --bind="load:pos($pos)") || exit 0
     case "$pick" in
         '(+) Volume')       pos=1; wp set-volume -l "$max" "$out" "$step+" ;;
         '(-) Volume')       pos=2; wp set-volume "$out" "$step-" ;;
