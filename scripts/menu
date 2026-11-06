@@ -7,7 +7,7 @@
 # menu - the bar button: wifi, volume, bluetooth, vpn, settings, power.
 # A pick opens its menu in this window, Esc there comes back here.
 # A part turned off in shh config has no script in ~/.local/bin, so no line.
-# menu open: the window (the bar runs this)
+# menu open: the window, or closes it when it is open (the bar and $mod+m run this)
 # menu --header NAME: the banner of a menu, the window fits the menu (header below)
 
 set -eu
@@ -198,8 +198,11 @@ case "${1:-}" in
         printf '%s\n' "$out"
         fit $(( $(printf '%s\n' "$out" | wc -l) + ${FZF_TOTAL_COUNT:-0} + 1 ))
         exit 0 ;;
-    # as tall as this menu (header 10 rows) from the start; sway/rules sets the width
-    open) exec footclient --app-id=menu --window-size-chars="50x$(($(lines | wc -l) + 11))" "$0" ;;
+    # open: close the menu if it is open (kill fails, exit 2, when there is none),
+    # else open it as tall as this menu (header 10 rows); sway/rules sets the width
+    open)
+        swaymsg '[app_id="menu"] kill' >/dev/null 2>&1 && exit 0
+        exec footclient --app-id=menu --window-size-chars="50x$(($(lines | wc -l) + 11))" "$0" ;;
 esac
 
 # no text under the art here (a menu opened from here sets its own)

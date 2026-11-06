@@ -1,8 +1,16 @@
 #!/bin/sh
 # keys - all sway keys from the config files, searchable ($mod+/)
 # a new bindsym shows up here by itself
+# keys open: what the key runs (the window, or closes it)
 
 set -eu
+
+# keys open (the key): close its window if it is open, else open it.
+# kill fails (exit 2) when no window matches
+if [ "${1:-}" = open ]; then
+    swaymsg '[app_id="keys"] kill' >/dev/null 2>&1 && exit 0
+    exec footclient --app-id=keys "$0"
+fi
 
 # not swaymsg -t get_config: it returns only the main file, without includes
 sway_dir="${XDG_CONFIG_HOME:-$HOME/.config}/sway"

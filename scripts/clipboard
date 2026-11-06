@@ -2,8 +2,16 @@
 # clipboard - clipboard history (cliphist): pick an old copy to copy it again
 # $mod+c. Enter copies, Ctrl+D deletes one, the first line clears all.
 # the history size is in ~/.config/cliphist/config
+# clipboard open: what the key runs (the window, or closes it)
 
 set -eu
+
+# clipboard open (the key): close its window if it is open, else open it.
+# kill fails (exit 2) when no window matches
+if [ "${1:-}" = open ]; then
+    swaymsg '[app_id="clipboard"] kill' >/dev/null 2>&1 && exit 0
+    exec footclient --app-id=clipboard "$0"
+fi
 
 # the last header line: one space, so an empty line sits above the list
 gap=$(printf '\n ')

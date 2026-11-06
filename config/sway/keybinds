@@ -12,7 +12,7 @@ bindsym --to-code --no-repeat $mod+t exec $term
 # launcher
 bindsym --to-code --no-repeat $mod+r exec $menu
 
-# menu: wifi, volume, bluetooth, vpn, light, power (the bar button)
+# menu: wifi, volume, bluez, vpn, prefs, power (the bar button)
 bindsym --to-code --no-repeat $mod+m exec ~/.local/bin/menu open
 
 # close the window
@@ -38,7 +38,7 @@ bindsym --to-code --no-repeat Shift+Print exec ~/.local/bin/screenshot full
 bindsym --to-code --no-repeat --locked $mod+Escape exec ~/.local/bin/lock
 
 # all keys (this list)
-bindsym --to-code --no-repeat $mod+slash exec footclient --app-id=keys ~/.local/bin/keys
+bindsym --to-code --no-repeat $mod+slash exec ~/.local/bin/keys open
 
 # reload the config
 bindsym --to-code --no-repeat $mod+Shift+c reload
