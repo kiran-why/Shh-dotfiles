@@ -1,4 +1,4 @@
 # ~/.config/sway/features/vpn - the vpn menu (scripts/vpn; shh config: misc)
 
 # top right, like wifi
-for_window [app_id="vpn"] floating enable, resize set 20 ppt 21 ppt, move position 80 ppt 0 ppt
+for_window [app_id="vpn"] floating enable, resize set 25 ppt 21 ppt, move position 75 ppt 0 ppt

@@ -6,9 +6,9 @@
 # height 0 = keep: menu open makes the window as tall as the menu
 for_window [app_id="menu"] floating enable, resize set 25 ppt 0, move position 75 ppt 0 ppt
 for_window [app_id="launcher"] floating enable, resize set 600 400, move position center
-for_window [app_id="wifi"] floating enable, resize set 20 ppt 21 ppt, move position 80 ppt 0 ppt
-for_window [app_id="volume"] floating enable, resize set 20 ppt 21 ppt, move position 80 ppt 0 ppt
-for_window [app_id="brightness"] floating enable, resize set 20 ppt 21 ppt, move position 80 ppt 0 ppt
-for_window [app_id="power"] floating enable, resize set 20 ppt 21 ppt, move position 80 ppt 0 ppt
-for_window [app_id="settings"] floating enable, resize set 20 ppt 21 ppt, move position 80 ppt 0 ppt
+for_window [app_id="wifi"] floating enable, resize set 25 ppt 21 ppt, move position 75 ppt 0 ppt
+for_window [app_id="volume"] floating enable, resize set 25 ppt 21 ppt, move position 75 ppt 0 ppt
+for_window [app_id="brightness"] floating enable, resize set 25 ppt 21 ppt, move position 75 ppt 0 ppt
+for_window [app_id="power"] floating enable, resize set 25 ppt 21 ppt, move position 75 ppt 0 ppt
+for_window [app_id="settings"] floating enable, resize set 25 ppt 21 ppt, move position 75 ppt 0 ppt
 for_window [app_id="keys"] floating enable, resize set 900 600, move position center
