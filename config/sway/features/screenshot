@@ -1,0 +1,7 @@
+# ~/.config/sway/features/screenshot - screenshots (shh config: screenshot)
+
+# screenshot of a region, copied too
+bindsym --to-code --no-repeat Print exec ~/.local/bin/screenshot
+
+# screenshot of all screens
+bindsym --to-code --no-repeat Shift+Print exec ~/.local/bin/screenshot full

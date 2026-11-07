@@ -27,12 +27,6 @@ bindsym --to-code --no-repeat $mod+v floating toggle
 # power: exit sway, power off, reboot, sleep
 bindsym --to-code --no-repeat $mod+l exec footclient --app-id=power ~/.local/bin/power
 
-# screenshot of a region, copied too
-bindsym --to-code --no-repeat Print exec ~/.local/bin/screenshot
-
-# screenshot of all screens
-bindsym --to-code --no-repeat Shift+Print exec ~/.local/bin/screenshot full
-
 # lock, screens off; again: screens on
 # --locked: works while locked too
 bindsym --to-code --no-repeat --locked $mod+Escape exec ~/.local/bin/lock

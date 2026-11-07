@@ -6,6 +6,7 @@
 # packages stay in system/artix/packages/common.csv too; sway lines of a part go in config/sway/features/NAME
 
 record|wf-recorder|scripts/record config/sway/features/record|||
+screenshot|grim|scripts/screenshot config/sway/features/screenshot|||
 bluetooth|bluez bluez-utils bluez-s6|scripts/bluetooth config/sway/features/bluetooth|bluetoothd||
 clipboard|cliphist|scripts/clipboard config/cliphist config/sway/features/clipboard|||
 screenshare|xdg-desktop-portal-wlr|config/sway/features/screenshare|||
