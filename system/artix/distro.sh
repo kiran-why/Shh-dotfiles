@@ -249,6 +249,14 @@ svc_ctl() {
     sudo s6 live "$1" "$2" >/dev/null
 }
 
+# svc_list (settings > Svc > All): every service, one per line, "NAME boot" for
+# a one-time boot step (stopping one takes down all that needs it).
+# NAME-srv + NAME-log are one service; s6rc-*: s6-rc's own
+svc_list() {
+    s6-rc-db list longruns | sed '/^s6rc-/d; /-log$/d; s/-srv$//' | sort
+    s6-rc-db list oneshots | sort | sed 's/$/ boot/'
+}
+
 # the vpn service (scripts/vpn): our own s6 service sing-box
 vpn_svc=sing-box
 

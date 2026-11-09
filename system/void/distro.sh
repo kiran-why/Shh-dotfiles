@@ -153,6 +153,12 @@ svc_ctl() {
     sudo sv "$cmd" "/var/service/$2" >/dev/null
 }
 
+# svc_list (settings > Svc > All): every service, one per line; only the ones
+# linked in /var/service are enabled (svc_check 2 for the rest)
+svc_list() {
+    ls /etc/sv
+}
+
 # the vpn service (scripts/vpn): our own, as root. The package's sing-box
 # service runs as _sing_box and can't read the root-only config
 vpn_svc=shh-vpn

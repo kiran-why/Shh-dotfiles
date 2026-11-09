@@ -1,7 +1,7 @@
 #!/bin/sh
 # settings - the bar menu's Prefs: Svc, Light (scripts/brightness)
-# Svc: our services (services.txt and the vpn) on or off now;
-# after a reboot they start as shh config says
+# Svc: our services (services.txt and the vpn) on or off now, All >: every
+# service of the init; after a reboot they start as shh config says
 
 set -eu
 
@@ -27,36 +27,46 @@ warning() {
     case "$1" in
         seatd) echo '! sway needs it' ;;
         dbus)  echo '! wifi, bluetooth need it' ;;
+        udevd) echo '! devices need it' ;;
+        tty*|agetty-*) echo '! ends logins on it' ;;
     esac
 }
 
-# "name (on|off)  warning" for each service the init knows; one not installed is left out
+# "name (state)  warning" for our services (one not installed is left out);
+# with "all", every service of the init (svc_list: distro.sh):
+# disabled = known, not enabled; boot = a one-time boot step, Enter skips both
 service_lines() {
-    local svc rc state
-    for svc in $(read_list "$share/services.txt") "$vpn_svc"; do
+    local all="${1:-}" svc kind rc state
+    if [ -n "$all" ]; then svc_list; else read_list "$share/services.txt"; echo "$vpn_svc"; fi |
+    while read -r svc kind; do
         rc=0
-        svc_check "$svc" >/dev/null || rc=$?
+        if [ "$kind" = boot ]; then rc=boot; else svc_check "$svc" >/dev/null || rc=$?; fi
         case "$rc" in
             0) state=on ;;
             1) state=off ;;
+            boot) state=boot ;;
+            2) [ -n "$all" ] || continue; state=disabled ;;
             *) continue ;;
         esac
         printf '%-18s%s\n' "$svc ($state)" "$(warning "$svc")"
     done
 }
 
-# Enter turns the picked one on or off (svc_ctl: distro.sh, asks for sudo)
+# services [all]: Enter turns the picked one on or off (svc_ctl: distro.sh,
+# asks for sudo); our list ends with All >, the same menu for every service
 services() {
-    local list pick svc pos=1 note=''
+    local all="${1:-}" list pick svc pos=1 note=''
     while :; do
         MENU_TEXT="${note:-Enter: on / off   Esc: back}$gap"
-        list=$(service_lines)
+        list=$(service_lines "$all")
         [ -n "$list" ] || list='No services found'
+        [ -n "$all" ] || list=$(printf '%s\nAll >' "$list")
         pick=$(printf '%s\n' "$list" |
             menu --bind="$(banner services)" --bind="load:pos($pos)") || return 0
         pos=$(printf '%s\n' "$list" | grep -nxF -- "$pick" | cut -d: -f1)
         svc=${pick%% *}
         case "$pick" in
+            'All >') note=''; services all ;;
             *' (on)'*) svc_ctl stop "$svc" && note="$svc: off" || note="Cannot stop $svc" ;;
             *' (off)'*) svc_ctl start "$svc" && note="$svc: on" || note="Cannot start $svc" ;;
         esac
