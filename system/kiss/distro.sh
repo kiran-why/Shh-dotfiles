@@ -41,7 +41,7 @@ distro_check() {
 
     # not in base; install.sh needs it before it can build anything
     if ! command -v sudo >/dev/null; then
-        info "as root: kiss b sudo (the community repo must be in KISS_PATH)"
+        info "as root: kiss U first, then kiss b sudo (the community repo must be in KISS_PATH)"
         info "then: addgroup $USER wheel, and in visudo uncomment the line %wheel ALL=(ALL:ALL) ALL"
     fi
 }
@@ -103,7 +103,8 @@ pkg_leftovers() {
 }
 
 # distro_prepare: the repos and the whole system, before any package;
-# everything is built from source, the first run takes hours
+# everything is built from source, the first run takes hours.
+# shortcut: a new OpenSSL soname breaks sudo during kiss U (its recipe has no depends), then: as root kiss b sudo
 distro_prepare() {
     step "system update"
     kiss_repos
