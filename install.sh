@@ -397,7 +397,8 @@ driver_leftovers() {
     for list in "$packages_dir"/*.csv; do
         [ "$list" != "$packages_file" ] || continue
         read_list "$list" | cut -d, -f2
-    done | sort -u | without "$keep"
+    # linux-headers is shared: other dkms modules (virtualbox) need it without depending on it
+    done | sort -u | without "$keep" | without linux-headers
 }
 
 # what parts turned off in shh config left behind; removed only on "y"
