@@ -74,6 +74,7 @@ write_root() {
         msg "$red" "$sym_bak" "$file -> $file.bak-$stamp"
     fi
 
+    sudo mkdir -p "$(dirname "$file")" || error "cannot create $(dirname "$file")"
     printf '%s\n' "$text" | sudo tee "$file" >/dev/null || error "cannot write $file"
 }
 
@@ -264,7 +265,6 @@ configure_network() {
     step "network settings"
 
     # iwd gets IP addresses itself, DNS goes to openresolv
-    sudo mkdir -p /etc/iwd
     write_root /etc/iwd/main.conf \
         "$(printf '[General]\nEnableNetworkConfiguration=true\n\n[Network]\nNameResolvingService=resolvconf')"
     info "iwd: built-in DHCP, DNS via resolvconf"
@@ -329,16 +329,17 @@ enable_services() {
         sh "$dots_path/scripts/vpn" setup || error "vpn setup failed"
     fi
 
-    # seat_groups: distro.sh
-    sudo usermod -aG "$seat_groups" "$USER"
+    # seat_groups, user_groups: distro.sh
+    user_groups "$seat_groups"
     ok "added $USER to groups $seat_groups (relogin to apply)"
 }
 
 configure_system() {
     step "system settings"
 
-    if [ "$(getent passwd "$USER" | cut -d: -f7)" != "$(command -v zsh)" ]; then
-        sudo chsh -s "$(command -v zsh)" "$USER"
+    # user_shell: distro.sh
+    if [ "$(grep "^$USER:" /etc/passwd | cut -d: -f7)" != "$(command -v zsh)" ]; then
+        user_shell "$(command -v zsh)"
         info "login shell: zsh"
     fi
 
@@ -350,13 +351,15 @@ configure_system() {
     fi
 
     # the group video may change the screen brightness (scripts/brightness);
-    # trigger: the rule works now, not after a reboot
-    write_root /etc/udev/rules.d/90-shh-backlight.rules \
-        "$(printf '%s\n%s' \
-            'ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chgrp video /sys/class/backlight/%k/brightness"' \
-            'ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chmod g+w /sys/class/backlight/%k/brightness"')"
-    ! command -v udevadm >/dev/null || sudo udevadm trigger --action=add --subsystem-match=backlight || true
-    info "brightness: group video"
+    # trigger: the rule works now, not after a reboot. No udev: session_setup's job
+    if command -v udevadm >/dev/null; then
+        write_root /etc/udev/rules.d/90-shh-backlight.rules \
+            "$(printf '%s\n%s' \
+                'ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chgrp video /sys/class/backlight/%k/brightness"' \
+                'ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chmod g+w /sys/class/backlight/%k/brightness"')"
+        sudo udevadm trigger --action=add --subsystem-match=backlight || true
+        info "brightness: group video"
+    fi
 
     ok "done"
 }

@@ -532,14 +532,15 @@ color() {
     done <"$list")
 
     # from now on both are one color: changing it later changes both
-    ! printf '%s\n' "$files" | xargs -r -d '\n' grep -qiI -- "$new" || warn "$new is already used too"
+    # one name per line; xargs -0: busybox has no -d
+    ! printf '%s\n' "$files" | tr '\n' '\0' | xargs -r -0 grep -qiI -- "$new" || warn "$new is already used too"
 
-    files=$(printf '%s\n' "$files" | xargs -r -d '\n' grep -liI -- "$old" || true)
+    files=$(printf '%s\n' "$files" | tr '\n' '\0' | xargs -r -0 grep -liI -- "$old" || true)
     [ -n "$files" ] || error "$old is not used in the configs"
 
-    # --follow-symlinks: with --link, edit the repo file, keep the link
+    # readlink -f: with --link, edit the repo file, keep the link
     printf '%s\n' "$files" | while IFS= read -r f; do
-        sed -i --follow-symlinks "s/$old/$new/gI" "$f"
+        sed -i "s/$old/$new/gI" "$(readlink -f "$f")"
         ok "$f"
     done
     info "to see it: Super+Shift+C (sway, bar), makoctl reload, new foot and vim / nvim windows"

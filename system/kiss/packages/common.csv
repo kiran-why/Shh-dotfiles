@@ -11,10 +11,15 @@
 
 # shell and terminal tools
 ,zsh,login shell
+,zsh-autosuggestions,zsh: gray suggestions from the history while typing
+,zsh-syntax-highlighting,zsh: unknown commands turn gray while typing
 ,vim,text editor (config/vim/vimrc)
 ,neovim,text editor (config/nvim/init.lua)
 ,fzf,fuzzy finder (launcher and the menus: volume, wifi, bluetooth, keys)
+,broot,file manager that shows folders as a tree (Super+F)
+,yazi,file manager with previews (Super+F)
 ,git,version control
+,fastfetch,system info when a terminal opens
 
 # desktop
 ,sway,tiling wayland compositor (includes swaybar and swaymsg)
@@ -23,11 +28,17 @@
 # wayland tools
 ,foot,terminal emulator
 ,swaylock,screen lock (scripts/lock on Super+Escape, before sleep)
+,libnotify,notify-send: send a notification from the shell or a script
 ,swaybg,wallpaper
 ,grim,screenshots
 ,slurp,select a screen region (for grim and wf-recorder)
+,wf-recorder,screen recording (scripts/record on Ctrl+Print)
 ,wl-clipboard,clipboard: wl-copy and wl-paste
+,cliphist,clipboard history (scripts/clipboard on Super+C)
+,xdg-utils,xdg-open and file types (home/.local/share/applications/mimeapps.list)
 ,jq,reads JSON (autotile, volume menu, bar clicks)
+,ttf-fira-code,Fira Code: the monospace font (foot, bar, mako, imv)
+,ttf-nerd-fonts-symbols,Symbols Nerd Font: icons only, the fallback for the bar and prompt
 
 # sound; the pipewire package has wireplumber and pipewire-pulse in it
 ,pipewire,sound server
@@ -36,6 +47,8 @@
 ,iwd,wifi daemon
 ,openresolv,DNS config for iwd
 ,dhcpcd,DHCP for wired network (iwd only does wifi)
+,chrony,network time: sets the clock at boot
+,sing-box,vpn client for subscriptions (scripts/vpn)
 
 # bluetooth (headphones); bluetoothctl is in bluez
 ,bluez,bluetooth daemon and bluetoothctl (scripts/bluetooth)
@@ -44,6 +57,10 @@
 ,firefox,browser (Super+B)
 ,mako,notifications (Super+N closes one)
 ,mpv,video player
+,imv,image viewer (which program opens what: home/.local/share/applications/mimeapps.list)
 ,btop,system monitor
+,7zip,archives: 7z x FILE
 ,mandoc,man command
 ,man-pages,manual pages for the C library and system calls (man 2, man 3)
+,noto-fonts-emoji,emoji in the browser
+,noto-fonts,text font for pages and programs (latin, cyrillic, greek)

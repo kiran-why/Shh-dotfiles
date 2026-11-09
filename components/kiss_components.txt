@@ -1,0 +1,44 @@
+# components/kiss_components.txt - parts shh config can turn off (KISS names); everything else is always installed
+# name|packages|files (repo paths)|services|group|default
+# group = the tab in shh config: empty = features, misc = programs we always use;
+# settings = its own line in settings (maxhz); xwayland = settings > xwayland; editor = settings > editor; files = settings > file manager
+# default: empty = on, no = off
+# packages stay in system/kiss/packages/common.csv too; sway lines of a part go in config/sway/features/NAME
+# no screenshare: KISS's firefox is built without dbus, the portal can't reach it
+
+record|wf-recorder|scripts/record config/sway/features/record|||
+screenshot|grim|scripts/screenshot config/sway/features/screenshot|||
+bluetooth|bluez|scripts/bluetooth config/sway/features/bluetooth|bluetoothd||
+clipboard|cliphist|scripts/clipboard config/cliphist config/sway/features/clipboard|||
+autotile||scripts/autotile config/sway/features/autotile|||
+fastfetch|fastfetch|config/fastfetch|||
+scratchpad||config/sway/features/scratchpad|||
+# the vpn menu and our own runit service shh-vpn (install.sh runs vpn setup)
+sing-box|sing-box|scripts/vpn config/sway/features/vpn|shh-vpn||
+
+# misc: programs the setup counts on
+firefox|firefox|config/sway/features/firefox||misc|
+mpv|mpv|||misc|
+imv|imv|config/imv||misc|
+btop|btop|||misc|
+7zip|7zip|||misc|
+man|mandoc man-pages|||misc|
+mako|mako libnotify|config/mako config/sway/features/mako||misc|
+emoji|noto-fonts-emoji|||misc|
+noto|noto-fonts|||misc|
+
+# settings > xwayland: noxwayland is on when xwayland is off (sway can't have both lines)
+noxwayland||config/sway/features/noxwayland||xwayland|
+# no package: KISS's wlroots and sway are built without Xwayland, the line in settings changes nothing
+xwayland||||xwayland|
+
+# settings > editor: vim or nvim, the same look, options and keys
+vim|vim|config/vim||editor|
+nvim|neovim|config/nvim||editor|
+
+# settings > file manager: broot or yazi on Super+F
+broot|broot|config/broot config/sway/features/broot||files|
+yazi|yazi|config/yazi config/sway/features/yazi||files|
+
+# settings > maxhz
+maxhz||scripts/maxhz config/sway/features/maxhz||settings|

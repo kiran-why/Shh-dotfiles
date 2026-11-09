@@ -325,6 +325,16 @@ session_setup() {
     info "pam_rundir: XDG_RUNTIME_DIR at login"
 }
 
+# user_groups GROUPS: add the user to GROUPS (comma-separated)
+user_groups() {
+    sudo usermod -aG "$1" "$USER"
+}
+
+# user_shell SHELL: the login shell of the user
+user_shell() {
+    sudo chsh -s "$1" "$USER"
+}
+
 # distro_settings: this distro's lines in shh config -> settings (line, yes_no: shh)
 distro_settings() {
     line aur_helper '' 'aur helper' "$(setting aur_helper yay) >"

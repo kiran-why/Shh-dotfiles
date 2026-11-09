@@ -1,0 +1,14 @@
+# system/kiss/services.txt - runit services started at boot (/etc/sv/NAME; iwd's is made by distro.sh)
+
+# hotplug: rc.boot stops its own mdev and leaves the job to this service
+mdev
+seatd
+# iwd and bluetoothd need dbus; runit restarts them until it is up
+dbus
+iwd
+# wired network (wifi is iwd's)
+dhcpcd
+# network time
+chronyd
+# bluetooth, needs dbus
+bluetoothd

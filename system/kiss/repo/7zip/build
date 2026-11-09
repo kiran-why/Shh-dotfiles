@@ -1,7 +1,11 @@
 #!/bin/sh -e
 
 # the tarball has no top directory: kiss would strip a level of the tree
-xz -dc 7z2606-src.tar.xz | tar xf -
+# the file keeps its ?no-extract suffix
+xz -dc ./7z*-src.tar.xz* | tar xf -
+
+# upstream has -Werror on, a new compiler warning must not stop the build
+sed -i "s/-Werror //" CPP/7zip/7zip_gcc.mak
 
 make -C CPP/7zip/Bundles/Alone2 -f ../../cmpl_gcc.mak \
     CC="$CC $CFLAGS $LDFLAGS" CXX="$CXX $CXXFLAGS $LDFLAGS"
