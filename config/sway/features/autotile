@@ -2,6 +2,9 @@
 
 exec ~/.local/bin/autotile
 
+# autotile drag finds the cursor with a 1x1 window: the default minimum is 75x50
+floating_minimum_size -1 x -1
+
 # drag a window, it follows the cursor
 bindsym --to-code --no-repeat --whole-window $mod+button1 mode drag, exec ~/.local/bin/autotile drag
 

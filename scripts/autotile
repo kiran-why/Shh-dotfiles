@@ -38,7 +38,7 @@ tiled_at() {
 # but "move position cursor" centers a floating window on it: float the
 # window, then repeat that, shifted by where it was grabbed
 drag() {
-    local id type x y w h dx dy step cx cy split cmd
+    local id type x y w h follow step cx cy split cmd
     # the mode has no keybinds: never stay in it
     trap 'swaymsg mode default >/dev/null' EXIT
     trap 'exit 1' INT TERM
@@ -58,17 +58,14 @@ drag() {
     sleep "$click_time"
     dragging || return 0
 
-    swaymsg "[con_id=$id] floating enable, resize set $w $h, move position cursor" >/dev/null
+    # 1x1 for a moment, or sway stops a big window short of the cursor at the
+    # screen edge; one command list, so the client never sees that size
+    follow="resize set 1 1, move position cursor, resize set $w $h"
+    swaymsg "[con_id=$id] floating enable, $follow" >/dev/null
     set -- $(rect "$id")
     [ "$#" -eq 4 ] || return 0
-    dx=$(($1 + $3 / 2 - x - w / 2))
-    dy=$(($2 + $4 / 2 - y - h / 2))
-
-    step="[con_id=$id] move position cursor"
-    [ "$dx" -le 0 ] || step="$step, move left $dx px"
-    [ "$dx" -ge 0 ] || step="$step, move right $((-dx)) px"
-    [ "$dy" -le 0 ] || step="$step, move up $dy px"
-    [ "$dy" -ge 0 ] || step="$step, move down $((-dy)) px"
+    # back by where it was grabbed; sway takes negative distances
+    step="[con_id=$id] $follow, move right $((x - $1)) px, move down $((y - $2)) px"
 
     # features/autotile ends the mode when the button goes up
     while dragging; do

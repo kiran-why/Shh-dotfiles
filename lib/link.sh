@@ -264,6 +264,7 @@ install_input() {
         'input type:keyboard {' \
         "    xkb_layout $layouts" \
         "    xkb_options grp:$toggle" \
+        '    xkb_numlock enabled' \
         '}' \
         '' \
         '# libinput has tapping off by default; 1 finger: left, 2 fingers: right' \
