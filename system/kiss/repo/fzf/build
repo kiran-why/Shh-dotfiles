@@ -1,0 +1,9 @@
+#!/bin/sh -e
+
+# fzf has no C code; kiss sets GOPATH and GOFLAGS itself
+export CGO_ENABLED=0
+
+go build -ldflags "-s -w -X main.version=$2" -o fzf
+
+install -Dm755 fzf "$1/usr/bin/fzf"
+install -Dm644 man/man1/fzf.1 "$1/usr/share/man/man1/fzf.1"

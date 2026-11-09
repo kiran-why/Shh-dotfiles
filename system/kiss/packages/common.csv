@@ -1,0 +1,49 @@
+# system/kiss/packages/common.csv - installed on every machine
+# tag,package,description: the tag stays empty, kiss finds a package through KISS_PATH
+# (repo: core extra wayland; community; kiss-dbus: dbus iwd bluez mako; system/kiss/repo: our own recipes)
+# check names: sh install.sh --check
+# a runit service comes inside its package (/etc/sv), no *-s6 packages here
+
+# system: libseat has the seatd daemon, no elogind
+,libseat,screen and input for sway without root (seatd service)
+,dbus,message bus (iwd and bluetoothd need it; services.txt)
+,curl,downloads: install.sh and wifi check the internet, vpn gets the subscription
+
+# shell and terminal tools
+,zsh,login shell
+,vim,text editor (config/vim/vimrc)
+,neovim,text editor (config/nvim/init.lua)
+,fzf,fuzzy finder (launcher and the menus: volume, wifi, bluetooth, keys)
+,git,version control
+
+# desktop
+,sway,tiling wayland compositor (includes swaybar and swaymsg)
+,mesa,OpenGL for sway on every graphics card and in a VM
+
+# wayland tools
+,foot,terminal emulator
+,swaylock,screen lock (scripts/lock on Super+Escape, before sleep)
+,swaybg,wallpaper
+,grim,screenshots
+,slurp,select a screen region (for grim and wf-recorder)
+,wl-clipboard,clipboard: wl-copy and wl-paste
+,jq,reads JSON (autotile, volume menu, bar clicks)
+
+# sound; the pipewire package has wireplumber and pipewire-pulse in it
+,pipewire,sound server
+
+# network
+,iwd,wifi daemon
+,openresolv,DNS config for iwd
+,dhcpcd,DHCP for wired network (iwd only does wifi)
+
+# bluetooth (headphones); bluetoothctl is in bluez
+,bluez,bluetooth daemon and bluetoothctl (scripts/bluetooth)
+
+# misc (shh config: misc)
+,firefox,browser (Super+B)
+,mako,notifications (Super+N closes one)
+,mpv,video player
+,btop,system monitor
+,mandoc,man command
+,man-pages,manual pages for the C library and system calls (man 2, man 3)
