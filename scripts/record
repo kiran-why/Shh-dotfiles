@@ -8,7 +8,10 @@ set -eu
 dir="$HOME/media/recordings"
 file="$dir/$(date +%Y-%m-%d_%H-%M-%S).mp4"
 
-# redraw the bar now, not on its next second (status.sh)
+# the bar reads this instead of looking for wf-recorder (status.sh)
+pid_file="${XDG_RUNTIME_DIR:-/tmp}/shh-record.pid"
+
+# redraw the bar now, not on its next update (status.sh)
 wake_bar() {
     kill -USR1 "$(cat "${XDG_RUNTIME_DIR:-/tmp}/shh-bar.pid" 2>/dev/null)" 2>/dev/null || true
 }
@@ -34,7 +37,7 @@ mkdir -p "$dir"
 # in the background, so the bar can show "● rec" right away
 wf-recorder "$@" -g "$geometry" -f "$file" </dev/null >/dev/null 2>&1 &
 rec_pid=$!
-sleep 0.2
+echo "$rec_pid" >"$pid_file"
 wake_bar
 
 if wait "$rec_pid"; then
@@ -42,4 +45,5 @@ if wait "$rec_pid"; then
 else
     notify-send -a record -u critical 'recording failed' 'run wf-recorder in a terminal to see why' || true
 fi
+rm -f "$pid_file"
 wake_bar

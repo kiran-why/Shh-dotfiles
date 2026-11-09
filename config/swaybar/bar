@@ -9,6 +9,8 @@ bar {
     status_edge_padding 6
     # no tray: swaybar always draws it right of the menu button
     tray_output none
+    # no "drag" on the bar while a window is dragged (features/autotile)
+    binding_mode_indicator no
 
     # show "●" instead of "1:●"
     strip_workspace_numbers yes

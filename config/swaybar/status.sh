@@ -15,9 +15,14 @@ block() {
         "$1" "$2" "$3"
 }
 
-# while scripts/record runs
+# scripts/record writes the pid of wf-recorder here
+rec_file="${XDG_RUNTIME_DIR:-/tmp}/shh-record.pid"
+
+# while scripts/record runs; /proc: the file stays if record was killed
 rec() {
-    pgrep -x wf-recorder >/dev/null || return 0
+    local pid=
+    read -r pid 2>/dev/null <"$rec_file" || return 0
+    [ -n "$pid" ] && [ -d "/proc/$pid" ] || return 0
     block rec '● rec' "$red"
     printf ','
 }
@@ -98,8 +103,9 @@ status_loop() {
     sh -c 'echo "$PPID"' >"$bar_pid"
     while :; do
         printf '[%s%s%s,%s],\n' "$(rec)" "$(clock)" "$(bat)" "$menu_button"
+        # once a minute, right when it changes; the rest comes as USR1;
         # wait, unlike sleep, returns at once on a signal
-        sleep 1 &
+        sleep $((60 - $(date +%s) % 60)) &
         wait $! || kill $! 2>/dev/null
     done
 }
