@@ -1,0 +1,13 @@
+cairo
+icu
+inih
+libjpeg-turbo
+libpng
+libwebp
+libxkbcommon
+mesa
+pango
+wayland
+wayland-protocols make
+meson make
+pkgconf make

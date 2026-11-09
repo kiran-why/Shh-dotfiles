@@ -1,0 +1,9 @@
+#!/bin/sh -e
+
+# the build script reads the commit from git, a tarball has none
+export VERGEN_GIT_SHA=kiss
+
+cargo build --release --locked
+
+install -Dm755 target/release/yazi "$1/usr/bin/yazi"
+install -Dm755 target/release/ya   "$1/usr/bin/ya"

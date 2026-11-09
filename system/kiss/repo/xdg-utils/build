@@ -1,0 +1,11 @@
+#!/bin/sh -e
+
+cd scripts
+
+# the help texts need xmlto, not on KISS: the scripts are the same without them
+for s in xdg-desktop-menu xdg-desktop-icon xdg-mime xdg-icon-resource \
+         xdg-open xdg-email xdg-screensaver xdg-settings; do
+    :> "$s.txt"
+    awk -f generate-help-script.awk "$s.in" | sed "s/@NAME@/$s/g" > "$s"
+    install -Dm755 "$s" "$1/usr/bin/$s"
+done

@@ -1,0 +1,8 @@
+#!/bin/sh -e
+
+# no C code; kiss sets GOPATH and GOFLAGS itself
+export CGO_ENABLED=0
+
+go build -ldflags "-s -w" -o cliphist
+
+install -Dm755 cliphist "$1/usr/bin/cliphist"

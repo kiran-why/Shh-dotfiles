@@ -1,0 +1,4 @@
+cmake make
+linux-headers make
+pkgconf make
+wayland

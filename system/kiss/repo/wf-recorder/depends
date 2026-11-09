@@ -1,0 +1,8 @@
+ffmpeg
+libdrm
+libpulse
+mesa
+wayland
+wayland-protocols make
+meson make
+pkgconf make

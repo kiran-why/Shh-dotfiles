@@ -1,0 +1,5 @@
+#!/bin/sh -e
+
+make PREFIX=/usr \
+    SHARE_DIR="$1/usr/share/zsh/plugins/zsh-syntax-highlighting" \
+    DOC_DIR="$PWD/doc" install

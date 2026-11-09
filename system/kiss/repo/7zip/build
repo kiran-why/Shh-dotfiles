@@ -1,0 +1,10 @@
+#!/bin/sh -e
+
+# the tarball has no top directory: kiss would strip a level of the tree
+xz -dc 7z2606-src.tar.xz | tar xf -
+
+make -C CPP/7zip/Bundles/Alone2 -f ../../cmpl_gcc.mak \
+    CC="$CC $CFLAGS $LDFLAGS" CXX="$CXX $CXXFLAGS $LDFLAGS"
+
+install -Dm755 CPP/7zip/Bundles/Alone2/b/g/7zz "$1/usr/bin/7zz"
+ln -s 7zz "$1/usr/bin/7z"

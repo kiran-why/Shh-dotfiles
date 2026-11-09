@@ -1,0 +1,11 @@
+#!/bin/sh -e
+
+# upstream's tags and flags; OTHERS: no naive outbound, it needs C (cronet)
+export CGO_ENABLED=0
+
+go build \
+    -tags "$(cat release/DEFAULT_BUILD_TAGS_OTHERS)" \
+    -ldflags "-X 'github.com/sagernet/sing-box/constant.Version=$2' $(cat release/LDFLAGS) -s -w -buildid=" \
+    -o sing-box ./cmd/sing-box
+
+install -Dm755 sing-box "$1/usr/bin/sing-box"

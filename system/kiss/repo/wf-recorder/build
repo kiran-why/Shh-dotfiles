@@ -1,0 +1,13 @@
+#!/bin/sh -e
+
+export DESTDIR="$1"
+
+# pulse, like on the other distros: scripts/record passes a pulse source name
+meson setup \
+    -Dprefix=/usr \
+    -Dpulse=enabled \
+    -Dpipewire=disabled \
+    build
+
+ninja -C build
+ninja -C build install

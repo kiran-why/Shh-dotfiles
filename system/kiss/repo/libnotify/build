@@ -1,0 +1,15 @@
+#!/bin/sh -e
+
+export DESTDIR="$1"
+
+meson setup \
+    -Dprefix=/usr \
+    -Dtests=false \
+    -Dintrospection=disabled \
+    -Dman=false \
+    -Dgtk_doc=false \
+    -Ddocbook_docs=disabled \
+    build
+
+ninja -C build
+ninja -C build install
