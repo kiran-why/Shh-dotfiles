@@ -40,10 +40,13 @@ rec_pid=$!
 echo "$rec_pid" >"$pid_file"
 wake_bar
 
-if wait "$rec_pid"; then
-    notify-send -a record 'recording saved' "${file##*/}" || true
-else
-    notify-send -a record -u critical 'recording failed' 'run wf-recorder in a terminal to see why' || true
-fi
+rc=0
+wait "$rec_pid" || rc=$?
 rm -f "$pid_file"
 wake_bar
+
+if [ "$rc" -eq 0 ]; then
+    ~/.local/bin/notify -a record 'recording saved' "${file##*/}" || true
+else
+    ~/.local/bin/notify -a record -u critical 'recording failed' 'run wf-recorder in a terminal to see why' || true
+fi

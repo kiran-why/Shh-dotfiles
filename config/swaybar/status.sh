@@ -18,11 +18,14 @@ block() {
 # scripts/record writes the pid of wf-recorder here
 rec_file="${XDG_RUNTIME_DIR:-/tmp}/shh-record.pid"
 
-# while scripts/record runs; /proc: the file stays if record was killed
+# while scripts/record runs; /proc: the file stays if record was killed,
+# comm: by then the pid may belong to another program
 rec() {
-    local pid=
+    local pid= comm=
     read -r pid 2>/dev/null <"$rec_file" || return 0
-    [ -n "$pid" ] && [ -d "/proc/$pid" ] || return 0
+    [ -n "$pid" ] || return 0
+    read -r comm 2>/dev/null <"/proc/$pid/comm" || return 0
+    [ "$comm" = wf-recorder ] || return 0
     block rec '● rec' "$red"
     printf ','
 }
@@ -32,12 +35,12 @@ rec() {
 # the main process
 date_flag="${XDG_RUNTIME_DIR:-/tmp}/shh-bar-date"
 
-# date format: man date
+# clock TIME DATE
 clock() {
     if [ -e "$date_flag" ]; then
-        block clock "$(date +%d.%m)" "$white"
+        block clock "$2" "$white"
     else
-        block clock "$(date +%H:%M)" "$white"
+        block clock "$1" "$white"
     fi
 }
 
@@ -70,7 +73,7 @@ bat() {
         fi
 
         if [ "$low" = 1 ] && [ ! -e "$low_flag" ]; then
-            notify-send -a battery -u critical 'battery low' "$cap%, plug in the charger" >/dev/null || true
+            ~/.local/bin/notify -a battery -u critical 'battery low' "$cap%, plug in the charger" >/dev/null || true
             : >"$low_flag"
         elif [ "$low" = 0 ] && [ -e "$low_flag" ]; then
             rm -f "$low_flag"
@@ -99,14 +102,19 @@ menu_button=$(block menu "$logo" "$white")
 bar_pid="${XDG_RUNTIME_DIR:-/tmp}/shh-bar.pid"
 
 status_loop() {
-    trap : USR1
+    trap 'woke=1' USR1
     sh -c 'echo "$PPID"' >"$bar_pid"
     while :; do
-        printf '[%s%s%s,%s],\n' "$(rec)" "$(clock)" "$(bat)" "$menu_button"
+        woke=
+        # date format: man date; one call, so the clock and the sleep agree
+        set -- $(date '+%s %H:%M %d.%m')
+        printf '[%s%s%s,%s],\n' "$(rec)" "$(clock "$2" "$3")" "$(bat)" "$menu_button"
         # once a minute, right when it changes; the rest comes as USR1;
-        # wait, unlike sleep, returns at once on a signal
-        sleep $((60 - $(date +%s) % 60)) &
-        wait $! || kill $! 2>/dev/null
+        # wait, unlike sleep, returns at once on a signal;
+        # woke: a USR1 during the redraw would be lost for a whole minute
+        sleep $((60 - $1 % 60)) &
+        [ -n "$woke" ] || wait $! || :
+        kill $! 2>/dev/null
     done
 }
 

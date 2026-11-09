@@ -19,7 +19,7 @@ export MENU_TEXT=
 run() {
     . "$HOME/.local/share/shh/distro.sh"
     power_run "$1" ||
-        notify-send -a power -u critical power "$1 failed: no sudo rule? run shh update" || true
+        ~/.local/bin/notify -a power -u critical power "$1 failed: no sudo rule? run shh update" || true
 }
 
 # lock first: swaylock -f returns once the screen is locked
@@ -28,6 +28,8 @@ suspend_now() {
     run suspend
     # awake again: scripts/lock may have turned the screens off
     swaymsg 'output * power on' >/dev/null
+    # the bar's sleep doesn't count the time asleep: redraw the clock now
+    kill -USR1 "$(cat "${XDG_RUNTIME_DIR:-/tmp}/shh-bar.pid" 2>/dev/null)" 2>/dev/null || true
 }
 
 case "${1:-}" in
