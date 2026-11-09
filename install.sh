@@ -324,8 +324,8 @@ enable_services() {
     services=$(read_list "$services_file" | without "$off_svcs")
     svc_apply "$services" "$off_svcs"
 
-    # sing-box (shh config: misc): our own service (vpn_setup: distro.sh); started from the vpn menu
-    if part_on sing-box misc; then
+    # sing-box (shh config: features): our own service (vpn_setup: distro.sh); started from the vpn menu
+    if part_on sing-box ''; then
         sh "$dots_path/scripts/vpn" setup || error "vpn setup failed"
     fi
 
