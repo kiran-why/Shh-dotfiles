@@ -1,3 +1,16 @@
 # ~/.config/sway/features/autotile - hyprland-like splits (shh config: autotile)
 
 exec ~/.local/bin/autotile
+
+# drag a window, it follows the cursor
+bindsym --to-code --no-repeat --whole-window $mod+button1 mode drag, exec ~/.local/bin/autotile drag
+
+# only while dragging; both releases: Super may go up first.
+# A click or Esc: over the bar sway doesn't see the button go up
+mode drag {
+    bindsym --whole-window --release button1 mode default
+    bindsym --whole-window --release $mod+button1 mode default
+    bindsym --whole-window button1 mode default
+    bindsym --whole-window $mod+button1 mode default
+    bindsym Escape mode default
+}

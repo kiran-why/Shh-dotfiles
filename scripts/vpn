@@ -1,5 +1,5 @@
 #!/bin/sh
-# vpn - sing-box from a subscription (shh config: misc)
+# vpn - sing-box from a subscription (shh config: sing-box)
 # vpn: the menu: on/off, locations, add or update the subscription, start at boot
 # vpn update: download the subscription, make /etc/sing-box/config.json, check it
 # vpn setup: the service that runs sing-box (install.sh runs it; vpn_*: distro.sh)
