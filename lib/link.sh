@@ -258,12 +258,17 @@ install_input() {
     fi
 
     printf '%s\n' \
-        '# ~/.config/sway/input - keyboard' \
+        '# ~/.config/sway/input - keyboard and touchpad' \
         '# made by link.sh from ~/.config/shh/config: change it with shh config, then shh update' \
         '' \
         'input type:keyboard {' \
         "    xkb_layout $layouts" \
         "    xkb_options grp:$toggle" \
+        '}' \
+        '' \
+        '# libinput has tapping off by default; 1 finger: left, 2 fingers: right' \
+        'input type:touchpad {' \
+        '    tap enabled' \
         '}' >"$new_list.input"
 
     mode=copy
