@@ -22,12 +22,12 @@ export MENU_TEXT=
 # the last header line: one space, so an empty line sits above the list
 gap=$(printf '\n ')
 
-# warning SVC: what breaks when SVC goes off (seatd, dbus: the same name on every distro)
+# warning SVC: what breaks when SVC goes off (tty*: s6 names, agetty-*: runit)
 warning() {
     case "$1" in
         seatd) echo '! sway needs it' ;;
         dbus)  echo '! wifi, bluetooth need it' ;;
-        udevd) echo '! devices need it' ;;
+        udevd) echo '! devices, network need it' ;;
         tty*|agetty-*) echo '! ends logins on it' ;;
     esac
 }
@@ -48,14 +48,14 @@ service_lines() {
             2) [ -n "$all" ] || continue; state=disabled ;;
             *) continue ;;
         esac
-        printf '%-18s%s\n' "$svc ($state)" "$(warning "$svc")"
+        printf '%-26s %s\n' "$svc ($state)" "$(warning "$svc")"
     done
 }
 
 # services [all]: Enter turns the picked one on or off (svc_ctl: distro.sh,
 # asks for sudo); our list ends with All >, the same menu for every service
 services() {
-    local all="${1:-}" list pick svc pos=1 note=''
+    local all="${1:-}" list pick svc was armed='' pos=1 note=''
     while :; do
         MENU_TEXT="${note:-Enter: on / off   Esc: back}$gap"
         list=$(service_lines "$all")
@@ -65,8 +65,15 @@ services() {
             menu --bind="$(banner services)" --bind="load:pos($pos)") || return 0
         pos=$(printf '%s\n' "$list" | grep -nxF -- "$pick" | cut -d: -f1)
         svc=${pick%% *}
+        was=$armed armed=''
+        # a row with a warning is stopped only by the second Enter in a row
+        case "$pick:$was" in
+            *' (on)'*'!'*":$svc") ;;
+            *' (on)'*'!'*) armed=$svc note="Enter again: stop $svc"; continue ;;
+        esac
         case "$pick" in
             'All >') note=''; services all ;;
+            *' (boot)'*|*' (disabled)'*) note="$svc: cannot be switched here" ;;
             *' (on)'*) svc_ctl stop "$svc" && note="$svc: off" || note="Cannot stop $svc" ;;
             *' (off)'*) svc_ctl start "$svc" && note="$svc: on" || note="Cannot start $svc" ;;
         esac

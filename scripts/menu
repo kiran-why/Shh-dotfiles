@@ -180,18 +180,18 @@ EOF
 # One row in px from its height now; 16 = pad=8x8 in foot.ini, 2 = the sway border (look).
 # Our own resize runs header again, then the rows match and it stops
 fit() {
-    local win id x y h px max
+    local win id x y h bottom px
     [ "${FZF_LINES:-0}" -gt 0 ] && [ "$1" -ne "$FZF_LINES" ] || return 0
-    win=$(swaymsg -t get_tree | jq -r '.. | objects | select(.focused and .type == "floating_con")
-        | "\(.id) \(.rect.x) \(.rect.y) \(.window_rect.height)"' 2>/dev/null) || return 0
+    win=$(swaymsg -t get_tree | jq -r '.. | objects | select(.type == "workspace") | .rect as $ws
+        | .floating_nodes[]? | select(.focused)
+        | "\(.id) \(.rect.x) \(.rect.y) \(.window_rect.height) \($ws.y + $ws.height)"' 2>/dev/null) || return 0
     [ -n "$win" ] || return 0
-    read -r id x y h <<EOF
+    read -r id x y h bottom <<EOF
 $win
 EOF
     px=$(( (h - 16) / FZF_LINES * $1 + 18 ))
     # a long list scrolls instead of going off the screen
-    max=$(swaymsg -t get_workspaces | jq '.[] | select(.focused) | .rect.height' 2>/dev/null) || max=
-    [ "$px" -le "${max:-$px}" ] || px=$max
+    [ "$((y + px))" -le "$bottom" ] || px=$((bottom - y))
     swaymsg "[con_id=$id] resize set height $px px, move absolute position $x px $y px" >/dev/null 2>&1 || true
 }
 

@@ -156,8 +156,11 @@ svc_ctl() {
 # svc_list (settings > Svc > All): every service, one per line; only the ones
 # linked in /var/service are enabled (svc_check 2 for the rest)
 svc_list() {
-    ls /etc/sv
+    { ls /etc/sv; ls /var/service; } | sort -u
 }
+
+# consoles nobody uses: tty1 runs sway, tty2 stays for repairs (svc_apply turns them off)
+svc_unused='agetty-tty3 agetty-tty4 agetty-tty5 agetty-tty6'
 
 # the vpn service (scripts/vpn): our own, as root. The package's sing-box
 # service runs as _sing_box and can't read the root-only config
