@@ -38,7 +38,7 @@ tiled_at() {
 # but "move position cursor" centers a floating window on it: float the
 # window, then repeat that, shifted by where it was grabbed
 drag() {
-    local id type x y w h follow step cx cy split cmd
+    local id type x y w h follow step cx cy dx dy split cmd
     # the mode has no keybinds: never stay in it
     trap 'swaymsg mode default >/dev/null' EXIT
     trap 'exit 1' INT TERM
@@ -77,9 +77,9 @@ drag() {
     # a floating window stays where it was dropped
     [ "$type" = con ] || return 0
 
-    # the cursor again: the center of the window; small, because sway keeps
-    # a window inside the screen and a big one's center would miss the cursor
-    swaymsg "[con_id=$id] resize set 10 10, move position cursor" >/dev/null || return 0
+    # the cursor again: $follow leaves the center of the window on it. The size
+    # comes back in the same list: a client that really got a tiny size (VirtualBox) stays broken
+    swaymsg "[con_id=$id] $follow" >/dev/null || return 0
     set -- $(rect "$id")
     [ "$#" -eq 4 ] || return 0
     cx=$(($1 + $3 / 2)) cy=$(($2 + $4 / 2))
@@ -89,16 +89,20 @@ drag() {
     set -- $(tiled_at "$cx" "$cy")
     # over a fullscreen window: nothing to halve, it just goes back to tiled
     if [ "$#" -ge 7 ] && [ "$7" -eq 0 ]; then
+        # from the center of the window under the cursor
+        dx=$((cx - $2 - $4 / 2)) dy=$((cy - $3 - $5 / 2))
         # in tabs or a stack it becomes one more, no split
         split=
         case "$6" in
             tabbed|stacked) ;;
-            *) if [ "$5" -gt "$4" ]; then split=splitv; else split=splith; fi ;;
+            # the edge the cursor is nearest to: top or bottom stacks the two windows.
+            # distances scaled by the other side, as the window is not a square
+            *) if [ $((${dy#-} * $4)) -gt $((${dx#-} * $5)) ]; then split=splitv; else split=splith; fi ;;
         esac
         cmd="[con_id=$1] mark --add _drag;${split:+ [con_id=$1] $split;} $cmd; [con_id=$id] move container to mark _drag; [con_id=$1] unmark _drag"
         # like hyprland: the half of the window the cursor is in
-        if { [ "$split" = splith ] && [ "$cx" -lt $(($2 + $4 / 2)) ]; } ||
-            { [ "$split" = splitv ] && [ "$cy" -lt $(($3 + $5 / 2)) ]; }; then
+        if { [ "$split" = splith ] && [ "$dx" -lt 0 ]; } ||
+            { [ "$split" = splitv ] && [ "$dy" -lt 0 ]; }; then
             cmd="$cmd; [con_id=$id] swap container with con_id $1"
         fi
         cmd="$cmd; [con_id=$id] focus"
