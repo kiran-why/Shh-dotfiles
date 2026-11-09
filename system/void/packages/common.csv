@@ -51,6 +51,7 @@
 ,openresolv,DNS config for iwd (no systemd-resolved)
 ,dhcpcd,DHCP for wired network (iwd only does wifi)
 ,chrony,network time: sets the clock at boot, both ways (makestep, rtcsync: default chrony.conf)
+,sing-box,vpn client for subscriptions (scripts/vpn)
 
 # bluetooth (headphones); bluetoothctl is in bluez
 ,bluez,bluetooth daemon and bluetoothctl (scripts/bluetooth)
@@ -58,7 +59,6 @@
 
 # misc (shh config: misc); man and man-pages are in base-system (mandoc)
 ,firefox,browser (Super+B)
-,sing-box,vpn client for subscriptions (scripts/vpn)
 ,mako,notifications (Super+N closes one)
 ,mpv,video player
 ,imv,image viewer (which program opens what: home/.local/share/applications/mimeapps.list)

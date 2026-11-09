@@ -54,6 +54,7 @@
 ,dhcpcd-s6,dhcpcd service for s6
 ,chrony,network time: sets the clock at boot, both ways (makestep, rtcsync: default chrony.conf)
 ,chrony-s6,chronyd service for s6
+,sing-box,vpn client for subscriptions (scripts/vpn)
 
 # bluetooth (headphones); sound to them comes with pipewire-pulse
 ,bluez,bluetooth daemon
@@ -62,7 +63,6 @@
 
 # misc (shh config: misc)
 ,firefox,browser (Super+B)
-,sing-box,vpn client for subscriptions (scripts/vpn)
 ,mako,notifications (Super+N closes one)
 ,mpv,video player
 ,imv,image viewer (which program opens what: home/.local/share/applications/mimeapps.list)

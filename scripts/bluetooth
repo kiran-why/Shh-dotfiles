@@ -93,7 +93,7 @@ paired_lines() {
 connect() {
     echo "connecting to $2..."
     if bt connect "$1" >/dev/null; then
-        notify-send -a bluetooth 'bluetooth connected' "$2" || true
+        ~/.local/bin/notify -a bluetooth 'bluetooth connected' "$2" || true
     else
         say 'could not connect'
     fi
@@ -148,7 +148,7 @@ unpair_menu() {
     mac=$(printf '%s\n' "$pick" | cut -f2)
     name=$(printf '%s\n' "$pick" | cut -f3)
     if bt remove "$mac" >/dev/null; then
-        notify-send -a bluetooth 'bluetooth: unpaired' "$name" || true
+        ~/.local/bin/notify -a bluetooth 'bluetooth: unpaired' "$name" || true
     else
         say 'could not unpair'
     fi

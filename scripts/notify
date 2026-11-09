@@ -1,0 +1,6 @@
+#!/bin/sh
+# notify - notify-send, or nothing at all when mako is off in shh config
+# (its sway file is installed only while the part is on)
+
+[ -e "$HOME/.config/sway/features/mako" ] || exit 0
+exec notify-send "$@"

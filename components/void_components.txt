@@ -24,7 +24,7 @@ btop|btop|||misc|
 7zip|7zip|||misc|
 # man itself (mandoc) and man-pages come with base-system
 man|man-pages-devel|||misc|
-mako|mako|config/mako config/sway/features/mako||misc|
+mako|mako libnotify|config/mako config/sway/features/mako||misc|
 emoji|noto-fonts-emoji|||misc|
 noto|noto-fonts-ttf|||misc|
 

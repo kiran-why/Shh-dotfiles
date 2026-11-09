@@ -33,7 +33,7 @@ while :; do
     if [ "$pick" = "$clear_all" ]; then
         if [ "$key" = ctrl-d ]; then continue; fi
         cliphist wipe
-        notify-send -a clipboard 'clipboard history cleared' || true
+        ~/.local/bin/notify -a clipboard 'clipboard history cleared' || true
         exit 0
     fi
 

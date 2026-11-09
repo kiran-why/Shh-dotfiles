@@ -67,7 +67,7 @@ now() {
 
 # the same tag makes mako replace the last one instead of stacking them
 notify_level() {
-    notify-send -a brightness -t 1500 -h string:x-dunst-stack-tag:brightness "$(now)" "$note" || true
+    ~/.local/bin/notify -a brightness -t 1500 -h string:x-dunst-stack-tag:brightness "$(now)" "$note" || true
 }
 
 note=''

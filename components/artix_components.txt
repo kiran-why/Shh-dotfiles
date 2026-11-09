@@ -23,7 +23,7 @@ imv|imv|config/imv||misc|
 btop|btop|||misc|
 7zip|7zip|||misc|
 man|man-db man-pages|||misc|
-mako|mako|config/mako config/sway/features/mako||misc|
+mako|mako libnotify|config/mako config/sway/features/mako||misc|
 emoji|noto-fonts-emoji|||misc|
 noto|noto-fonts|||misc|
 

@@ -91,10 +91,10 @@ available_menu() {
             rescan) scan ;;
             *)
                 if iwctl station "$dev" connect "$pick"; then
-                    notify-send -a wifi 'wifi connected' "$pick" || true
+                    ~/.local/bin/notify -a wifi 'wifi connected' "$pick" || true
                     exit 0
                 fi
-                notify-send -a wifi 'wifi: could not connect' "$pick" || true
+                ~/.local/bin/notify -a wifi 'wifi: could not connect' "$pick" || true
                 echo 'could not connect, press Enter'
                 read -r _
                 ;;
@@ -108,7 +108,7 @@ known_menu() {
     while :; do
         pick=$(known | menu --header="Enter: forget$gap") || return 0
         iwctl known-networks "$pick" forget || true
-        notify-send -a wifi 'wifi: forgot' "$pick" || true
+        ~/.local/bin/notify -a wifi 'wifi: forgot' "$pick" || true
     done
 }
 
