@@ -191,6 +191,7 @@ settings_lines() {
     yes_no nobeep 'Mute the motherboard beeper'
     yes_no maxhz 'Highest refresh rate of every screen'
     yes_no xwayland 'X11 programs; after a relogin' no
+    yes_no a11y 'Screen readers in GTK programs; after a relogin' no
 }
 
 settings_act() {
@@ -209,8 +210,8 @@ settings_act() {
             loop layouts 'Enter: on / off   Esc: back   the first one is the default' layout_lines layout_act
             note="Layouts: $(setting layouts us,ru)"
             return 0 ;;
-        xwayland)
-            toggle xwayland no
+        xwayland|a11y)
+            toggle "$1" no
             return 0 ;;
         *)
             # distro_act: distro.sh (Artix: aur helper); not its line: a yes / no

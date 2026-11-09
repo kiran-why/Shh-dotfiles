@@ -29,6 +29,9 @@ EDITOR=vim
 grep -q '^editor=nvim' "$HOME/.config/shh/config" 2>/dev/null && EDITOR=nvim
 export EDITOR
 
+# no accessibility bus (8 MB) unless shh config > settings asks for screen readers
+grep -q '^a11y=yes' "$HOME/.config/shh/config" 2>/dev/null || export NO_AT_BRIDGE=1 GTK_A11Y=none
+
 # █   █ ▀█▀ █▀▀▄ ▀▀█▀▀ █  █ ▄▀▀▄ █        █▄ ▄█ ▄▀▀▄ ▄▀▀▀ █  █ ▀█▀ █▄  █ █▀▀▀ ▄▀▀▀ 
 # ▀▄ ▄▀  █  █▀█    █   █  █ █▀▀█ █        █ ▀ █ █▀▀█ █    █▀▀█  █  █ ▀▄█ █▀▀   ▀▀▄ 
 #   ▀   ▀▀▀ ▀  ▀   ▀    ▀▀  ▀  ▀ ▀▀▀▀     ▀   ▀ ▀  ▀  ▀▀▀ ▀  ▀ ▀▀▀ ▀   ▀ ▀▀▀▀ ▀▀▀  
