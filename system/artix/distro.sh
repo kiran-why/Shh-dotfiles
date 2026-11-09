@@ -217,7 +217,8 @@ svc_apply() {
         info "enabled $svc"
     done
     for svc in $2; do
-        s6 set status 2>/dev/null | grep -qx "$svc-srv/active" || continue
+        # tty*: a single longrun, no -srv
+        s6 set status 2>/dev/null | grep -Eqx "$svc(-srv)?/active" || continue
         sudo s6 set disable "$svc" || error "cannot disable $svc"
         info "disabled $svc"
         disabled="$disabled $svc"
@@ -256,6 +257,9 @@ svc_list() {
     s6-rc-db list longruns | sed '/^s6rc-/d; /-log$/d; s/-srv$//' | sort
     s6-rc-db list oneshots | sort | sed 's/$/ boot/'
 }
+
+# consoles nobody uses: tty1 runs sway, tty2 stays for repairs (svc_apply turns them off)
+svc_unused='tty3 tty4 tty5 tty6 ttyS'
 
 # the vpn service (scripts/vpn): our own s6 service sing-box
 vpn_svc=sing-box

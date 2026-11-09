@@ -322,7 +322,7 @@ enable_services() {
     local services off_svcs
     off_svcs=$(off_items "$components_file" 4)
     services=$(read_list "$services_file" | without "$off_svcs")
-    svc_apply "$services" "$off_svcs"
+    svc_apply "$services" "$off_svcs $svc_unused"
 
     # sing-box (shh config: features): our own service (vpn_setup: distro.sh); started from the vpn menu
     if part_on sing-box ''; then
