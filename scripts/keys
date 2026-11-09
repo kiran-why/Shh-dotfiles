@@ -30,6 +30,9 @@ list() {
             printf "\n"
             n = 0
         }
+        # keys inside a "mode NAME {" block work only in that mode
+        $1 == "mode" && $NF == "{" { inmode = 1; next }
+        inmode { if ($1 == "}") inmode = 0; next }
         /^[[:space:]]*$/ { desc = ""; next }
         /^[[:space:]]*#/ {
             if (desc == "") {

@@ -8,9 +8,9 @@ bindsym --to-code --no-repeat --whole-window $mod+button1 mode drag, exec ~/.loc
 # only while dragging; both releases: Super may go up first.
 # A click or Esc: over the bar sway doesn't see the button go up
 mode drag {
-    bindsym --whole-window --release button1 mode default
-    bindsym --whole-window --release $mod+button1 mode default
-    bindsym --whole-window button1 mode default
-    bindsym --whole-window $mod+button1 mode default
-    bindsym Escape mode default
+    bindsym --to-code --no-repeat --whole-window --release button1 mode default
+    bindsym --to-code --no-repeat --whole-window --release $mod+button1 mode default
+    bindsym --to-code --no-repeat --whole-window button1 mode default
+    bindsym --to-code --no-repeat --whole-window $mod+button1 mode default
+    bindsym --to-code --no-repeat Escape mode default
 }
