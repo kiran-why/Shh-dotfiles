@@ -286,10 +286,24 @@ chown $USER /run/user/$uid
 for light in /sys/class/backlight/*/brightness; do
     [ -e \"\$light\" ] && chgrp video \"\$light\" && chmod g+w \"\$light\"
 done"
+    # Set LANG, which nothing on KISS does.
+    #
+    # musl always works in UTF-8, but programs look at LANG to find out:
+    # btop refuses to start without a UTF-8 one. A LANG set earlier is kept.
     write_root /etc/profile.d/shh.sh "export XDG_RUNTIME_DIR=/run/user/\$(id -u)
+export LANG=\"\${LANG:-C.UTF-8}\"
 export KISS_PATH=$KISS_PATH
 export MAKEFLAGS=\"\${MAKEFLAGS:-$MAKEFLAGS}\" SAMUFLAGS=\"\${SAMUFLAGS:-$SAMUFLAGS}\" CARGO_BUILD_JOBS=\"\${CARGO_BUILD_JOBS:-$CARGO_BUILD_JOBS}\""
-    info "XDG_RUNTIME_DIR at login, brightness: group video, build jobs: $SAMUFLAGS"
+    info "XDG_RUNTIME_DIR and LANG at login, brightness: group video, build jobs: $SAMUFLAGS"
+
+    # Drop the KISS_PATH line the KISS install guide adds to /etc/profile.
+    #
+    # /etc/profile reads profile.d first and sets its own KISS_PATH after,
+    # so ours (with our recipes) would never be seen. '-i.bak-DATE' keeps
+    # the old file next to it, like write_root does.
+    ! grep -q '^export KISS_PATH=' /etc/profile ||
+        sudo sed -i".bak-$stamp" '/^export KISS_PATH=/d' /etc/profile ||
+        error "cannot remove KISS_PATH from /etc/profile"
 
     [ -e /etc/asound.conf ] || [ -L /etc/asound.conf ] ||
         sudo ln -s /usr/share/alsa/alsa.conf.d/99-pipewire-default.conf /etc/asound.conf ||
@@ -321,7 +335,7 @@ distro_undo() {
     echo "  services   services.txt          sudo rm /var/service/NAME"
     echo "  shell      zsh                   the last field of your line in /etc/passwd"
     echo "  groups     audio, video, wheel   sudo delgroup $(id -un) GROUP"
-    echo "  /etc       rc.d/shh.boot, profile.d/shh.sh (XDG_RUNTIME_DIR, brightness, KISS_PATH), sv/eiwd/run, sv/mdevd/run, mdevd.conf,"
+    echo "  /etc       rc.d/shh.boot (/run/user, brightness), profile.d/shh.sh (XDG_RUNTIME_DIR, LANG, KISS_PATH, build jobs), profile (KISS_PATH line removed), sv/eiwd/run, sv/mdevd/run, mdevd.conf,"
     echo "             dhcpcd.conf (denyinterfaces wl*), iwd/main.conf, modprobe.d/nobeep.conf, asound.conf, pipewire/pipewire.conf.d/shh.conf,"
     echo "             sudoers.d/shh-power (poweroff, reboot, sleep): sudo rm /etc/sudoers.d/shh-power;"
     echo "             older versions of some are next to them as FILE.bak-DATE"

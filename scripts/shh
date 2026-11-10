@@ -277,13 +277,17 @@ recipe_act() {
 # A recipe that is off (recipe_NAME=no) is not copied for kiss
 # (kiss_repos: distro.sh). That counts from the next build of the package:
 # what is installed stays as it is.
+#
+# The versions line up in one column, a tab's width (8 spaces) right of the
+# longest name. A real tab can't be used: fzf splits the lines on it.
 all_recipe_lines() {
-    local dir name box
+    local dir name box width
+    width=$(ls "$recipes_dir" | awk '{ if (length > w) w = length } END { print w + 8 }')
     for dir in "$recipes_dir"/*/; do
         dir=${dir%/} name=${dir##*/}
         box='[x]'
         [ "$(setting "recipe_$name" yes)" = yes ] || box='[ ]'
-        line "recipe_$name" "$box" "$name" "$(cut -d' ' -f1 "$dir/version")"
+        printf "%s\t%-3s %-${width}s%s\n" "recipe_$name" "$box" "$(cap "$name")" "$(cut -d' ' -f1 "$dir/version")"
     done
 }
 
