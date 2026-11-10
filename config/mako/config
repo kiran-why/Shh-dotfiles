@@ -1,5 +1,5 @@
-# ~/.config/mako/config - notifications (man 5 mako)
-# try it: notify-send hello   /   notify-send -u critical oops
+# Notifications (man 5 mako).
+# Try it: 'notify-send hello', 'notify-send -u critical oops'.
 
 font=Fira Code, Symbols Nerd Font 10
 background-color=#000000
@@ -7,14 +7,14 @@ text-color=#e6e6e6
 border-color=#5a5a5a
 border-size=2
 padding=10
-# gap to the screen edge
+# The gap to the screen edge.
 margin=10
 width=350
 anchor=top-right
-# in milliseconds
+# In milliseconds.
 default-timeout=5000
 
-# critical: red border, stays until clicked
+# Critical: a red border, stays until clicked.
 [urgency=critical]
 border-color=#d7263d
 default-timeout=0

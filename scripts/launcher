@@ -1,15 +1,16 @@
 #!/bin/sh
-# launcher - pick a program from $PATH and start it ($mod+r)
-# console programs open in their own foot, app id = program name,
-# so menus like wifi and keys float by their sway/rules
+# Pick a program from $PATH and start it ($mod+r).
+#
+# Console programs open in their own foot with the program name as the
+# app id, so menus like wifi and keys float by their sway/rules.
 
 set -eu
 
-# started by sway or a key: from here a second copy would clash, record and
-# screenshot would catch their own terminal window
+# Started by sway or a key. From here a second copy would clash, and
+# record and screenshot would catch their own terminal window.
 hidden='autotile sound hardware wallpaper vmware-clipboard notify record screenshot maxhz'
 
-# every executable in $PATH, without duplicates
+# Print every executable in $PATH, without duplicates.
 programs() {
     local IFS=: dir f
     for dir in $PATH; do
@@ -22,7 +23,7 @@ programs() {
     done | sort -u
 }
 
-# is_gui CMD: some .desktop file runs CMD without Terminal=true
+# Check if some .desktop file runs CMD without 'Terminal=true'.
 is_gui() {
     local cmd="$1" f
     set --

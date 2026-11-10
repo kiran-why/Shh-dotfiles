@@ -1,7 +1,7 @@
-# ~/.config/sway/workspaces - workspace keys
+# Workspace keys.
 
 # go to a workspace (0 = 10)
-# the bar shows only what is after ":"
+# The bar shows only what is after ":".
 bindsym --to-code --no-repeat $mod+1 workspace number 1:●
 bindsym --to-code --no-repeat $mod+2 workspace number 2:●
 bindsym --to-code --no-repeat $mod+3 workspace number 3:●

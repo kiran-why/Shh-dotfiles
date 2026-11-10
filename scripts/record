@@ -1,32 +1,34 @@
 #!/bin/sh
-# record - record the screen to ~/media/recordings, run again to stop
-# Ctrl+Print: drag for a region, click a screen for all of it, Esc cancels.
-# record: no sound, record sound: the system sound, record mic: the microphone
+# Record the screen to ~/media/recordings, run again to stop.
+#
+# Ctrl+Print: drag for a region, click a screen for all of it, Esc
+# cancels. 'record' has no sound, 'record sound' takes the system sound,
+# 'record mic' the microphone.
 
 set -eu
 
 dir="$HOME/media/recordings"
 file="$dir/$(date +%Y-%m-%d_%H-%M-%S).mp4"
 
-# the bar reads this instead of looking for wf-recorder (status.sh)
+# The bar reads this instead of looking for wf-recorder (status.sh).
 pid_file="${XDG_RUNTIME_DIR:-/tmp}/shh-record.pid"
 
-# redraw the bar now, not on its next update (status.sh)
+# Redraw the bar now, not on its next update (status.sh).
 wake_bar() {
     kill -USR1 "$(cat "${XDG_RUNTIME_DIR:-/tmp}/shh-bar.pid" 2>/dev/null)" 2>/dev/null || true
 }
 
-# already recording: wf-recorder finishes the file on TERM,
-# the first run then shows "saved"
+# Already recording: wf-recorder finishes the file on TERM, and the first
+# run then shows "saved".
 if pgrep -x wf-recorder >/dev/null; then
     pkill -TERM -x wf-recorder
     exit 0
 fi
 
-# -o: a click picks a whole screen
+# '-o': a click picks a whole screen.
 geometry=$(slurp -o -b '#00000080' -c '#e6e6e6ff' -w 1 </dev/null) || exit 0
 
-# one source only: wf-recorder can't mix the system sound and the mic
+# One source only: wf-recorder can't mix the system sound and the mic.
 case "${1:-}" in
     sound) set -- --audio="$(pactl get-default-sink).monitor" ;;
     mic)   set -- --audio ;;
@@ -34,7 +36,7 @@ case "${1:-}" in
 esac
 
 mkdir -p "$dir"
-# in the background, so the bar can show "● rec" right away
+# In the background, so the bar can show "● rec" right away.
 wf-recorder "$@" -g "$geometry" -f "$file" </dev/null >/dev/null 2>&1 &
 rec_pid=$!
 echo "$rec_pid" >"$pid_file"

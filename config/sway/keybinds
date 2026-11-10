@@ -1,9 +1,13 @@
-# ~/.config/sway/keybinds - keys for programs and windows
-# workspace keys are in workspaces, keys of the parts shh config can turn off in features/.
-# the first comment line of a block says what the key does, Super+/ shows it (scripts/keys).
-# --to-code: works on the ru layout; --no-repeat: a stuck key runs it once
+# Keys for programs and windows.
+#
+# Workspace keys are in workspaces, the keys of the parts 'shh config'
+# can turn off in features/. The first comment line of a block says what
+# the key does: Super+/ shows it (scripts/keys), so it stays a short label.
+#
+# '--to-code' makes a key work on the ru layout, '--no-repeat' makes a
+# stuck key run it once.
 
-# Mod4 = the Windows key
+# Mod4 is the Windows key.
 set $mod Mod4
 
 # terminal
@@ -28,7 +32,7 @@ bindsym --to-code --no-repeat $mod+v floating toggle
 bindsym --to-code --no-repeat $mod+l exec footclient --app-id=power ~/.local/bin/power
 
 # lock, screens off; again: screens on
-# --locked: works while locked too
+# '--locked' makes it work while locked too.
 bindsym --to-code --no-repeat --locked $mod+Escape exec ~/.local/bin/lock
 
 # all keys (this list)
@@ -37,7 +41,7 @@ bindsym --to-code --no-repeat $mod+slash exec ~/.local/bin/keys open
 # reload the config
 bindsym --to-code --no-repeat $mod+Shift+c reload
 
-# drag a window with $mod + left mouse, resize it with $mod + right mouse
+# Drag a window with $mod + left mouse, resize it with $mod + right mouse.
 floating_modifier $mod normal
 
 # focus another window
@@ -53,12 +57,13 @@ bindsym --to-code --no-repeat $mod+Shift+Up move up
 bindsym --to-code --no-repeat $mod+Shift+Right move right
 
 # volume up / down / mute
-# the level shows in a notification; the step and the max are in scripts/volume
+# The level shows in a notification. The step and the max are in
+# scripts/volume.
 bindsym --to-code XF86AudioRaiseVolume exec ~/.local/bin/volume up
 bindsym --to-code XF86AudioLowerVolume exec ~/.local/bin/volume down
 bindsym --to-code --no-repeat XF86AudioMute exec ~/.local/bin/volume mute
 
 # brightness up / down
-# the level shows in a notification; the step is in scripts/brightness
+# The level shows in a notification. The step is in scripts/brightness.
 bindsym --to-code XF86MonBrightnessUp exec ~/.local/bin/brightness up
 bindsym --to-code XF86MonBrightnessDown exec ~/.local/bin/brightness down

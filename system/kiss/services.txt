@@ -1,15 +1,17 @@
-# system/kiss/services.txt - runit services started at boot (/etc/sv/NAME; distro.sh fixes eiwd's and mdevd's)
+# The runit services started at boot (/etc/sv/NAME). distro.sh fixes the
+# ones of eiwd and mdevd.
 
-# hotplug: rc.boot stops its own mdev and leaves the job to this service; it also loads drivers (distro.sh)
+# Hotplug. rc.boot stops its own mdev and leaves the job to this service.
+# It also loads drivers (distro.sh).
 mdevd
 seatd
-# bluetoothd needs dbus; runit restarts it until it is up
+# bluetoothd needs dbus. runit restarts it until dbus is up.
 dbus
-# wifi: iwd without dbus
+# Wifi: iwd without dbus.
 eiwd
-# wired network (wifi is iwd's)
+# The wired network (wifi is iwd's).
 dhcpcd
-# network time
+# Network time.
 chronyd
-# bluetooth, needs dbus
+# Bluetooth, needs dbus.
 bluetoothd

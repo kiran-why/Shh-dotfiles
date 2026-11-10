@@ -1,30 +1,31 @@
 #!/bin/sh
-# autotile - hyprland-like dwindle: a new window halves the focused one
-# along its longer side. Started once by sway (sway/features/autotile)
-# autotile drag: the focused window follows the cursor until the sway mode
-# "drag" ends, then it halves the window it was dropped on
+# Split windows like hyprland's dwindle: a new window halves the focused
+# one along its longer side. Started once by sway (sway/features/autotile).
+#
+# 'autotile drag' makes the focused window follow the cursor until the
+# sway mode "drag" ends, then it halves the window it was dropped on.
 
 set -eu
 
-# how often a dragged window moves, seconds
+# How often a dragged window moves, in seconds.
 drag_step=0.01
-# a shorter press is a click, not a drag, seconds
+# A shorter press is a click, not a drag, in seconds.
 click_time=0.15
 
-# is the sway mode "drag" still on?
+# Check if the sway mode "drag" is still on.
 dragging() {
     case "$(swaymsg -t get_binding_state)" in *'"drag"'*) ;; *) false ;; esac
 }
 
-# rect ID: "x y width height" of the window
+# Print "x y width height" of a window: rect ID.
 rect() {
     swaymsg -t get_tree | jq -r --argjson id "$1" '
         recurse(.nodes[]?, .floating_nodes[]?) | select(.id == $id)
         | "\(.rect.x) \(.rect.y) \(.rect.width) \(.rect.height)"'
 }
 
-# tiled_at X Y: "id x y width height parent_layout fullscreen" of the tiled
-# window at that point
+# Print "id x y width height parent_layout fullscreen" of the tiled
+# window at a point: tiled_at X Y.
 tiled_at() {
     swaymsg -t get_tree | jq -r --argjson x "$1" --argjson y "$2" '
         recurse(.nodes[]?) | .layout as $layout | .nodes[]?
@@ -34,12 +35,15 @@ tiled_at() {
         | "\(.id) \(.rect.x) \(.rect.y) \(.rect.width) \(.rect.height) \($layout) \(.fullscreen_mode // 0)"'
 }
 
-# sway can't drag a tiled window live and doesn't tell where the cursor is,
-# but "move position cursor" centers a floating window on it: float the
-# window, then repeat that, shifted by where it was grabbed
+# Drag the focused window with the cursor.
+#
+# sway can't drag a tiled window live and doesn't tell where the cursor
+# is. But 'move position cursor' centers a floating window on it. So the
+# window is floated and that command is repeated, shifted by where the
+# window was grabbed.
 drag() {
     local id type x y w h follow step cx cy dx dy split cmd
-    # the mode has no keybinds: never stay in it
+    # The mode has no keybinds, so never stay in it.
     trap 'swaymsg mode default >/dev/null' EXIT
     trap 'exit 1' INT TERM
 
@@ -54,53 +58,57 @@ drag() {
         *) return 0 ;;
     esac
 
-    # floating it already changes the layout, so a click must stop before that
+    # Floating the window already changes the layout, so a click must stop
+    # before that.
     sleep "$click_time"
     dragging || return 0
 
     # 1x1 for a moment, or sway stops a big window short of the cursor at the
-    # screen edge; one command list, so the client never sees that size
+    # screen edge. One command list, so the client never sees that size.
     follow="resize set 1 1, move position cursor, resize set $w $h"
     swaymsg "[con_id=$id] floating enable, $follow" >/dev/null
     set -- $(rect "$id")
     [ "$#" -eq 4 ] || return 0
-    # back by where it was grabbed; sway takes negative distances
+    # Move back by where it was grabbed. sway takes negative distances.
     step="[con_id=$id] $follow, move right $((x - $1)) px, move down $((y - $2)) px"
 
-    # features/autotile ends the mode when the button goes up
+    # features/autotile ends the mode when the button goes up.
     while dragging; do
-        # fails when the window was closed
+        # This fails when the window was closed.
         swaymsg "$step" >/dev/null || return 0
         sleep "$drag_step"
     done
 
-    # a floating window stays where it was dropped
+    # A floating window stays where it was dropped.
     [ "$type" = con ] || return 0
 
-    # the cursor again: $follow leaves the center of the window on it. The size
-    # comes back in the same list: a client that really got a tiny size (VirtualBox) stays broken
+    # Find the cursor again: '$follow' leaves the center of the window on it.
+    # The size comes back in the same list, as a client that really gets a
+    # tiny size (VirtualBox) stays broken.
     swaymsg "[con_id=$id] $follow" >/dev/null || return 0
     set -- $(rect "$id")
     [ "$#" -eq 4 ] || return 0
     cx=$(($1 + $3 / 2)) cy=$(($2 + $4 / 2))
 
-    # one command list, so the loop below can't get between the steps
+    # One command list, so the loop below can't get between the steps.
     cmd="[con_id=$id] floating disable"
     set -- $(tiled_at "$cx" "$cy")
-    # over a fullscreen window: nothing to halve, it just goes back to tiled
+    # Over a fullscreen window there is nothing to halve. The window just
+    # goes back to tiled.
     if [ "$#" -ge 7 ] && [ "$7" -eq 0 ]; then
-        # from the center of the window under the cursor
+        # Measured from the center of the window under the cursor.
         dx=$((cx - $2 - $4 / 2)) dy=$((cy - $3 - $5 / 2))
-        # in tabs or a stack it becomes one more, no split
+        # In tabs or a stack it becomes one more, with no split.
         split=
         case "$6" in
             tabbed|stacked) ;;
-            # the edge the cursor is nearest to: top or bottom stacks the two windows.
-            # distances scaled by the other side, as the window is not a square
+            # Split by the edge the cursor is nearest to: top or bottom stacks
+            # the two windows. The distances are scaled by the other side, as
+            # the window is not a square.
             *) if [ $((${dy#-} * $4)) -gt $((${dx#-} * $5)) ]; then split=splitv; else split=splith; fi ;;
         esac
         cmd="[con_id=$1] mark --add _drag;${split:+ [con_id=$1] $split;} $cmd; [con_id=$id] move container to mark _drag; [con_id=$1] unmark _drag"
-        # like hyprland: the half of the window the cursor is in
+        # Like hyprland: take the half of the window the cursor is in.
         if { [ "$split" = splith ] && [ "$dx" -lt 0 ]; } ||
             { [ "$split" = splitv ] && [ "$dy" -lt 0 ]; }; then
             cmd="$cmd; [con_id=$id] swap container with con_id $1"
@@ -115,8 +123,8 @@ if [ "${1:-}" = drag ]; then
     exit 0
 fi
 
-# the focused window and its parent:
-# "id type fullscreen width height parent_layout siblings"
+# The focused window and its parent, as
+# "id type fullscreen width height parent_layout siblings".
 focused='
 [.. | objects | select(.nodes? and any(.nodes[]; .focused))]
 | first // empty
@@ -137,7 +145,7 @@ while read -r change; do
     set -- $info
     id=$1 type=$2 fullscreen=$3 width=$4 height=$5 layout=$6 siblings=$7
 
-    # leave floating, fullscreen, stacked and tabbed windows alone
+    # Leave floating, fullscreen, stacked and tabbed windows alone.
     [ "$type" = con ] && [ "$fullscreen" -eq 0 ] || continue
     case "$layout" in
         stacked|tabbed) continue ;;

@@ -36,28 +36,28 @@ unset distro_id icon
 #  ▀▀▄ █▀▀█ █▀▀  █    █    
 # ▀▀▀  ▀  ▀ ▀▀▀▀ ▀▀▀▀ ▀▀▀▀          
 
-# HISTORY (a command with a space in front is not saved)
+# History. A command with a space in front is not saved.
 mkdir -p ~/.local/state/zsh
 HISTFILE=~/.local/state/zsh/history
 HISTSIZE=10000
 SAVEHIST=10000
 setopt SHARE_HISTORY HIST_IGNORE_ALL_DUPS HIST_IGNORE_SPACE
 
-# COMPLETION: a menu on the second Tab, case-insensitive
+# Completion: a menu on the second Tab, case-insensitive.
 mkdir -p ~/.cache/zsh
 autoload -Uz compinit
 compinit -d ~/.cache/zsh/zcompdump
 zstyle ':completion:*' menu select
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 
-# KEYBINDS: foot and the TTY send some keys differently, both are bound
+# Keys. foot and the TTY send some keys differently, so both are bound.
 bindkey -e
 
-# Ctrl+Left / Ctrl+Right: by words
+# Ctrl+Left and Ctrl+Right move by words.
 bindkey '^[[1;5D' backward-word
 bindkey '^[[1;5C' forward-word
 
-# Home / End / Delete
+# Home, End and Delete.
 bindkey '^[[H' beginning-of-line
 bindkey '^[OH' beginning-of-line
 bindkey '^[[1~' beginning-of-line
@@ -66,7 +66,7 @@ bindkey '^[OF' end-of-line
 bindkey '^[[4~' end-of-line
 bindkey '^[[3~' delete-char
 
-# Up / Down: history that starts like the typed text
+# Up and Down search the history that starts like the typed text.
 autoload -Uz up-line-or-beginning-search down-line-or-beginning-search
 zle -N up-line-or-beginning-search
 zle -N down-line-or-beginning-search
@@ -75,13 +75,13 @@ bindkey '^[OA' up-line-or-beginning-search
 bindkey '^[[B' down-line-or-beginning-search
 bindkey '^[OB' down-line-or-beginning-search
 
-# br: broot that can cd into the picked folder (Alt+Enter)
+# br: broot that can cd into the picked folder (Alt+Enter).
 if command -v broot >/dev/null; then
     eval "$(broot --print-shell-function zsh)"
 fi
 
-# y: yazi that cds into the folder it was closed in (q; Q quits without),
-# from the yazi docs (quick start, shell wrapper)
+# y: yazi that cds into the folder it was closed in ('q', while 'Q' quits
+# without). From the yazi docs (quick start, shell wrapper).
 if command -v yazi >/dev/null; then
     y() {
         local tmp cwd
@@ -97,17 +97,18 @@ fi
 # █▀▀  █    █  █ █ ▀█  █  █ ▀▄█  ▀▀▄ 
 # ▀    ▀▀▀▀  ▀▀   ▀▀▀ ▀▀▀ ▀   ▀ ▀▀▀  
 
-# not on the TTY, its colors aren't ours
+# No plugins on the TTY: its colors aren't ours.
 plugins=/usr/share/zsh/plugins
 [ "$TERM" = linux ] && plugins=/nonexistent
 
-# gray suggestion from the history, Right or End accepts it
+# A gray suggestion from the history. Right or End accepts it.
 if [ -r "$plugins/zsh-autosuggestions/zsh-autosuggestions.zsh" ]; then
     ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
     source "$plugins/zsh-autosuggestions/zsh-autosuggestions.zsh"
 fi
 
-# known commands plain, unknown ones gray underlined; must load last
+# Known commands stay plain, unknown ones are gray and underlined. This
+# plugin must load last.
 if [ -r "$plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]; then
     source "$plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
     typeset -A ZSH_HIGHLIGHT_STYLES
@@ -118,7 +119,7 @@ if [ -r "$plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]; then
 fi
 unset plugins style
 
-# system info in every new foot window
+# Show the system info in every new foot window.
 if [ "$TERM" = foot ] && command -v fastfetch >/dev/null; then
     fastfetch
 fi

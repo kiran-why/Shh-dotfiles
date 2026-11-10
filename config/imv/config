@@ -1,5 +1,5 @@
-# ~/.config/imv/config - image viewer (man 5 imv)
-# keys: arrows / j k next and previous, f fullscreen, q quit (man imv)
+# The image viewer (man 5 imv).
+# Keys: arrows or j / k for next and previous, f fullscreen, q quit.
 
 [options]
 background = 000000

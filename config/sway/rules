@@ -1,9 +1,11 @@
-# ~/.config/sway/rules - floating windows and their size (width height)
-# menus from the bar go to the top right corner: ppt = % of the workspace
-# (it starts under the bar), x = 100 - width
+# Floating windows and their size (width height).
+#
+# Menus from the bar go to the top right corner. 'ppt' is % of the
+# workspace (it starts under the bar), x is 100 minus the width.
 
-# the bar menu (scripts/menu): wider, for the MENU art; its menus open in it.
-# height 0 = keep: menu open makes the window as tall as the menu
+# The bar menu (scripts/menu) is wider, for the MENU banner, and its menus
+# open in it. A height of 0 keeps it: 'menu open' makes the window as
+# tall as the menu.
 for_window [app_id="menu"] floating enable, resize set 25 ppt 0, move position 75 ppt 0 ppt
 for_window [app_id="launcher"] floating enable, resize set 600 400, move position center
 for_window [app_id="wifi"] floating enable, resize set 25 ppt 21 ppt, move position 75 ppt 0 ppt

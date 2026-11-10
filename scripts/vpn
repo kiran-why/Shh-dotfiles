@@ -1,21 +1,24 @@
 #!/bin/sh
-# vpn - sing-box from a subscription (shh config: sing-box)
-# vpn: the menu: on/off, locations, add or update the subscription, start at boot
-# vpn update: download the subscription, make /etc/sing-box/config.json, check it
-# vpn setup: the service that runs sing-box (install.sh runs it; vpn_*: distro.sh)
-# update writes the files as root with sudo
+# sing-box from a subscription (shh config: sing-box).
+#
+# 'vpn' shows the menu: on/off, locations, add or update the
+# subscription, start at boot. 'vpn update' downloads the subscription,
+# makes /etc/sing-box/config.json and checks it, as root through sudo.
+# 'vpn setup' makes the service that runs sing-box (install.sh runs it).
 
 set -eu
 
 dir=/etc/sing-box
-# location names for the menu, readable without root
+# The location names for the menu, readable without root.
 state=/var/lib/sing-box
-# the menu switches locations through it (localhost only)
+# The menu switches locations through this API (localhost only).
 api=127.0.0.1:9090
 
-# the service is the distro's (distro.sh): from the repo when run from it
-# (install.sh), else the installed copies. Not as root: update's root part
-# needs none, and sudo may give another $HOME
+# Load the functions of the distro (vpn_*: distro.sh), from the repo when
+# run from it (install.sh), else the installed copies.
+#
+# Not as root: the root part of update needs none, and sudo may give
+# another $HOME.
 if [ "$(id -u)" -ne 0 ]; then
     repo=$(cd "$(dirname "$0")/.." && pwd -P)
     if [ -f "$repo/lib/lib.sh" ]; then
@@ -28,12 +31,14 @@ if [ "$(id -u)" -ne 0 ]; then
     . "$distro_file"
 fi
 
-# links: vless:// links (one per line) -> sing-box outbounds, one
-# JSON object per line. What sing-box can't do is skipped with a message:
-# xhttp, vless encryption. LC_ALL=C: %HH decoding works on bytes
+# Turn vless:// links (one per line) into sing-box outbounds, one JSON
+# object per line.
+#
+# What sing-box can't do is skipped with a message: xhttp, vless
+# encryption. LC_ALL=C makes the %HH decoding work on bytes.
 links() {
     LC_ALL=C awk '
-        # %HH -> the byte
+        # Turn %HH into the byte.
         function dec(s,   out, i, h) {
             out = ""
             for (i = 1; i <= length(s); i++) {
@@ -45,8 +50,9 @@ links() {
             }
             return out
         }
-        # q: a JSON string. Bytes 1-31 as \u00XX (%0A in a name broke the config);
-        # \ and " in the loop, not gsub: awks differ on "\\" in a gsub replacement
+        # Make a JSON string. Bytes 1-31 become \u00XX (a %0A in a name
+        # broke the config). The quote and the backslash are escaped in the
+        # loop, not by gsub: awks differ on "\\" in a gsub replacement.
         BEGIN { for (i = 1; i < 32; i++) ctl = ctl sprintf("%c", i) }
         function q(s,   out, i, c, n) {
             out = ""
@@ -66,7 +72,7 @@ links() {
             if ((i = index(link, "#"))) { name = dec(substr(link, i + 1)); link = substr(link, 1, i - 1) }
             if ((i = index(link, "?"))) { query = substr(link, i + 1); link = substr(link, 1, i - 1) }
 
-            # uuid@host:port, host can be [ipv6]
+            # The link is uuid@host:port, where the host can be [ipv6].
             i = index(link, "@"); uuid = dec(substr(link, 1, i - 1)); hp = substr(link, i + 1)
             port = hp; sub(/.*:/, "", port)
             host = substr(hp, 1, length(hp) - length(port) - 1); gsub(/^\[|\]$/, "", host)
@@ -80,7 +86,7 @@ links() {
             if (("encryption" in p) && p["encryption"] != "none") { skip("vless encryption"); next }
             if (type != "tcp" && type != "grpc" && type != "ws" && type != "httpupgrade") { skip(type); next }
 
-            # the same name twice: add a number
+            # The same name twice: add a number.
             tag = name
             if (tag in seen) tag = tag " " (++seen[name] + 1); else seen[name] = 0
 
@@ -93,11 +99,12 @@ links() {
                 if (p["sni"] != "") tls = tls ",\"server_name\":" q(p["sni"])
                 fp = p["fp"]
                 if (fp != "") {
-                    # sing-box knows these; anything else looks like chrome
+                    # sing-box knows these. Anything else looks like chrome.
                     if (fp !~ /^(chrome|firefox|edge|safari|360|qq|ios|android|random|randomized)$/) fp = "chrome"
                     tls = tls ",\"utls\":{\"enabled\":true,\"fingerprint\":" q(fp) "}"
                 }
-                # each value through q(): a link must not write raw JSON (this runs as root)
+                # Every value goes through q(): a link must not write raw JSON,
+                # as this runs as root.
                 if (p["alpn"] != "") {
                     m = split(p["alpn"], al, ","); a = q(al[1])
                     for (k = 2; k <= m; k++) a = a "," q(al[k])
@@ -119,8 +126,10 @@ links() {
     '
 }
 
-# config OUTBOUNDS_FILE SECRET: the whole config around the outbounds (a JSON
-# array). Everything goes through the picked location, the local network directly
+# Print the whole config around the outbounds (a JSON array): config
+# OUTBOUNDS_FILE SECRET.
+#
+# Everything goes through the picked location, the local network directly.
 config() {
     jq -n --slurpfile o "$1" --arg secret "$2" '
         ($o[0] | map(.tag)) as $tags | {
@@ -134,11 +143,12 @@ config() {
         },
         inbounds: [{
             type: "tun", tag: "tun-in",
-            # IPv4 only: the servers have no v6; strict_route makes v6 unreachable
+            # IPv4 only: the servers have no v6, and strict_route makes v6
+            # unreachable.
             address: ["172.18.0.1/30"],
             mtu: 1500, auto_route: true, strict_route: true
         }],
-        # interrupt: a new location takes over the open connections too
+        # interrupt: a new location takes over the open connections too.
         outbounds: ([{ type: "selector", tag: "proxy", outbounds: $tags, interrupt_exist_connections: true }]
             + $o[0] + [{ type: "direct", tag: "direct" }]),
         route: {
@@ -152,33 +162,36 @@ config() {
             default_domain_resolver: { server: "local" }
         },
         experimental: {
-            # a secret: any web page in the browser can reach 127.0.0.1
+            # A secret, as any web page in the browser can reach 127.0.0.1.
             clash_api: { external_controller: "'"$api"'", secret: $secret },
-            # remembers the picked location
+            # Remembers the picked location.
             cache_file: { enabled: true, path: "'"$state"'/cache.db" }
         }
     }'
 }
 
 update() {
-    # the files as root (sh: works without the +x bit too), then the running vpn takes them
+    # Write the files as root ('sh' works without the +x bit too), then make
+    # the running vpn take them.
     if [ "$(id -u)" -ne 0 ]; then
         sudo sh "$0" update
         ! running || vpn_ctl restart
         return 0
     fi
 
-    # tmp is not local: the EXIT trap runs after update returns
+    # 'tmp' is not local: the EXIT trap runs after update returns.
     local url secret
     [ -s "$dir/subscription" ] || { echo "no subscription link: vpn > paste the subscription link" >&2; exit 1; }
     url=$(head -n 1 "$dir/subscription")
     tmp=$(mktemp -d)
     trap 'rm -rf "$tmp"' EXIT
 
-    # the server sets a cookie and sends us back to the same link: keep it
+    # The server sets a cookie and sends us back to the same link, so keep
+    # the cookie.
     curl -fsSL -m 30 -c "$tmp/jar" -b "$tmp/jar" -A "sing-box" -o "$tmp/sub" "$url" ||
         { echo "cannot download the subscription" >&2; exit 1; }
-    # base64 of the links, maybe without the = padding at the end
+    # The file is base64 of the links, maybe without the '=' padding at the
+    # end.
     tr -d '\r\n' <"$tmp/sub" | sed 's/$/===/; s/\(\(....\)*\).*/\1/' | base64 -d >"$tmp/links" 2>/dev/null ||
         cp "$tmp/sub" "$tmp/links"
 
@@ -191,7 +204,7 @@ update() {
     install -d -m 700 "$dir"
     install -d -m 755 "$state"
     install -m 600 "$tmp/config.json" "$dir/config.json"
-    # a copy for the menu, readable only by the user who ran sudo
+    # A copy for the menu, readable only by the user who ran sudo.
     install -m 600 /dev/null "$state/secret"
     printf '%s\n' "$secret" >"$state/secret"
     [ -z "${SUDO_USER:-}" ] || chown "$SUDO_USER" "$state/secret"
@@ -200,34 +213,35 @@ update() {
     echo "$(jq length "$tmp/outbounds.json") locations"
 }
 
-# known to the init system, but not started at boot (vpn > start at boot)
+# Make the service: known to the init system, but not started at boot
+# (vpn > Start at boot).
 setup() {
     vpn_setup "sing-box run -c $dir/config.json -D $state"
     echo "service $vpn_svc ready"
 }
 
-# the menu
+# The menu.
 
-# the same on every init system, no root needed
+# Check if sing-box runs. The same on every init system, no root needed.
 running() { pgrep -x sing-box >/dev/null; }
 
-# api_call PATH [CURL OPTIONS]: the API with the secret from vpn update
+# Call the API with the secret from 'vpn update': api_call PATH [CURL OPTIONS].
 api_call() {
     local path="$1"
     shift
     curl -s -H "Authorization: Bearer $(cat "$state/secret" 2>/dev/null)" "$@" "http://$api$path"
 }
 
-# the location in use (empty when off)
+# Print the location in use (empty when the vpn is off).
 now() { api_call /proxies/proxy -m 2 2>/dev/null | jq -r '.now // empty' 2>/dev/null || true; }
 
 menu() { fzf --info=hidden --no-input --border=none "$@"; }
 
-# the last header line: one space, so an empty line sits above the list
+# The last header line is one space, so an empty line sits above the list.
 gap=$(printf '\n ')
 
-# the banner of the main menu: scripts/menu draws it and $MENU_TEXT
-# under it in the middle, again on every resize
+# The banner of the main menu. scripts/menu draws it and '$MENU_TEXT'
+# under it in the middle, again on every resize.
 banner="result,resize:transform-header:sh '$HOME/.local/bin/menu' --header vpn"
 export MENU_TEXT=
 
@@ -237,7 +251,8 @@ header() {
     [ -z "$note" ] || echo "$note"
 }
 
-# start and wait for the API (up to 5 s): picking a location needs it
+# Start the vpn and wait for the API (up to 5 s): picking a location
+# needs it.
 start() {
     local i=0
     vpn_ctl start || { note="Cannot start $vpn_svc (vpn setup?)"; return 1; }
@@ -247,7 +262,7 @@ start() {
     done
 }
 
-# Enter picks a location; with the vpn off it starts it first
+# Show the locations. Enter picks one, with the vpn off it starts it first.
 locations_menu() {
     local pick cur
     [ -s "$state/locations" ] || { note='No locations: add subscription first'; return 0; }
@@ -257,7 +272,7 @@ locations_menu() {
             menu --header="${note:-Enter: use it   Esc: back}$gap") || return 0
         pick=${pick#????}
         running || start || return 0
-        # names have spaces and flags: jq makes the JSON
+        # The names have spaces and flags, so jq makes the JSON.
         if jq -n --arg n "$pick" '{ name: $n }' |
             api_call /proxies/proxy -m 5 -o /dev/null -w '%{http_code}' -X PUT \
                 -H 'Content-Type: application/json' --data @- | grep -qx 204; then
@@ -268,7 +283,10 @@ locations_menu() {
     done
 }
 
-# paste the link (Ctrl+Shift+V), it is not shown; only root can read it then
+# Ask for the subscription link and save it.
+#
+# The pasted link (Ctrl+Shift+V) is not shown, and only root can read it
+# afterwards.
 add() {
     local link out
     printf 'paste the subscription link (Ctrl+Shift+V), then Enter: '
@@ -315,7 +333,7 @@ case "${1:-}" in
     *)      echo "usage: vpn [update | setup]" >&2; exit 1 ;;
 esac
 
-# pos keeps the cursor on the last picked line
+# 'pos' keeps the cursor on the last picked line.
 pos=1
 note=''
 while :; do

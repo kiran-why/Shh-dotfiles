@@ -1,28 +1,29 @@
 #!/bin/sh
-# clipboard - clipboard history (cliphist): pick an old copy to copy it again
-# $mod+c. Enter copies, Ctrl+D deletes one, the first line clears all.
-# the history size is in ~/.config/cliphist/config
-# clipboard open: what the key runs (the window, or closes it)
+# The clipboard history (cliphist): pick an old copy to copy it again
+# ($mod+c). Enter copies, Ctrl+D deletes one, the first line clears all.
+#
+# The history size is in ~/.config/cliphist/config.
 
 set -eu
 
-# clipboard open (the key): close its window if it is open, else open it.
-# kill fails (exit 2) when no window matches
+# 'clipboard open' is what the key runs: close the window if it is open,
+# else open it. 'kill' fails (exit 2) when no window matches.
 if [ "${1:-}" = open ]; then
     swaymsg '[app_id="clipboard"] kill' >/dev/null 2>&1 && exit 0
     exec footclient --app-id=clipboard "$0"
 fi
 
-# the last header line: one space, so an empty line sits above the list
+# The last header line is one space, so an empty line sits above the list.
 gap=$(printf '\n ')
 
-# cliphist lines are "id<TAB>preview", newest first; --expect prints the key first
+# cliphist lines are "id<TAB>preview", newest first. '--expect' prints
+# the key first.
 menu() {
     fzf --border-label=' Clipboard ' --header="Enter: copy   Ctrl-D: delete$gap" \
         --no-sort --delimiter='\t' --with-nth=2.. --expect=ctrl-d
 }
 
-# empty id, so it can't be a cliphist line
+# An empty id, so it can't be a cliphist line.
 clear_all='	Clear history'
 
 while :; do

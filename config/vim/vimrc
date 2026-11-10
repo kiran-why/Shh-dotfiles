@@ -1,24 +1,24 @@
-" ~/.config/vim/vimrc - options, keys and the look: the built-in "quiet"
-" colorscheme with its few colors made gray, red for errors
+" Options, keys and the look: the built-in "quiet" colorscheme with its
+" few colors made gray, and red for errors.
 
-" a vimrc turns off defaults.vim: syntax, filetypes, incsearch, mouse...
+" A vimrc turns off defaults.vim: syntax, filetypes, incsearch, mouse.
 unlet! skip_defaults_vim
 source $VIMRUNTIME/defaults.vim
-" on by default in neovim
+" On by default in neovim.
 set hlsearch autoindent hidden belloff=all laststatus=2 scrolloff=0
 
 set termguicolors
 set background=dark
 colorscheme quiet
-" undercurl in foot (vim knows it only for xterm)
+" Undercurl in foot (vim knows it only for xterm).
 let &t_Cs = "\e[4:3m"
 let &t_Ce = "\e[4:0m"
 
-" same palette as foot.ini:
+" The same palette as foot.ini:
 " black #000000  dark #2a2a2a  gray #5a5a5a  light #a0a0a0
 " white #e6e6e6  bright #ffffff  red #d7263d
 
-" the group is replaced whole, like nvim_set_hl (:help :highlight)
+" The group is replaced whole, like nvim_set_hl (:help :highlight).
 function s:hl(group, attrs)
     execute 'highlight clear' a:group
     execute 'highlight' a:group a:attrs
@@ -26,11 +26,11 @@ endfunction
 
 call s:hl('Normal', 'guifg=#e6e6e6 guibg=#000000')
 
-" the selection is lighter than the current line, so it shows on it
+" The selection is lighter than the current line, so it shows on it.
 call s:hl('CursorLine', 'guibg=#2a2a2a')
 call s:hl('CursorLineNr', 'guifg=#e6e6e6 guibg=#2a2a2a')
 
-" selection and search
+" Selection and search.
 call s:hl('Visual', 'guifg=#ffffff guibg=#5a5a5a')
 call s:hl('Search', 'guifg=#000000 guibg=#a0a0a0')
 call s:hl('IncSearch', 'guifg=#000000 guibg=#ffffff')
@@ -41,68 +41,69 @@ call s:hl('QuickFixLine', 'guibg=#2a2a2a')
 call s:hl('CursorIM', 'guifg=#000000 guibg=#ffffff')
 call s:hl('Todo', 'guifg=#ffffff gui=bold')
 
-" completion menu
+" Completion menu.
 call s:hl('PmenuMatch', 'guifg=#000000 guibg=#a0a0a0 gui=bold')
 call s:hl('PmenuMatchSel', 'guifg=#000000 guibg=#e6e6e6 gui=bold')
 
-" diffs: deleted in red
+" Diffs: deleted in red.
 call s:hl('DiffAdd', 'guifg=#ffffff guibg=#2a2a2a')
 call s:hl('DiffChange', 'guibg=#2a2a2a')
 call s:hl('DiffText', 'guifg=#000000 guibg=#a0a0a0')
 call s:hl('DiffDelete', 'guifg=#d7263d')
 
-" spelling: only real mistakes are red
+" Spelling: only real mistakes are red.
 call s:hl('SpellBad', 'guisp=#d7263d gui=undercurl')
 call s:hl('SpellCap', 'guisp=#5a5a5a gui=undercurl')
 call s:hl('SpellLocal', 'guisp=#5a5a5a gui=undercurl')
 call s:hl('SpellRare', 'guisp=#5a5a5a gui=undercurl')
 
-" errors stay red
+" Errors stay red.
 call s:hl('Error', 'guifg=#d7263d gui=bold')
 call s:hl('ErrorMsg', 'guifg=#d7263d gui=bold')
 
 set number
 set cursorline
-" no ~ after the end of file (the other fillchars stay default)
+" No ~ after the end of the file (the other fillchars stay default).
 set fillchars=eob:\
 
-" options (:help option-list)
+" Options (:help option-list).
 set relativenumber
 set expandtab " spaces instead of tabs
 set shiftwidth=4
 set tabstop=4
 set ignorecase
 set smartcase " a capital letter in the search makes it case-sensitive
-" undo survives closing the file; vim does not make the folder itself
+" Undo survives closing the file. vim does not make the folder itself.
 set undofile undodir=~/.local/state/vim/undo//
 call mkdir(expand('~/.local/state/vim/undo'), 'p', 0700)
 
-" yank and delete go to the system clipboard too (this vim has no
-" +clipboard); paste from other programs: Ctrl+Shift+V in foot
+" Yank and delete go to the system clipboard too (this vim has no
+" +clipboard). Paste from other programs with Ctrl+Shift+V in foot.
 if executable('wl-copy')
     autocmd TextYankPost * if v:event.regname ==# ''
         \ | call system('wl-copy >/dev/null 2>&1', getreg('"')) | endif
 endif
 
-" keys: leader is Space (:help map-which-keys)
+" Keys. The leader is Space (:help map-which-keys).
 let mapleader = ' '
-" save
+" Save.
 nnoremap <leader>w <cmd>write<cr>
-" quit
+" Quit.
 nnoremap <leader>q <cmd>quit<cr>
-" clear search highlight
+" Clear the search highlight.
 nnoremap <Esc> <cmd>nohlsearch<cr>
-" file tree on the left: the built-in netrw (:help netrw), no plugin.
-" Enter opens a file in the window on the right, Ctrl+l / Ctrl+h move between them
+" The file tree on the left: the built-in netrw (:help netrw), no plugin.
+" Enter opens a file in the window on the right, Ctrl+l and Ctrl+h move
+" between them.
 let g:netrw_banner = 0      " no help text on top
 let g:netrw_liststyle = 3   " a tree
 let g:netrw_winsize = -30   " 30 columns wide
 nnoremap <leader>e <cmd>Lexplore<cr>
-" netrw takes Ctrl+h / Ctrl+l (ours) unless its actions have other keys:
-" F5 refreshes the tree, Space+h edits the list of hidden files
+" netrw takes Ctrl+h and Ctrl+l (ours) unless its actions have other
+" keys: F5 refreshes the tree, Space+h edits the list of hidden files.
 nmap <F5> <Plug>NetrwRefresh
 nmap <leader>h <Plug>NetrwHideEdit
-" Ctrl+h/j/k/l: move between split windows
+" Ctrl+h/j/k/l move between split windows.
 nnoremap <C-h> <C-w>h
 nnoremap <C-j> <C-w>j
 nnoremap <C-k> <C-w>k

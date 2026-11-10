@@ -1,3 +1,5 @@
-# ~/.config/swaybar/tray - no tray: swaybar always draws it right of the menu button
-# own file: sway built without tray support errors on this line (KISS skips the file, system/kiss/distro.sh)
+# No tray: swaybar always draws it right of the menu button.
+#
+# This line has its own file, as a sway built without tray support errors
+# on it (KISS skips the file: system/kiss/distro.sh).
 bar bar-0 tray_output none

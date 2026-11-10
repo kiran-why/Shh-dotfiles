@@ -1,5 +1,7 @@
-# ~/.config/fzf/fzfrc - the look of every fzf menu (loaded by .zprofile)
-# colors are foot.ini palette numbers: 7 text, 15 white, 8 gray, 0 dark gray
+# The look of every fzf menu (loaded by .zprofile).
+#
+# The colors are foot.ini palette numbers: 7 text, 15 white, 8 gray,
+# 0 dark gray.
 
 --layout=reverse
 --border=top

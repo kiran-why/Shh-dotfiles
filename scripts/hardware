@@ -1,8 +1,10 @@
 #!/bin/sh
-# hardware - what we run on, one word per line: the VM type (vmware,
-# virtualbox, qemu, hyperv, xen) or each graphics card: amd, intel,
-# nvidia (GTX 16xx, RTX+), nvidia-580xx (GTX 750-10xx), nvidia-legacy.
-# fails when nothing is found. install.sh installs system/DISTRO/packages/WORD.csv
+# Print what we run on, one word per line.
+#
+# That is the VM type (vmware, virtualbox, qemu, hyperv, xen) or each
+# graphics card: amd, intel, nvidia (GTX 16xx, RTX and newer),
+# nvidia-580xx (GTX 750 to 10xx), nvidia-legacy. Fails when nothing is
+# found. install.sh installs system/DISTRO/packages/WORD.csv.
 
 set -eu
 
@@ -14,17 +16,19 @@ case "$id" in
     *vmware*)                         echo vmware;     exit 0 ;;
     *virtualbox*|*innotek*|*oracle*)  echo virtualbox; exit 0 ;;
     *qemu*|*kvm*)                     echo qemu;       exit 0 ;;
-    # hyper-v: product_name "Virtual Machine" (sys_vendor is also on real Surface laptops)
+    # Hyper-V has the product_name "Virtual Machine" (its sys_vendor is
+    # also on real Surface laptops).
     *"virtual machine"*)              echo hyperv;     exit 0 ;;
 esac
 
-# xen does not always show up in DMI
+# Xen does not always show up in DMI.
 if [ -r /sys/hypervisor/type ]; then
     cat /sys/hypervisor/type
     exit 0
 fi
 
-# nvidia_driver DEVICE: by PCI id (pci.ids: Turing+ from 0x1e00, Maxwell from 0x1340)
+# Print the NVIDIA driver for a PCI device id (pci.ids: Turing and newer
+# from 0x1e00, Maxwell from 0x1340).
 nvidia_driver() {
     if [ $(($1)) -ge $((0x1e00)) ]; then
         echo nvidia
@@ -35,7 +39,7 @@ nvidia_driver() {
     fi
 }
 
-# PCI class 0x03 = display controller
+# PCI class 0x03 is a display controller.
 gpus=$(for dev in /sys/bus/pci/devices/*; do
     case "$(cat "$dev/class" 2>/dev/null)" in
         0x03*) ;;

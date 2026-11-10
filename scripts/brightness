@@ -1,11 +1,13 @@
 #!/bin/sh
-# brightness - screen brightness menu: up / down, opened from the bar menu (scripts/menu).
-# brightness up | down: no menu, for the brightness keys, shows the level.
-# Writing needs the group video (install.sh: udev rule, relogin)
+# The screen brightness menu: up / down. Opened from the bar menu
+# (scripts/menu).
+#
+# 'brightness up | down' shows no menu: it is for the brightness keys and
+# shows the level. Writing needs the group video (install.sh, relogin).
 
 set -eu
 
-# the step and the lowest level in %: 0 can turn the screen black
+# The step and the lowest level in %. 0 can turn the screen black.
 step=5
 min=5
 
@@ -13,18 +15,18 @@ menu() {
     fzf --info=hidden --no-input --border=none "$@"
 }
 
-# the last header line: one space, so an empty line sits above the list
+# The last header line is one space, so an empty line sits above the list.
 gap=$(printf '\n ')
 
-# the banner of the main menu: scripts/menu draws it and $MENU_TEXT
-# under it in the middle, again on every resize
+# The banner of the main menu. scripts/menu draws it and '$MENU_TEXT'
+# under it in the middle, again on every resize.
 banner="result,resize:transform-header:sh '$HOME/.local/bin/menu' --header light"
 export MENU_TEXT=
 
-# the screen backlights; a laptop with two graphics cards can have two
+# The screen backlights. A laptop with two graphics cards can have two.
 devs=$(ls -d /sys/class/backlight/* 2>/dev/null || true)
 
-# level: the brightness of the first one in %
+# Print the brightness of the first backlight in %.
 level() {
     local dev cur max
     for dev in $devs; do
@@ -35,20 +37,20 @@ level() {
     done
 }
 
-# set_level PERCENT: on every backlight, within min..100
+# Set every backlight to PERCENT, within min..100.
 set_level() {
     local pct="$1" dev max
     [ "$pct" -ge "$min" ] || pct=$min
     [ "$pct" -le 100 ] || pct=100
     for dev in $devs; do
         read -r max <"$dev/max_brightness"
-        # 2> first: a failed > would print before it
+        # '2>' goes first: a failed '>' would print before it.
         printf '%s\n' $(((pct * max + 50) / 100)) 2>/dev/null >"$dev/brightness" ||
             { note='No permission: sh install.sh, then log in again'; return 1; }
     done
 }
 
-# line PERCENT: ━━━━━─────
+# Print a level as a bar: line PERCENT.
 line() {
     local full=$((($1 + 5) / 10)) i=0 text=''
     [ "$full" -gt 10 ] && full=10
@@ -65,14 +67,15 @@ now() {
     printf '󰃠 %s %s%%' "$(line "$pct")" "$pct"
 }
 
-# the same tag makes mako replace the last one instead of stacking them
+# Show the level. The same tag makes mako replace the last notification
+# instead of stacking them.
 notify_level() {
     ~/.local/bin/notify -a brightness -t 1500 -h string:x-dunst-stack-tag:brightness "$(now)" "$note" || true
 }
 
 note=''
 if [ -z "$devs" ]; then
-    # the keys: nothing to do; the menu says why
+    # The keys have nothing to do, the menu says why.
     [ -z "${1:-}" ] || exit 0
     MENU_TEXT="No screen backlight here (a desktop monitor?)$gap"
     printf '' | menu --bind="$banner" || true
@@ -84,7 +87,7 @@ case "${1:-}" in
     down) set_level $(($(level) - step)) || true; notify_level; exit 0 ;;
 esac
 
-# pos keeps the cursor on the last picked line
+# 'pos' keeps the cursor on the last picked line.
 pos=1
 while :; do
     MENU_TEXT="$(now)${note:+

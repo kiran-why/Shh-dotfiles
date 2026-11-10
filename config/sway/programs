@@ -1,13 +1,15 @@
-# ~/.config/sway/programs - programs for the keys, and what starts with sway
+# Programs for the keys, and what starts with sway.
 
-# terminals are footclient windows of one foot server: a few MB each, not 25
+# Terminals are footclient windows of one foot server: a few MB each,
+# not 25.
 set $term footclient
 set $menu footclient --app-id=launcher ~/.local/bin/launcher
 
-# exec: once per session, exec_always: also on every reload
-# a running server makes the new one quit; a crashed one is restarted on reload
+# 'exec' runs once per session, 'exec_always' also on every reload. A
+# running server makes the new one quit, a crashed one is restarted on
+# reload.
 exec_always foot --server
 exec ~/.local/bin/sound
 
-# shared clipboard in VMware (scripts/vmware-clipboard)
+# The shared clipboard in VMware (scripts/vmware-clipboard).
 exec_always ~/.local/bin/vmware-clipboard

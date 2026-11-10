@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-# no C code; kiss sets GOPATH and GOFLAGS itself
+# There is no C code. kiss sets GOPATH and GOFLAGS itself.
 export CGO_ENABLED=0
 
 go build -ldflags "-s -w" -o cliphist

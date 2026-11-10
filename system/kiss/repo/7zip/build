@@ -1,10 +1,11 @@
 #!/bin/sh -e
 
-# the tarball has no top directory: kiss would strip a level of the tree
-# the file keeps its ?no-extract suffix
+# The tarball has no top directory, and kiss would strip a level of the
+# tree. So the file keeps its '?no-extract' suffix and is unpacked here.
 xz -dc ./7z*-src.tar.xz* | tar xf -
 
-# upstream has -Werror on, a new compiler warning must not stop the build
+# Upstream has '-Werror' on. A new compiler warning must not stop the
+# build.
 sed -i "s/-Werror //" CPP/7zip/7zip_gcc.mak
 
 make -C CPP/7zip/Bundles/Alone2 -f ../../cmpl_gcc.mak \

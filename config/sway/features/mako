@@ -1,4 +1,4 @@
-# ~/.config/sway/features/mako - notifications (shh config: misc)
+# Notifications (shh config: misc).
 
 exec mako
 

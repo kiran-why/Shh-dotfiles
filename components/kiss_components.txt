@@ -1,11 +1,20 @@
-# components/kiss_components.txt - parts shh config can turn off (KISS names); everything else is always installed
+# The parts 'shh config' can turn off (KISS names). Everything else is
+# always installed.
+#
 # name|packages|files (repo paths)|services|group|default
-# group = the tab in shh config: empty = features, misc = programs we always use;
-# settings = its own line in settings (maxhz); xwayland = settings > xwayland; editor = settings > editor; files = settings > file manager;
-# recipes = KISS recipes, packages of our own recipes (system/kiss/repo) we can do without
-# default: empty = on, no = off
-# packages stay in system/kiss/packages/common.csv too; sway lines of a part go in config/sway/features/NAME
-# no screenshare: KISS's firefox is built without dbus, the portal can't reach it
+#
+# The group is the tab in 'shh config': empty is features, misc is the
+# programs we always use, settings is an own line in settings (maxhz).
+# xwayland, editor and files are the lines settings > xwayland, editor
+# and file manager. recipes is the KISS recipes tab: the packages of our
+# own recipes (system/kiss/repo) we can do without. The default is on
+# when empty, off when "no".
+#
+# The packages stay in system/kiss/packages/common.csv too. The sway
+# lines of a part go in config/sway/features/NAME.
+#
+# There is no screenshare: KISS's firefox is built without dbus, so the
+# portal can't reach it.
 
 record|wf-recorder|scripts/record config/sway/features/record|||
 screenshot|grim|scripts/screenshot config/sway/features/screenshot|||
@@ -14,10 +23,11 @@ clipboard|cliphist|scripts/clipboard config/cliphist config/sway/features/clipbo
 autotile||scripts/autotile config/sway/features/autotile|||
 fastfetch|fastfetch|config/fastfetch|||
 scratchpad||config/sway/features/scratchpad|||
-# the vpn menu and our own runit service shh-vpn (install.sh runs vpn setup)
+# The vpn menu and our own runit service shh-vpn (install.sh runs
+# 'vpn setup').
 sing-box|sing-box|scripts/vpn config/sway/features/vpn|shh-vpn||
 
-# misc: programs the setup counts on
+# misc: the programs the setup counts on.
 firefox|firefox|config/sway/features/firefox||misc|
 mpv|mpv|||misc|
 imv|imv|config/imv||misc|
@@ -28,21 +38,23 @@ mako|mako libnotify|config/mako config/sway/features/mako||misc|
 emoji|noto-fonts-emoji|||misc|
 noto|noto-fonts|||misc|
 
-# settings > xwayland: noxwayland is on when xwayland is off (sway can't have both lines)
+# settings > xwayland. noxwayland is on when xwayland is off: sway can't
+# have both lines.
 noxwayland||config/sway/features/noxwayland||xwayland|
-# no package: KISS's wlroots and sway are built without Xwayland, the line in settings changes nothing
+# No package: KISS's wlroots and sway are built without Xwayland, so the
+# line in settings changes nothing.
 xwayland||||xwayland|
 
-# settings > editor: vim or nvim, the same look, options and keys
+# settings > editor: vim or nvim, with the same look, options and keys.
 vim|vim|config/vim||editor|
 nvim|neovim|config/nvim||editor|
 
-# settings > file manager: broot or yazi on Super+F
+# settings > file manager: broot or yazi on Super+F.
 broot|broot|config/broot config/sway/features/broot||files|
 yazi|yazi|config/yazi config/sway/features/yazi||files|
 
-# settings > maxhz
+# settings > maxhz.
 maxhz||scripts/maxhz config/sway/features/maxhz||settings|
 
-# recipes: packages from system/kiss/repo that the setup does not need
+# recipes: the packages from system/kiss/repo the setup does not need.
 bash|bash|||recipes|

@@ -1,27 +1,29 @@
 #!/bin/sh
-# keys - all sway keys from the config files, searchable ($mod+/)
-# a new bindsym shows up here by itself
-# keys open: what the key runs (the window, or closes it)
+# Show all sway keys from the config files, searchable ($mod+/). A new
+# bindsym shows up here by itself.
 
 set -eu
 
-# keys open (the key): close its window if it is open, else open it.
-# kill fails (exit 2) when no window matches
+# 'keys open' is what the key runs: close the window if it is open, else
+# open it. 'kill' fails (exit 2) when no window matches.
 if [ "${1:-}" = open ]; then
     swaymsg '[app_id="keys"] kill' >/dev/null 2>&1 && exit 0
     exec footclient --app-id=keys "$0"
 fi
 
-# not swaymsg -t get_config: it returns only the main file, without includes
+# Not 'swaymsg -t get_config': it returns only the main file, without the
+# includes.
 sway_dir="${XDG_CONFIG_HOME:-$HOME/.config}/sway"
 
-# "KEY  ACTION  description"; the description is the first comment line
-# of the block above the key, in gray. Keys in a row that differ only in
-# the last key and the last word of the action make one line:
-# Super+Left/Down/Up/Right focus, Super+1..0 workspace number
+# Print "KEY  ACTION  description" lines.
+#
+# The description is the first comment line of the block above the key,
+# in gray. Keys in a row that differ only in the last key and the last
+# word of the action make one line: Super+Left/Down/Up/Right focus,
+# Super+1..0 workspace number.
 list() {
     awk '
-        # shown: a local variable (awk makes extra parameters local)
+        # shown is a local variable (awk makes extra parameters local).
         function flush(shown) {
             if (n == 0) return
             shown = (n > 4) ? first ".." last : keys
@@ -30,7 +32,7 @@ list() {
             printf "\n"
             n = 0
         }
-        # keys inside a "mode NAME {" block work only in that mode
+        # Keys inside a "mode NAME {" block work only in that mode.
         $1 == "mode" && $NF == "{" { inmode = 1; next }
         inmode { if ($1 == "}") inmode = 0; next }
         /^[[:space:]]*$/ { desc = ""; next }
@@ -55,7 +57,7 @@ list() {
             sub(/^foot(client)? --app-id=[^ ]* /, "", cmd)
             gsub(/~\/\.local\/bin\//, "", cmd)
 
-            # "Super+Shift+" + "Left", "move" + "left"
+            # Split into "Super+Shift+" and "Left", "move" and "left".
             p = key; sub(/[^+]*$/, "", p)
             k = substr(key, length(p) + 1)
             w = split(cmd, word, " ")
@@ -72,7 +74,7 @@ list() {
     ' "$@"
 }
 
-# features/: only the parts shh config turned on are there
+# Only the parts turned on in shh config are in features/.
 set -- "$sway_dir/keybinds" "$sway_dir/workspaces"
 for f in "$sway_dir"/features/*; do
     [ ! -f "$f" ] || set -- "$@" "$f"

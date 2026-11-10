@@ -12,7 +12,7 @@ make DESTDIR="$1" install
 install -Dm644 examples/chrony.conf.example1 "$1/etc/chrony.conf"
 mkdir -p "$1/var/lib/chrony"
 
-# runit service, the way KISS packages ship them
+# The runit service, the way KISS packages ship them.
 mkdir -p "$1/etc/sv/chronyd"
 cp -f chronyd.run "$1/etc/sv/chronyd/run"
 ln -sf /run/runit/supervise.chronyd "$1/etc/sv/chronyd/supervise"

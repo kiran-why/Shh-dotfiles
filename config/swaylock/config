@@ -1,5 +1,7 @@
-# ~/.config/swaylock/config - the lock screen (man swaylock); colors from sway/colors
-# black screen, the ring shows only while typing: white, red on a wrong password
+# The lock screen (man swaylock), with the colors of sway/colors.
+#
+# A black screen. The ring shows only while typing: white, red on a wrong
+# password.
 
 color=000000
 inside-color=000000
@@ -21,6 +23,6 @@ text-color=e6e6e6
 text-clear-color=e6e6e6
 text-ver-color=e6e6e6
 text-wrong-color=d7263d
-# Enter with no password does nothing
+# Enter with no password does nothing.
 ignore-empty-password
 show-failed-attempts

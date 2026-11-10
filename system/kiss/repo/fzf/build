@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-# fzf has no C code; kiss sets GOPATH and GOFLAGS itself
+# fzf has no C code. kiss sets GOPATH and GOFLAGS itself.
 export CGO_ENABLED=0
 
 go build -ldflags "-s -w -X main.version=$2" -o fzf

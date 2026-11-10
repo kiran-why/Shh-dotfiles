@@ -3,14 +3,15 @@
 # █ ▀ █▄▄     ▄▄▄ █▄▄  
 # █ █ █  █   ▀▀▄▄ █  █ 
 # ▀ ▀ ▀▀▀  ▀ ▀▀▀  ▀  ▀ 
-# lib.sh - colors, messages, lists and the logo for install.sh, link.sh and shh
-# not run on its own: loaded with  . "$dots_path/lib/lib.sh"
+# Colors, messages, lists and the logo for install.sh, link.sh and shh.
+#
+# Not run on its own: a script loads it with '. lib/lib.sh'.
 
 # ▄▀▀▀ ▄▀▀▄ █    ▄▀▀▄ █▀▀▄ ▄▀▀▀ 
 # █    █  █ █    █  █ █▀█   ▀▀▄ 
 #  ▀▀▀  ▀▀  ▀▀▀▀  ▀▀  ▀  ▀ ▀▀▀  
 
-# white and red only; no colors when the output is not a terminal
+# Use white and red only, and no colors when the output is not a terminal.
 if [ -t 1 ]; then
     red=$(printf '\033[1;31m')
     white=$(printf '\033[1;37m')
@@ -24,7 +25,9 @@ fi
 # █ ▀ █ █▀▀   ▀▀▄  ▀▀▄ █▀▀█ █ ▀█ █▀▀   ▀▀▄ 
 # ▀   ▀ ▀▀▀▀ ▀▀▀  ▀▀▀  ▀  ▀  ▀▀▀ ▀▀▀▀ ▀▀▀  
 
-# symbols in front of messages; plain ascii on the TTY (its font lacks ✓ ✗)
+# Put a symbol in front of each message.
+#
+# The font of the TTY lacks the check mark and the cross, so it gets ASCII.
 case "${TERM:-}" in
     linux) sym_ok='+' sym_info='-' sym_fail='x' ;;
     *)     sym_ok='✓' sym_info='·' sym_fail='✗' ;;
@@ -32,18 +35,18 @@ esac
 sym_warn='!'
 sym_bak='~'
 
-# msg COLOR SYMBOL TEXT
+# Print TEXT with a colored SYMBOL in front: msg COLOR SYMBOL TEXT.
 msg() {
     printf '  %s%s%s %s\n' "$1" "$2" "$reset" "$3"
 }
 
-# step: a section header, like pacman's ":: Synchronizing"
+# Print a section header, like pacman's ":: Synchronizing".
 step() { printf '\n%s::%s %s%s%s\n' "$red" "$reset" "$white" "$1" "$reset"; }
 info() { msg "$dim"   "$sym_info" "$1"; }
 ok()   { msg "$white" "$sym_ok"   "$1"; }
 warn() { msg "$red"   "$sym_warn" "$1"; }
 
-# error TEXT: print and stop the script
+# Print TEXT as an error and stop the script.
 error() {
     msg "$red" "$sym_fail" "$1" >&2
     exit 1
@@ -53,12 +56,12 @@ error() {
 # █     █   ▀▀▄   █    ▀▀▄ 
 # ▀▀▀▀ ▀▀▀ ▀▀▀    ▀   ▀▀▀  
 
-# read_list FILE: lines without empty ones and comments
+# Print the lines of a file, without the empty ones and the comments.
 read_list() {
     grep -v '^[[:space:]]*#' "$1" | grep -v '^[[:space:]]*$' || true
 }
 
-# without LIST: stdin minus the lines that are in LIST (one per line)
+# Print stdin without the lines that are in the list '$1' (one per line).
 without() {
     if [ -n "$1" ]; then grep -vxF -- "$1" || true; else cat; fi
 }
@@ -67,17 +70,22 @@ without() {
 # █    █▀▀█ █  █  █  █    █▀▀   ▀▀▄ 
 #  ▀▀▀ ▀  ▀  ▀▀  ▀▀▀  ▀▀▀ ▀▀▀▀ ▀▀▀ 
 
-# the distro: ID from /etc/os-release (artix, void ...) picks system/ID/ and
-# components/ID_components.txt; SHH_DISTRO overrides it (tests on Windows)
+# Find the distro: the ID from /etc/os-release (artix, void, kiss).
+#
+# It picks system/ID/ and components/ID_components.txt. SHH_DISTRO
+# overrides it, for tests on another system.
 distro=${SHH_DISTRO:-}
-# "." on a missing file stops dash, so check first
+# Check that the file is there first: '.' on a missing file stops dash.
 [ -n "$distro" ] || [ ! -r /etc/os-release ] || distro=$(. /etc/os-release && echo "${ID:-}")
 
-# what shh config picked: NAME=VALUE lines, editable by hand; not in the
-# repo, so shh update remembers it
+# Keep what 'shh config' picked as NAME=VALUE lines, editable by hand.
+#
+# The file is not in the repo, so 'shh update' remembers the choices.
 shh_config="$HOME/.config/shh/config"
 
-# setting NAME DEFAULT: NAME from $shh_config (the last line wins), or DEFAULT
+# Print the value of NAME from the config, or DEFAULT: setting NAME DEFAULT.
+#
+# The last line with NAME wins.
 setting() {
     local value
     value=$(sed -n "s/^$1=//p" "$shh_config" 2>/dev/null | tail -n 1 |
@@ -85,23 +93,25 @@ setting() {
     printf '%s\n' "${value:-$2}"
 }
 
-# part_on NAME GROUP DEFAULT: is the part turned on? (components.txt)
+# Check if a part is turned on: part_on NAME GROUP DEFAULT (components.txt).
 part_on() {
     case "$2" in
-        # two parts: noxwayland (the sway line) or xwayland (the package)
+        # Two parts: noxwayland (the sway line) or xwayland (the package).
         xwayland)
             if [ "$(setting xwayland no)" = yes ]; then [ "$1" = xwayland ]; else [ "$1" = noxwayland ]; fi ;;
-        # one of the two editors (settings > editor)
+        # One of the two editors (settings > editor).
         editor)   [ "$(setting editor vim)" = "$1" ] ;;
-        # one of the two file managers (settings > file manager)
+        # One of the two file managers (settings > file manager).
         files)    [ "$(setting files broot)" = "$1" ] ;;
         *)        [ "$(setting "$1" "${3:-yes}")" = yes ] ;;
     esac
 }
 
-# gpu_drivers HARDWARE: the graphics drivers to install, one per line
-# (system/DISTRO/packages/WORD.csv): HARDWARE (scripts/hardware) on auto,
-# else the ones picked in shh config > settings > graphics (gpu=amd,nvidia)
+# Print the graphics drivers to install, one per line.
+#
+# On 'auto' these are the cards scripts/hardware found ('$1'), else the
+# ones picked in 'shh config' (gpu=amd,nvidia). Every name has a list in
+# system/DISTRO/packages/NAME.csv.
 gpu_drivers() {
     local gpu card
     gpu=$(setting gpu auto)
@@ -110,15 +120,16 @@ gpu_drivers() {
         return 0
     fi
     for card in $(printf '%s\n' "$gpu" | tr , ' '); do
-        # the open or the older 580xx driver: what fits the card, if one was found
+        # Take the open or the older 580xx driver, whichever fits the card found.
         [ "$card" != nvidia ] || card=$(printf '%s\n' "$1" nvidia | grep -x 'nvidia\|nvidia-580xx' | head -n 1)
         echo "$card"
     done
 }
 
-# off_items COMPONENTS FIELD: one per line, FIELD (2 packages, 3 files,
-# 4 services) of the parts in COMPONENTS turned off. Shared by a part that
-# is on: not off
+# Print one field of the parts that are turned off, one word per line.
+#
+# off_items COMPONENTS FIELD, where FIELD is 2 (packages), 3 (files) or
+# 4 (services). A word shared with a part that is on is left out.
 off_items() {
     local name group default line words on='' off=''
     while IFS= read -r line; do
@@ -131,7 +142,7 @@ EOF
     done <<EOF
 $(read_list "$1")
 EOF
-    # unquoted on purpose: one word per line
+    # Unquoted on purpose: one word per line.
     printf '%s\n' $off | grep -v '^$' | without "$(printf '%s\n' $on | grep -v '^$')"
 }
 
@@ -139,7 +150,8 @@ EOF
 # █    █  █ █ ▀█ █  █ 
 # ▀▀▀▀  ▀▀   ▀▀▀  ▀▀  
 
-# the big logo needs 94 columns, a narrower terminal gets the small one
+# Print the logo. The big one needs 94 columns, a narrower terminal gets
+# the small one.
 logo() {
     local cols
     cols=$(stty size 2>/dev/null | cut -d' ' -f2)
@@ -153,7 +165,7 @@ logo() {
     fi
 }
 
-# tagline N: the tagline, N spaces from the left to center it
+# Print the tagline, N spaces from the left to center it: tagline N.
 tagline() {
     printf '\n%*s%s%s%s\n\n' "$1" '' "$dim" '// quiet  // minimal  // no useless GUI' "$reset"
 }
@@ -174,7 +186,7 @@ EOF
     printf '%s' "$reset"
 }
 
-# the small slant logo, 57 columns
+# Print the small slant logo, 57 columns wide.
 logo_small() {
     printf '%s%-26s%s  %s%s%s\n' "$white" '   _____ __    __' "$reset" "$white" '' "$reset"
     printf '%s%-26s%s  %s%s%s\n' "$white" '  / ___// /_  / /_' "$reset" "$white" '     __     __  ____ __' "$reset"

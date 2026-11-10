@@ -1,12 +1,12 @@
-# system/artix/services.txt - s6 services started at boot; each *-s6 package is in common.csv
+# The s6 services started at boot. Each '*-s6' package is in common.csv.
 
 seatd
-# iwd needs dbus
+# iwd needs dbus.
 dbus
 iwd
-# wired network (wifi is iwd's)
+# The wired network (wifi is iwd's).
 dhcpcd
-# network time (chronyd)
+# Network time (chronyd).
 chrony
-# bluetooth, needs dbus
+# Bluetooth, needs dbus.
 bluetoothd

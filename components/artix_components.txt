@@ -1,9 +1,15 @@
-# components/artix_components.txt - parts shh config can turn off (Artix names); everything else is always installed
+# The parts 'shh config' can turn off (Artix names). Everything else is
+# always installed.
+#
 # name|packages|files (repo paths)|services|group|default
-# group = the tab in shh config: empty = features, misc = programs we always use;
-# settings = its own line in settings (maxhz); xwayland = settings > xwayland; editor = settings > editor; files = settings > file manager. Anything else: sudo pacman -S NAME yourself.
-# default: empty = on, no = off
-# packages stay in system/artix/packages/common.csv too; sway lines of a part go in config/sway/features/NAME
+#
+# The group is the tab in 'shh config': empty is features, misc is the
+# programs we always use, settings is an own line in settings (maxhz).
+# xwayland, editor and files are the lines settings > xwayland, editor
+# and file manager. The default is on when empty, off when "no".
+#
+# The packages stay in system/artix/packages/common.csv too. The sway
+# lines of a part go in config/sway/features/NAME.
 
 record|wf-recorder|scripts/record config/sway/features/record|||
 screenshot|grim|scripts/screenshot config/sway/features/screenshot|||
@@ -13,10 +19,10 @@ screenshare|xdg-desktop-portal-wlr|config/sway/features/screenshare|||
 autotile||scripts/autotile config/sway/features/autotile|||
 fastfetch|fastfetch|config/fastfetch|||
 scratchpad||config/sway/features/scratchpad|||
-# the vpn menu and its s6 service (install.sh runs vpn setup)
+# The vpn menu and its s6 service (install.sh runs 'vpn setup').
 sing-box|sing-box|scripts/vpn config/sway/features/vpn|sing-box||
 
-# misc: programs the setup counts on
+# misc: the programs the setup counts on.
 firefox|firefox|config/sway/features/firefox||misc|
 mpv|mpv|||misc|
 imv|imv|config/imv||misc|
@@ -27,17 +33,18 @@ mako|mako libnotify|config/mako config/sway/features/mako||misc|
 emoji|noto-fonts-emoji|||misc|
 noto|noto-fonts|||misc|
 
-# settings > xwayland: noxwayland is on when xwayland is off (sway can't have both lines)
+# settings > xwayland. noxwayland is on when xwayland is off: sway can't
+# have both lines.
 noxwayland||config/sway/features/noxwayland||xwayland|
 xwayland|xorg-xwayland|||xwayland|
 
-# settings > editor: vim or nvim, the same look, options and keys
+# settings > editor: vim or nvim, with the same look, options and keys.
 vim|vim|config/vim||editor|
 nvim|neovim|config/nvim||editor|
 
-# settings > file manager: broot or yazi on Super+F
+# settings > file manager: broot or yazi on Super+F.
 broot|broot|config/broot config/sway/features/broot||files|
 yazi|yazi|config/yazi config/sway/features/yazi||files|
 
-# settings > maxhz
+# settings > maxhz.
 maxhz||scripts/maxhz config/sway/features/maxhz||settings|

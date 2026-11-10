@@ -1,41 +1,43 @@
 #!/bin/sh
-# bluetooth - power, pair a new device, connect / disconnect, unpair
-# opened from the bar menu (scripts/menu). Esc goes back.
-# no PIN prompt: pair a keyboard that asks for one in bluetoothctl
+# The bluetooth menu: power, pair a new device, connect / disconnect,
+# unpair. Opened from the bar menu (scripts/menu), Esc goes back.
+#
+# There is no PIN prompt: pair a keyboard that asks for one in
+# bluetoothctl.
 
 set -eu
 
-# how long to look for new devices, in seconds
+# How long to look for new devices, in seconds.
 scan_time=8
 
 menu() {
     fzf --info=hidden --no-input --border=none "$@"
 }
 
-# the last header line: one space, so an empty line sits above the list
+# The last header line is one space, so an empty line sits above the list.
 gap=$(printf '\n ')
 
-# the banner of the main menu: scripts/menu draws it and $MENU_TEXT
-# under it in the middle, again on every resize
+# The banner of the main menu. scripts/menu draws it and '$MENU_TEXT'
+# under it in the middle, again on every resize.
 banner="result,resize:transform-header:sh '$HOME/.local/bin/menu' --header bluetooth"
 export MENU_TEXT=
 
-# lines are "label<TAB>address<TAB>name", only the label shows
+# The lines are "label<TAB>address<TAB>name", only the label shows.
 device_menu() {
     menu --delimiter='\t' --with-nth=1 "$@"
 }
 
-# bluetoothctl colors some lines
+# Strip the colors bluetoothctl puts on some lines.
 plain() {
     sed 's/\x1b\[[0-9;]*m//g'
 }
 
-# bluetoothctl waits forever if bluetoothd hangs
+# Run bluetoothctl with a time limit: it waits forever if bluetoothd hangs.
 bt() {
     timeout 30 bluetoothctl "$@"
 }
 
-# say TEXT: show it until Enter
+# Show TEXT until Enter.
 say() {
     echo "$1, press Enter"
     read -r _
@@ -52,12 +54,12 @@ if ! pgrep -x bluetoothd >/dev/null; then
     exit 1
 fi
 
-# devices [Paired | Connected]: "address name" lines
+# Print "address name" lines: devices [Paired | Connected].
 devices() {
     bt devices "$@" | plain | sed -n 's/^Device \([0-9A-F:]*\) \(.*\)/\1 \2/p'
 }
 
-# has ADDRESS LIST: is the address in the list
+# Check if an address is in a list: has ADDRESS LIST.
 has() {
     printf '%s\n' "$2" | grep -qxF "$1"
 }
@@ -66,7 +68,7 @@ powered() {
     [ "$(bt show | plain | sed -n 's/^[[:space:]]*Powered: //p')" = yes ]
 }
 
-# power and the connected devices
+# Print the power state and the connected devices.
 now() {
     local names
     if ! powered; then
@@ -78,7 +80,7 @@ now() {
     printf '󰂯 on\nConnected: %s' "${names:-nothing}"
 }
 
-# paired devices for device_menu, connected ones marked
+# Print the paired devices for device_menu, the connected ones marked.
 paired_lines() {
     local connected mac name state
     connected=$(devices Connected | cut -d' ' -f1)
@@ -89,7 +91,7 @@ paired_lines() {
     done
 }
 
-# connect ADDRESS NAME
+# Connect a device: connect ADDRESS NAME.
 connect() {
     echo "connecting to $2..."
     if bt connect "$1" >/dev/null; then
@@ -99,7 +101,7 @@ connect() {
     fi
 }
 
-# scan, pick a new device, pair and connect it
+# Scan, pick a new device, pair and connect it.
 pair_new() {
     local paired pick mac name
     while :; do
@@ -122,7 +124,7 @@ pair_new() {
         # disconnects and has to be paired again.
         bt pairable on >/dev/null || true
         if bt pair "$mac" >/dev/null; then
-            # trusted devices may reconnect by themselves
+            # Trusted devices may reconnect by themselves.
             bt trust "$mac" >/dev/null || true
             connect "$mac" "$name"
             return 0
@@ -131,7 +133,8 @@ pair_new() {
     done
 }
 
-# connected -> disconnect, else connect
+# Show the paired devices. Enter disconnects a connected one, else
+# connects.
 paired_menu() {
     local pick mac name
     pick=$(paired_lines |
@@ -144,7 +147,7 @@ paired_menu() {
     esac
 }
 
-# forget a paired device
+# Forget a paired device.
 unpair_menu() {
     local pick mac name
     pick=$(paired_lines |
@@ -158,7 +161,7 @@ unpair_menu() {
     fi
 }
 
-# pos keeps the cursor on the last picked line
+# 'pos' keeps the cursor on the last picked line.
 pos=1
 while :; do
     if powered; then toggle='Power off'; else toggle='Power on'; fi

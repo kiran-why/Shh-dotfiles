@@ -1,15 +1,19 @@
-# system/kiss/packages/common.csv - installed on every machine
-# tag,package,description: the tag stays empty, kiss finds a package through KISS_PATH
-# (repo: core extra wayland; community; kiss-dbus: dbus bluez mako; system/kiss/repo: our own recipes)
-# check names: sh install.sh --check
-# a runit service comes inside its package (/etc/sv), no *-s6 packages here
+# The packages installed on every machine.
+#
+# tag,package,description. The tag stays empty: kiss finds a package
+# through KISS_PATH (repo: core, extra, wayland; community; kiss-dbus:
+# dbus, bluez, mako; system/kiss/repo: our own recipes).
+# Check the names with 'sh install.sh --check'.
+#
+# A runit service comes inside its package (/etc/sv), so there are no
+# '*-s6' packages here.
 
-# system: libseat has the seatd daemon, no elogind
+# System: libseat has the seatd daemon, no elogind.
 ,libseat,screen and input for sway without root (seatd service)
 ,dbus,message bus (bluetoothd needs it; services.txt)
 ,curl,downloads: install.sh and wifi check the internet, vpn gets the subscription
 
-# shell and terminal tools
+# Shell and terminal tools.
 ,zsh,login shell
 ,zsh-autosuggestions,zsh: gray suggestions from the history while typing
 ,zsh-syntax-highlighting,zsh: unknown commands turn gray while typing
@@ -22,13 +26,13 @@
 ,git,version control
 ,fastfetch,system info when a terminal opens
 
-# desktop
-# mesa's build needs clang (clang-cpp) but its depends lack it
+# Desktop. The build of mesa needs clang (clang-cpp), but its depends
+# lack it.
 ,clang,C/C++ compiler libraries for mesa's build
 ,sway,tiling wayland compositor (includes swaybar and swaymsg)
 ,mesa,OpenGL for sway on every graphics card and in a VM
 
-# wayland tools
+# Wayland tools.
 ,foot,terminal emulator
 ,swaylock,screen lock (scripts/lock on Super+Escape, before sleep)
 ,libnotify,notify-send: send a notification from the shell or a script
@@ -43,10 +47,10 @@
 ,ttf-fira-code,Fira Code: the monospace font (foot, bar, mako, imv)
 ,ttf-nerd-fonts-symbols,Symbols Nerd Font: icons only, the fallback for the bar and prompt
 
-# sound; the pipewire package has wireplumber and pipewire-pulse in it
+# Sound. The pipewire package has wireplumber and pipewire-pulse in it.
 ,pipewire,sound server
 
-# network
+# Network.
 ,eiwd,wifi daemon: iwd without dbus (no iwctl, networks in /var/lib/iwd)
 ,wireless-regdb,wifi rules of each country: all channels and full power (system/kiss/repo)
 ,openresolv,DNS config for iwd
@@ -54,10 +58,10 @@
 ,chrony,network time: sets the clock at boot
 ,sing-box,vpn client for subscriptions (scripts/vpn)
 
-# bluetooth (headphones); bluetoothctl is in bluez
+# Bluetooth (headphones). bluetoothctl is in bluez.
 ,bluez,bluetooth daemon and bluetoothctl (scripts/bluetooth)
 
-# misc (shh config: misc)
+# Misc (shh config: misc).
 ,firefox,browser (Super+B)
 ,mako,notifications (Super+N closes one)
 ,mpv,video player

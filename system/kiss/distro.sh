@@ -3,23 +3,29 @@
 #  ▄▄█ ▀  ▄▄▄ ▄█▄  ▄ ▄▄  ▄▄     ▄▄▄ █▄▄
 # █  █ █ ▀▀▄▄  █   █▀   █  █   ▀▀▄▄ █  █
 #  ▀▀▀ ▀ ▀▀▀    ▀▀ ▀     ▀▀  ▀ ▀▀▀  ▀  ▀
-# distro.sh - what is KISS (musl, busybox runit) only: kiss, runit services, the login
-# loaded after lib.sh by install.sh, link.sh and shh; every distro has the same functions
+# What only KISS has (musl, busybox, runit): kiss, runit services, the login.
+#
+# Loaded after lib.sh by install.sh, link.sh and shh. Every distro.sh has
+# the same functions.
 
-# video: the group seatd gives its socket to (libseat's seatd.run), and the GPU;
-# audio: the sound card; wheel: sudo
+# The groups of the user. video: seatd gives its socket to it (libseat's
+# seatd.run), and the GPU. audio: the sound card. wheel: sudo.
 seat_groups=audio,video,wheel
-# https, not ping: ICMP is often blocked; a few sites, one can be down or blocked
+# The sites for the internet check. https, not ping: ICMP is often
+# blocked. A few of them, as one can be down or blocked.
 online_sites='https://kisslinux.github.io https://codeberg.org https://github.com'
 pkg_remove='kiss r'
-# the root commands of power_run, for the sudoers rule (install.sh); "" = no arguments.
-# no zzz here: suspend is "mem" written to /sys/power/state
+# The root commands of power_run, for the sudoers rule (install.sh).
+#
+# "" means no arguments. There is no zzz here: suspend is "mem" written to
+# /sys/power/state.
 power_cmds='/usr/bin/poweroff "", /usr/bin/reboot "", /usr/bin/tee /sys/power/state'
-# repo files link.sh leaves out here: KISS's sway has no tray (no sd-bus), tray_output is an error
+# The repo files link.sh leaves out here. KISS's sway has no tray (no
+# sd-bus), so 'tray_output' is an error.
 distro_skip='config/swaybar/tray'
 
-# the repos kiss builds from, cloned by kiss_repos; shh = our recipes. Ours come
-# first, the first recipe found wins
+# The repos kiss builds from, cloned by kiss_repos. 'shh' holds our
+# recipes and comes first: the first recipe found wins.
 kiss_dir="$HOME/.local/share/kiss"
 export KISS_PATH="$kiss_dir/shh:$kiss_dir/repo/core:$kiss_dir/repo/extra:$kiss_dir/repo/wayland:$kiss_dir/community/community:$kiss_dir/kiss-dbus/dbus"
 export KISS_PROMPT=0
@@ -37,7 +43,9 @@ build_jobs=$(awk -v n="$(nproc)" '/^MemTotal/ { j = int($2 / 2097152); print (j 
 export MAKEFLAGS="${MAKEFLAGS:--j$build_jobs}" SAMUFLAGS="${SAMUFLAGS:--j$build_jobs}" \
     CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-$build_jobs}"
 
-# power_run poweroff | reboot | suspend (scripts/power); -n: fail, don't ask for a password
+# Power off, reboot or suspend (scripts/power).
+#
+# 'sudo -n' fails instead of asking for a password.
 power_run() {
     case "$1" in
         suspend) echo mem | sudo -n /usr/bin/tee /sys/power/state >/dev/null ;;
@@ -45,16 +53,17 @@ power_run() {
     esac
 }
 
-# distro_check: stop when this system can't take the setup
+# Stop when this system can't take the setup.
 distro_check() {
     [ -d /var/service ] && command -v sv >/dev/null || error "runit is not the init system here"
 
-    # NVIDIA's driver is built for glibc only; on musl nouveau (mesa) runs the card
+    # NVIDIA's driver is built for glibc only. On musl nouveau (mesa) runs
+    # the card.
     case "$hardware" in
         *nvidia*) warn "NVIDIA: no NVIDIA driver on musl, nouveau (mesa) runs the card" ;;
     esac
 
-    # not in base; install.sh needs it before it can build anything
+    # sudo is not in base, and install.sh needs it to build anything.
     if ! command -v sudo >/dev/null; then
         info "as root: kiss U first, then kiss b sudo (the community repo must be in KISS_PATH)"
         info "then: addgroup $USER wheel, and in visudo uncomment the line %wheel ALL=(ALL:ALL) ALL"
@@ -96,22 +105,24 @@ pkg_installed() {
     kiss l "$1" >/dev/null 2>&1
 }
 
-# pkg_install TAG PKG: no tags on KISS. With KISS_PROMPT=0 kiss b installs the
-# dependencies but only builds PKG itself, so kiss i after it.
-# </dev/null: kiss must not read the rest of our list.
-# The first call can come from shh config, before distro_prepare
+# Build and install a package: pkg_install TAG PKG (no tags on KISS).
+#
+# With KISS_PROMPT=0 'kiss b' installs the dependencies but only builds
+# PKG itself, so 'kiss i' follows. '</dev/null' keeps kiss from reading
+# the rest of our list. The first call can come from 'shh config', before
+# distro_prepare, hence the kiss_repos.
 pkg_install() {
     [ -d "$kiss_dir/shh" ] || kiss_repos
     kiss b "$2" </dev/null && kiss i "$2" </dev/null
 }
 
-# pkg_exists TAG PKG (--check): 0 found, 1 not found; prints nothing
+# Check that a package exists ('--check'): 0 found, 1 not found.
 pkg_exists() {
     [ -d "$kiss_dir/shh" ] || kiss_repos >/dev/null
     kiss s "$2" >/dev/null 2>&1
 }
 
-# pkg_missing NAMES: print the ones not installed
+# Print the packages that are not installed.
 pkg_missing() {
     local pkg
     for pkg in "$@"; do
@@ -119,7 +130,7 @@ pkg_missing() {
     done
 }
 
-# pkg_leftovers NAMES: print the installed ones
+# Print the packages that are installed.
 pkg_leftovers() {
     local pkg
     for pkg in "$@"; do
@@ -127,8 +138,9 @@ pkg_leftovers() {
     done
 }
 
-# distro_prepare: the repos and the whole system, before any package;
-# everything is built from source, the first run takes hours.
+# Update the repos and the whole system, before any package.
+#
+# Everything is built from source, so the first run takes hours.
 # shortcut: a new OpenSSL soname breaks sudo during kiss U (its recipe has no depends), then: as root kiss b sudo
 distro_prepare() {
     step "system update"
@@ -138,7 +150,8 @@ distro_prepare() {
     ok "system updated"
 }
 
-# vmware_clipboard: the clipway fork of open-vm-tools is not packaged for KISS
+# Skip the VMware clipboard: the clipway fork of open-vm-tools is not
+# packaged for KISS.
 vmware_clipboard() {
     [ "$hardware" != vmware ] || info "VMware clipboard: not packaged for KISS, skipped"
 }
@@ -147,11 +160,15 @@ vmware_clipboard() {
 #  ▀▀▄ █▀▀  █▀█  ▀▄ ▄▀  █  █    █▀▀   ▀▀▄
 # ▀▀▀  ▀▀▀▀ ▀  ▀   ▀   ▀▀▀  ▀▀▀ ▀▀▀▀ ▀▀▀
 
-# svc_apply ON OFF: a runit service is on while /var/service/NAME links to
-# /etc/sv/NAME: runsvdir starts it within 5 s and at every boot.
-# OFF (turned off in shh config): the link goes, runsvdir stops the service.
-# eiwd's service runs iwd -d (debug floods tty1), so it gets ours. Again on every
-# run: kiss U can bring the package's files back
+# Turn services on and off: svc_apply ON OFF.
+#
+# A runit service is on while /var/service/NAME links to /etc/sv/NAME:
+# runsvdir starts it within 5 s and at every boot. Without the link
+# runsvdir stops it.
+#
+# eiwd's own service runs 'iwd -d', and the debug output floods tty1, so
+# it gets our run file. It is written on every run, as 'kiss U' can bring
+# the file of the package back.
 svc_apply() {
     local svc
     write_root /etc/sv/eiwd/run "$(printf '#!/bin/sh\nexec iwd 2>&1')"
@@ -207,10 +224,11 @@ svc_apply() {
     done
 }
 
-# svc_check SVC (shh doctor): 0 up, 1 down (prints the state), 2 not on.
-# sv status works for root only (runsv makes supervise/ 0700), so a user
-# looks at the processes: runsv SVC runs the service as its child, and its
-# log/ too, so the logger doesn't count
+# Check a service for 'shh doctor': 0 up, 1 down (prints the state), 2 not on.
+#
+# 'sv status' works for root only (runsv makes supervise/ 0700). A user
+# looks at the processes instead: 'runsv SVC' runs the service as its
+# child. Its log/ is a child too, so the logger does not count.
 svc_check() {
     local state pid
     [ -e "/var/service/$1" ] || return 2
@@ -221,34 +239,40 @@ svc_check() {
         esac
     fi
     pid=$(pgrep -x -f "runsv $1") || { echo " runsv not running"; return 1; }
-    # pgrep -l: "PID NAME" lines; grep -v: any line that is not the logger
+    # 'pgrep -l' prints "PID NAME" lines, 'grep -v' finds one that is not the
+    # logger.
     pgrep -l -P "$pid" | grep -qv ' svlogd$' || { echo " down"; return 1; }
 }
 
-# svc_ctl start | stop SVC (settings > Services): now, till the reboot
-# (sv up / down; runit has no dependencies: with dbus off bluetoothd fails and restarts)
+# Start or stop a service now, till the reboot (settings > Svc).
+#
+# runit has no dependencies: with dbus off bluetoothd fails and restarts.
 svc_ctl() {
     local cmd=up
     [ "$1" = start ] || cmd=down
     sudo sv "$cmd" "/var/service/$2" >/dev/null
 }
 
-# svc_list (settings > Svc > All): every service, one per line; only the ones
-# linked in /var/service are enabled (svc_check 2 for the rest)
+# Print every service, one per line (settings > Svc > All).
+#
+# Only the ones linked in /var/service are on (svc_check gives 2 for the
+# rest).
 svc_list() {
     { ls /etc/sv; ls /var/service; } | sort -u
 }
 
-# none: the gettys are in /etc/inittab, not services (tty1 and tty2 by default)
+# No unused consoles to turn off: the gettys are in /etc/inittab, not
+# services.
 svc_unused=''
 
-# the vpn service (scripts/vpn): our own, as root
+# The vpn service (scripts/vpn): our own, run as root.
 vpn_svc=shh-vpn
 
-# vpn_setup RUN: make the service that runs RUN. Known to runit after this,
-# but not started at boot: a "down" file in it (vpn > start at boot removes it).
-# log/: without it sing-box writes over the login prompt on the console;
-# svlogd, as KISS has no syslog running by default
+# Make the service that runs the command '$1'.
+#
+# runit knows it after this, but a "down" file keeps it from starting at
+# boot (vpn > Start at boot removes the file). Without a log/ sing-box
+# writes over the login prompt. svlogd, as KISS runs no syslog.
 vpn_setup() {
     sudo sh -s -- "$1" <<'EOF' || error "cannot make the runit service shh-vpn"
 set -e
@@ -263,19 +287,19 @@ fi
 EOF
 }
 
-# vpn_ctl start | stop | restart (sv: up, down, restart)
+# Start, stop or restart the vpn ('sv up', 'down', 'restart').
 vpn_ctl() {
     local cmd="$1"
     case "$1" in start) cmd=up ;; stop) cmd=down ;; esac
     sudo sv "$cmd" /var/service/shh-vpn >/dev/null
 }
 
-# vpn_boot: is it started at boot?
+# Check if the vpn starts at boot.
 vpn_boot() {
     [ -e /var/service/shh-vpn ] && [ ! -e /etc/sv/shh-vpn/down ]
 }
 
-# vpn_boot_set yes | no
+# Make the vpn start at boot, or not: vpn_boot_set yes | no.
 vpn_boot_set() {
     if [ "$1" = yes ]; then sudo rm -f /etc/sv/shh-vpn/down; else sudo touch /etc/sv/shh-vpn/down; fi
 }
@@ -284,10 +308,12 @@ vpn_boot_set() {
 #  ▀▀▄ █▀▀   ▀▀▄  ▀▀▄  █  █  █ █ ▀▄█
 # ▀▀▀  ▀▀▀▀ ▀▀▀  ▀▀▀  ▀▀▀  ▀▀  ▀   ▀
 
-# session_setup: no PAM and no udev here. rc.boot sources /etc/rc.d/*.boot at
-# every boot (/run is empty then); login shells read /etc/profile.d (zsh too:
-# KISS's /etc/zprofile loads /etc/profile). ALSA through PipeWire: firefox has
-# only the ALSA backend on KISS.
+# Set up the login session. There is no PAM and no udev here.
+#
+# rc.boot sources /etc/rc.d/*.boot at every boot, when /run is empty.
+# Login shells read /etc/profile.d (zsh too: KISS's /etc/zprofile loads
+# /etc/profile). ALSA goes through PipeWire, as firefox has only the ALSA
+# backend on KISS.
 # shortcut: brightness is set once at boot, a backlight that appears later needs an mdev.conf rule
 session_setup() {
     local uid
@@ -321,12 +347,14 @@ export MAKEFLAGS=\"\${MAKEFLAGS:-$MAKEFLAGS}\" SAMUFLAGS=\"\${SAMUFLAGS:-$SAMUFL
         error "cannot link /etc/asound.conf"
     info "alsa: through pipewire"
 
-    # KISS's patch makes pipewire start wireplumber, and scripts/sound starts it too
+    # KISS's patch makes pipewire start wireplumber, and scripts/sound starts
+    # it too.
     write_root /etc/pipewire/pipewire.conf.d/shh.conf 'context.properties = { exec.session-manager = false }'
 }
 
-# user_groups GROUPS: add the user to GROUPS (comma-separated); busybox has
-# no usermod, addgroup USER GROUP takes one group
+# Add the user to GROUPS (comma-separated).
+#
+# busybox has no usermod, and 'addgroup USER GROUP' takes one group.
 user_groups() {
     local group
     for group in $(printf %s "$1" | tr , ' '); do
@@ -334,12 +362,12 @@ user_groups() {
     done
 }
 
-# user_shell SHELL: the login shell of the user; busybox has no chsh
+# Set the login shell of the user. busybox has no chsh.
 user_shell() {
     sudo sed -i "/^$USER:/s|[^:]*\$|$1|" /etc/passwd || error "cannot edit /etc/passwd"
 }
 
-# distro_undo: what install.sh changed in the system (link.sh --uninstall)
+# Print what install.sh changed in the system ('link.sh --uninstall').
 distro_undo() {
     echo "  packages   packages/*.csv        kiss r NAME"
     echo "  repos      $kiss_dir             rm -r it"

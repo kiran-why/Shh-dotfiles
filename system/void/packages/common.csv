@@ -1,15 +1,19 @@
-# system/void/packages/common.csv - installed on every machine (drivers: CARD.csv next to it)
-# tag,package,description: the tag stays empty, everything comes from xbps.
-# check names: sh install.sh --check
-# a runit service comes inside its package (/etc/sv), no *-s6 packages here
+# The packages installed on every machine. The drivers are in CARD.csv
+# next to this file.
+#
+# tag,package,description. The tag stays empty: everything comes from
+# xbps. Check the names with 'sh install.sh --check'.
+#
+# A runit service comes inside its package (/etc/sv), so there are no
+# '*-s6' packages here.
 
-# system: seatd instead of elogind
+# System: seatd instead of elogind.
 ,seatd,screen and input for sway without root (no elogind)
 ,dumb_runtime_dir,creates XDG_RUNTIME_DIR at login (the PAM line is already in system-login)
 ,dbus,message bus (iwd and bluetoothd need it; services.txt)
 ,curl,downloads: install.sh and wifi check the internet, vpn gets the subscription (not in base-system)
 
-# shell and terminal tools
+# Shell and terminal tools.
 ,zsh,login shell
 ,zsh-autosuggestions,zsh: gray suggestions from the history while typing
 ,zsh-syntax-highlighting,zsh: unknown commands turn gray while typing
@@ -21,11 +25,11 @@
 ,git,version control
 ,fastfetch,system info when a terminal opens
 
-# desktop
+# Desktop.
 ,sway,tiling wayland compositor (includes swaybar and swaymsg)
 ,mesa-dri,OpenGL for sway on every graphics card and in a VM
 
-# wayland tools
+# Wayland tools.
 ,foot,terminal emulator
 ,swaylock,screen lock (scripts/lock on Super+Escape, before sleep)
 ,libnotify,notify-send: send a notification from the shell or a script
@@ -41,23 +45,24 @@
 ,nerd-fonts-symbols-ttf,Symbols Nerd Font: icons only, the fallback for the bar and prompt
 ,xdg-desktop-portal-wlr,screen sharing in the browser (sway/features/screenshare)
 
-# sound; pipewire has pipewire-pulse in it (PulseAudio programs: firefox and others)
+# Sound. pipewire has pipewire-pulse in it (for PulseAudio programs:
+# firefox and others).
 ,pipewire,sound server
 ,wireplumber,pipewire session manager
 ,alsa-pipewire,ALSA programs play through pipewire (links in /etc/alsa/conf.d: distro.sh)
 
-# network
+# Network.
 ,iwd,wifi daemon
 ,openresolv,DNS config for iwd (no systemd-resolved)
 ,dhcpcd,DHCP for wired network (iwd only does wifi)
 ,chrony,network time: sets the clock at boot, both ways (makestep, rtcsync: default chrony.conf)
 ,sing-box,vpn client for subscriptions (scripts/vpn)
 
-# bluetooth (headphones); bluetoothctl is in bluez
+# Bluetooth (headphones). bluetoothctl is in bluez.
 ,bluez,bluetooth daemon and bluetoothctl (scripts/bluetooth)
 ,libspa-bluetooth,pipewire: sound to bluetooth headphones
 
-# misc (shh config: misc); man and man-pages are in base-system (mandoc)
+# Misc (shh config: misc). man and man-pages are in base-system (mandoc).
 ,firefox,browser (Super+B)
 ,mako,notifications (Super+N closes one)
 ,mpv,video player
@@ -68,5 +73,6 @@
 ,noto-fonts-emoji,emoji in the browser
 ,noto-fonts-ttf,text font for pages and programs (latin, cyrillic, greek)
 
-# no xorg-server-xwayland: Void's sway depends on it, so it is always there;
-# settings > xwayland only turns it on in sway (config/sway/features/noxwayland)
+# No xorg-server-xwayland: Void's sway depends on it, so it is always
+# there. settings > xwayland only turns it on in sway
+# (config/sway/features/noxwayland).

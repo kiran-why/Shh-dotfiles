@@ -2,7 +2,8 @@
 
 export DESTDIR="$1"
 
-# pulse, like on the other distros: scripts/record passes a pulse source name
+# Pulse, like on the other distros: scripts/record passes the name of a
+# pulse source.
 meson setup \
     -Dprefix=/usr \
     -Dpulse=enabled \

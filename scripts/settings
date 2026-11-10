@@ -1,7 +1,9 @@
 #!/bin/sh
-# settings - the bar menu's Prefs: Svc, Light (scripts/brightness)
-# Svc: our services (services.txt and the vpn) on or off now, All >: every
-# service of the init; after a reboot they start as shh config says
+# The Prefs of the bar menu: Svc and Light (scripts/brightness).
+#
+# Svc turns our services (services.txt and the vpn) on or off now, 'All >'
+# shows every service of the init. After a reboot they start as
+# 'shh config' says.
 
 set -eu
 
@@ -14,15 +16,17 @@ menu() {
     fzf --info=hidden --no-input --border=none "$@"
 }
 
-# banner NAME: scripts/menu draws it and $MENU_TEXT, again on every resize
+# Print the fzf binding that draws a banner: scripts/menu draws it and
+# '$MENU_TEXT', again on every resize.
 banner() {
     printf '%s' "result,resize:transform-header:sh '$bin/menu' --header $1"
 }
 export MENU_TEXT=
-# the last header line: one space, so an empty line sits above the list
+# The last header line is one space, so an empty line sits above the list.
 gap=$(printf '\n ')
 
-# warning SVC: what breaks when SVC goes off (tty*: s6 names, agetty-*: runit)
+# Print what breaks when a service goes off ('tty*' are s6 names,
+# 'agetty-*' runit ones).
 warning() {
     case "$1" in
         seatd) echo '! sway needs it' ;;
@@ -32,9 +36,12 @@ warning() {
     esac
 }
 
-# "name (state)  warning" for our services (one not installed is left out);
-# with "all", every service of the init (svc_list: distro.sh):
-# disabled = known, not enabled; boot = a one-time boot step, Enter skips both
+# Print "name (state)  warning" for our services. One that is not
+# installed is left out.
+#
+# With "all" it is every service of the init (svc_list: distro.sh).
+# 'disabled' is known but not enabled, 'boot' is a one-time boot step.
+# Enter skips both.
 service_lines() {
     local all="${1:-}" svc kind rc state
     if [ -n "$all" ]; then svc_list; else read_list "$share/services.txt"; echo "$vpn_svc"; fi |
@@ -52,8 +59,10 @@ service_lines() {
     done
 }
 
-# services [all]: Enter turns the picked one on or off (svc_ctl: distro.sh,
-# asks for sudo); our list ends with All >, the same menu for every service
+# Show the services. Enter turns the picked one on or off (svc_ctl:
+# distro.sh, asks for sudo).
+#
+# Our list ends with 'All >', the same menu for every service.
 services() {
     local all="${1:-}" list pick svc was armed='' pos=1 note=''
     while :; do
@@ -66,7 +75,7 @@ services() {
         pos=$(printf '%s\n' "$list" | grep -nxF -- "$pick" | cut -d: -f1)
         svc=${pick%% *}
         was=$armed armed=''
-        # a row with a warning is stopped only by the second Enter in a row
+        # A row with a warning is stopped only by the second Enter in a row.
         case "$pick:$was" in
             *' (on)'*'!'*":$svc") ;;
             *' (on)'*'!'*) armed=$svc note="Enter again: stop $svc"; continue ;;
@@ -80,7 +89,7 @@ services() {
     done
 }
 
-# Light only when scripts/brightness is installed
+# Print the lines. Light shows only when scripts/brightness is installed.
 lines() {
     echo 'Svc >'
     [ ! -x "$bin/brightness" ] || echo 'Light >'
@@ -93,7 +102,7 @@ while :; do
         menu --bind="$(banner settings)" --bind="load:pos($pos)") || exit 0
     case "$pick" in
         'Svc >')   pos=1; services ;;
-        # a menu that fails just comes back here
+        # A menu that fails just comes back here.
         'Light >') pos=2; "$bin/brightness" || true ;;
     esac
 done

@@ -1,10 +1,10 @@
-# ~/.config/sway/look - wallpaper, borders, gaps, colors
+# Wallpaper, borders, gaps and colors.
 
-# black until scripts/wallpaper sets the newest picture from ~/wallpapers
+# Black until scripts/wallpaper sets the newest picture from ~/wallpapers.
 output * bg $black solid_color
 exec_always ~/.local/bin/wallpaper
 
-# border width and gaps in px
+# The border width and the gaps in px.
 default_border pixel 1
 default_floating_border pixel 1
 gaps inner 0

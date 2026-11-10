@@ -3,19 +3,27 @@
 #  ▄▄█ ▀  ▄▄▄ ▄█▄  ▄ ▄▄  ▄▄     ▄▄▄ █▄▄
 # █  █ █ ▀▀▄▄  █   █▀   █  █   ▀▀▄▄ █  █
 #  ▀▀▀ ▀ ▀▀▀    ▀▀ ▀     ▀▀  ▀ ▀▀▀  ▀  ▀
-# distro.sh - what is Artix (s6) only: pacman, AUR, s6 services, the login
-# loaded after lib.sh by install.sh and shh; every distro has the same functions
+# What only Artix has (s6): pacman, the AUR, s6 services, the login.
+#
+# Loaded after lib.sh by install.sh, link.sh and shh. Every distro.sh has
+# the same functions.
 
-# seat: screen and input for sway; audio: the sound card (no elogind); video: the screen brightness
+# The groups of the user. seat: screen and input for sway. audio: the
+# sound card (no elogind). video: the screen brightness.
 seat_groups=seat,audio,video
-# https, not ping: ICMP is often blocked; a few sites, one can be down or blocked
+# The sites for the internet check. https, not ping: ICMP is often
+# blocked. A few of them, as one can be down or blocked.
 online_sites='https://artixlinux.org https://archlinux.org https://github.com'
 pkg_remove='sudo pacman -Rs'
-# the root commands of power_run, for the sudoers rule (install.sh); "" = no arguments.
-# no zzz on Artix: suspend is "mem" written to /sys/power/state
+# The root commands of power_run, for the sudoers rule (install.sh).
+#
+# "" means no arguments. Artix has no zzz: suspend is "mem" written to
+# /sys/power/state.
 power_cmds='/usr/bin/poweroff "", /usr/bin/reboot "", /usr/bin/tee /sys/power/state'
 
-# power_run poweroff | reboot | suspend (scripts/power); -n: fail, don't ask for a password
+# Power off, reboot or suspend (scripts/power).
+#
+# 'sudo -n' fails instead of asking for a password.
 power_run() {
     case "$1" in
         suspend) echo mem | sudo -n /usr/bin/tee /sys/power/state >/dev/null ;;
@@ -23,18 +31,20 @@ power_run() {
     esac
 }
 
-# distro_check: stop when this system can't take the setup
+# Stop when this system can't take the setup.
 distro_check() {
     command -v s6-rc >/dev/null || error "s6 is not the init system here"
 
-    # seatd-s6 and elogind-s6 conflict; pacman --noconfirm can't swap them
+    # seatd-s6 and elogind-s6 conflict, and 'pacman --noconfirm' can't swap
+    # them.
     if pkg_installed elogind-s6; then
         warn "elogind-s6 is installed, this setup uses seatd instead"
         info "swap it: sudo pacman -S seatd-s6  (answer y to remove elogind-s6)"
         error "replace elogind-s6 with seatd-s6, then run install.sh again"
     fi
 
-    # an old install guide started dhcpcd from rc.local; the s6 service does it now
+    # An old install guide started dhcpcd from rc.local. The s6 service does
+    # it now.
     if grep -q '^[[:space:]]*dhcpcd' /etc/s6/rc.local 2>/dev/null; then
         warn "/etc/s6/rc.local starts dhcpcd too, comment that line out"
     fi
@@ -48,8 +58,10 @@ pkg_installed() {
     pacman -Qq "$1" >/dev/null 2>&1
 }
 
-# aur_install PKG: paru shows every PKGBUILD for review unless told not to.
-# </dev/null: it must not read the rest of a list we loop over
+# Install a package from the AUR.
+#
+# paru shows every PKGBUILD for review unless told not to. '</dev/null'
+# keeps the helper from reading the rest of a list we loop over.
 aur_install() {
     local helper review=''
     helper=$(setting aur_helper yay)
@@ -57,23 +69,25 @@ aur_install() {
     "$helper" -S --needed --noconfirm $review "$1" </dev/null
 }
 
-# pkg_install TAG PKG: empty tag = pacman, A = AUR
+# Install a package: pkg_install TAG PKG. An empty tag is pacman, A is
+# the AUR.
 pkg_install() {
-    # </dev/null: pacman must not read the rest of our list
+    # '</dev/null' keeps pacman from reading the rest of our list.
     case "$1" in
         A) aur_install "$2" ;;
         *) sudo pacman -S --needed --noconfirm "$2" </dev/null ;;
     esac
 }
 
-# in_arch PKG: is PKG in Arch [extra]? pacman can't tell before distro_prepare
+# Check if a package is in Arch [extra]. pacman can't tell before
+# distro_prepare.
 in_arch() {
     curl -s -m 10 "https://archlinux.org/packages/search/json/?name=$1&repo=Extra" |
         grep -q '"pkgname"'
 }
 
-# pkg_exists TAG PKG (--check): 0 found, 1 not found, 2 can't tell yet;
-# prints a note for the message
+# Check that a package exists ('--check'): 0 found, 1 not found, 2 can't
+# tell yet. Prints a note for the message.
 pkg_exists() {
     local helper
     helper=$(setting aur_helper yay)
@@ -93,12 +107,12 @@ pkg_exists() {
     return 1
 }
 
-# pkg_missing NAMES: print the ones not installed (pacman -T knows provides)
+# Print the packages that are not installed ('pacman -T' knows provides).
 pkg_missing() {
     pacman -T "$@" || true
 }
 
-# pkg_leftovers NAMES: print the installed ones (with no names: all of them)
+# Print the packages that are installed (with no names: all of them).
 pkg_leftovers() {
     pacman -Qq "$@" 2>/dev/null | tr '\n' ' ' || true
 }
@@ -113,7 +127,7 @@ tweak_pacman() {
 
     sudo sed -i 's/^#Color$/Color/' /etc/pacman.conf
     sudo sed -Ei 's/^#?(ParallelDownloads).*/\1 = 5/' /etc/pacman.conf
-    # build AUR packages on all cpu cores
+    # Build AUR packages on all CPU cores.
     sudo sed -i "s/^#\?MAKEFLAGS=.*/MAKEFLAGS=\"-j$(nproc)\"/" /etc/makepkg.conf
 
     ok "Color, ParallelDownloads = 5, MAKEFLAGS = -j$(nproc)"
@@ -125,7 +139,7 @@ enable_arch_repos() {
     sudo pacman -S --needed --noconfirm artix-archlinux-support </dev/null ||
         error "cannot install artix-archlinux-support"
 
-    # arch [extra] goes after the artix repos
+    # Arch [extra] goes after the Artix repos.
     if ! grep -q '^\[extra\]' /etc/pacman.conf; then
         printf '\n[extra]\nInclude = /etc/pacman.d/mirrorlist-arch\n' |
             sudo tee -a /etc/pacman.conf >/dev/null
@@ -142,7 +156,7 @@ install_aur_helper() {
     helper=$(setting aur_helper yay)
     step "AUR helper: $helper"
 
-    # the other one, after a switch in shh config
+    # The other helper is left over after a switch in 'shh config'.
     local other
     for other in yay paru; do
         [ "$other" = "$helper" ] || ! pkg_installed "$other-bin" ||
@@ -157,7 +171,8 @@ install_aur_helper() {
     sudo pacman -S --needed --noconfirm git base-devel </dev/null ||
         error "cannot install git and base-devel"
 
-    # -bin: prebuilt, no need to compile Go (yay) or Rust (paru)
+    # The '-bin' package is prebuilt: no need to compile Go (yay) or Rust
+    # (paru).
     local build_dir
     build_dir=$(mktemp -d)
     git clone --depth 1 "https://aur.archlinux.org/$helper-bin.git" "$build_dir" ||
@@ -169,14 +184,14 @@ install_aur_helper() {
     ok "$helper installed"
 }
 
-# distro_prepare: the package manager and repos, before any package
+# Set up the package manager and the repos, before any package.
 distro_prepare() {
     tweak_pacman
     enable_arch_repos
     install_aur_helper
 }
 
-# vmware_clipboard: the clipboard between VMware and the VM ($hardware: install.sh)
+# Share the clipboard between VMware and the VM ('$hardware': install.sh).
 # https://github.com/krisztianfekete/clipway
 vmware_clipboard() {
     step "VMware clipboard support"
@@ -207,9 +222,11 @@ vmware_clipboard() {
 #  ▀▀▄ █▀▀  █▀█  ▀▄ ▄▀  █  █    █▀▀   ▀▀▄
 # ▀▀▀  ▀▀▀▀ ▀  ▀   ▀   ▀▀▀  ▀▀▀ ▀▀▀▀ ▀▀▀
 
-# svc_apply ON OFF: enable -> commit -> live install -> start, they also start
-# at boot; OFF (turned off in shh config) is disabled and stopped if it is on.
-# a one-time "unable to chdir to <svc>-srv" after it is harmless
+# Turn services on and off: svc_apply ON OFF.
+#
+# ON: enable, commit, live install, start. They also start at boot. OFF
+# (turned off in 'shh config') is disabled and stopped if it is on. A
+# one-time "unable to chdir to <svc>-srv" after it is harmless.
 svc_apply() {
     local svc disabled=''
     for svc in $1; do
@@ -217,23 +234,27 @@ svc_apply() {
         info "enabled $svc"
     done
     for svc in $2; do
-        # tty*: a single longrun, no -srv
+        # A tty is a single longrun, with no '-srv'.
         s6 set status 2>/dev/null | grep -Eqx "$svc(-srv)?/active" || continue
         sudo s6 set disable "$svc" || error "cannot disable $svc"
         info "disabled $svc"
         disabled="$disabled $svc"
     done
 
-    # -f: after the clock went back (chrony steps it) commit thought the db up to date
+    # '-f': after the clock went back (chrony steps it) commit took the db
+    # for up to date.
     sudo s6 set commit -f || error "s6 set commit failed"
     sudo s6 live install || error "s6 live install failed"
-    # live install only swaps the db: services new to it stay down until reboot
+    # 'live install' only swaps the db. Services new to it stay down until
+    # the reboot.
     sudo s6 live start $1 || error "cannot start the services"
     [ -z "$disabled" ] || sudo s6 live stop $disabled || warn "cannot stop$disabled"
 }
 
-# svc_check SVC (shh doctor): 0 up, 1 down (prints the parts down),
-# 2 unknown to s6, 3 can't read the state. Every part must be up (iwd = iwd-srv + iwd-log)
+# Check a service for 'shh doctor': 0 up, 1 down (prints the parts down),
+# 2 unknown to s6, 3 can't read the state.
+#
+# Every part must be up (iwd is iwd-srv and iwd-log).
 svc_check() {
     local active parts part down=''
     active=$(s6-rc -a list 2>/dev/null) || return 3
@@ -244,29 +265,36 @@ svc_check() {
     [ -z "$down" ] || { echo "$down"; return 1; }
 }
 
-# svc_ctl start | stop SVC (settings > Services): now, till the reboot.
-# s6-rc stops what needs SVC too (dbus: iwd, bluetoothd) and starts what SVC needs
+# Start or stop a service now, till the reboot (settings > Svc).
+#
+# s6-rc also stops what needs the service (dbus: iwd, bluetoothd) and
+# starts what the service needs.
 svc_ctl() {
     sudo s6 live "$1" "$2" >/dev/null
 }
 
-# svc_list (settings > Svc > All): every service, one per line, "NAME boot" for
-# a one-time boot step (stopping one takes down all that needs it).
-# NAME-srv + NAME-log are one service; s6rc-*: s6-rc's own
+# Print every service, one per line (settings > Svc > All).
+#
+# A one-time boot step is printed as "NAME boot": stopping one takes
+# down all that needs it. NAME-srv and NAME-log are one service, and the
+# 's6rc-*' ones are s6-rc's own.
 svc_list() {
     s6-rc-db list longruns | sed '/^s6rc-/d; /-log$/d; s/-srv$//' | sort
     s6-rc-db list oneshots | sort | sed 's/$/ boot/'
 }
 
-# consoles nobody uses: tty1 runs sway, tty2 stays for repairs (svc_apply turns them off)
+# The consoles nobody uses, turned off by svc_apply. tty1 runs sway, tty2
+# stays for repairs.
 svc_unused='tty3 tty4 tty5 tty6 ttyS'
 
-# the vpn service (scripts/vpn): our own s6 service sing-box
+# The vpn service (scripts/vpn): our own s6 service sing-box.
 vpn_svc=sing-box
 
-# vpn_setup RUN: make the service that runs RUN. Our own services go in
-# /etc/s6/adminsv (storelist in /etc/s6-frontend.conf); the log part is like
-# the one of dhcpcd-s6. Known to s6 after this, but not started at boot
+# Make the service that runs the command '$1'.
+#
+# Our own services go in /etc/s6/adminsv (storelist in
+# /etc/s6-frontend.conf). The log part is like the one of dhcpcd-s6. s6
+# knows the service after this, but does not start it at boot.
 vpn_setup() {
     sudo sh -s -- "$1" <<'EOF' || error "cannot make the s6 service sing-box"
 set -e
@@ -295,17 +323,17 @@ s6 live install
 EOF
 }
 
-# vpn_ctl start | stop | restart
+# Start, stop or restart the vpn.
 vpn_ctl() {
     sudo s6 live "$1" sing-box >/dev/null
 }
 
-# vpn_boot: is it started at boot?
+# Check if the vpn starts at boot.
 vpn_boot() {
     s6 set status 2>/dev/null | grep -qx 'sing-box-srv/active'
 }
 
-# vpn_boot_set yes | no
+# Make the vpn start at boot, or not: vpn_boot_set yes | no.
 vpn_boot_set() {
     local how=disable
     [ "$1" != yes ] || how=enable
@@ -316,7 +344,8 @@ vpn_boot_set() {
 #  ▀▀▄ █▀▀   ▀▀▄  ▀▀▄  █  █  █ █ ▀▄█
 # ▀▀▀  ▀▀▀▀ ▀▀▀  ▀▀▀  ▀▀▀  ▀▀  ▀   ▀
 
-# session_setup: XDG_RUNTIME_DIR at login, sway won't start without it (elogind did it before)
+# Set up the login session: XDG_RUNTIME_DIR at login. sway won't start
+# without it (elogind did it before).
 session_setup() {
     if ! grep -q pam_rundir /etc/pam.d/system-login; then
         echo 'session    optional   pam_rundir.so' |
@@ -325,24 +354,25 @@ session_setup() {
     info "pam_rundir: XDG_RUNTIME_DIR at login"
 }
 
-# user_groups GROUPS: add the user to GROUPS (comma-separated)
+# Add the user to GROUPS (comma-separated).
 user_groups() {
     sudo usermod -aG "$1" "$USER"
 }
 
-# user_shell SHELL: the login shell of the user
+# Set the login shell of the user.
 user_shell() {
     sudo chsh -s "$1" "$USER"
 }
 
-# distro_settings: this distro's lines in shh config -> settings (line, yes_no: shh)
+# Print the lines of this distro in shh config > settings (line, yes_no:
+# shh).
 distro_settings() {
     line aur_helper '' 'aur helper' "$(setting aur_helper yay) >"
     yes_no pacman 'Pacman colors and parallel downloads, AUR builds on all cpu cores'
 }
 
-# distro_act KEY (shh config): the value picked on this distro's line KEY
-# (choose: shh); 1 = not a line of ours
+# Print the value picked on a line of this distro in 'shh config'
+# (choose: shh). Returns 1 when the line is not ours.
 distro_act() {
     case "$1" in
         aur_helper) choose 'aur helper' "yay${tab}yay
@@ -351,7 +381,7 @@ paru${tab}paru" ;;
     esac
 }
 
-# distro_undo: what install.sh changed in the system (link.sh --uninstall)
+# Print what install.sh changed in the system ('link.sh --uninstall').
 distro_undo() {
     echo "  packages   packages/*.csv        sudo pacman -Rs NAME"
     echo "  services   services.txt          sudo s6 set disable NAME, sudo s6 set commit -f, sudo s6 live install"

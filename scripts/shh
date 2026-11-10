@@ -4,20 +4,24 @@
 #  ▄▄▄ █▄▄  █▄▄  
 # ▀▀▄▄ █  █ █  █ 
 # ▀▀▀  ▀  ▀ ▀  ▀ 
-# shh - look after the dotfiles: pick the parts, update, check, change a color, uninstall
-# usage: shh config | update | doctor | color OLD NEW | uninstall [-n] | help
+# Look after the dotfiles: pick the parts, update, check, change a color,
+# uninstall.
+#
+# Usage: shh config | update | doctor | color OLD NEW | uninstall [-n] | help
 
 set -eu
 
-# where link.sh installs lib.sh, link.sh, the lists and packages/, so the repo can go
+# Where link.sh installs lib.sh, link.sh, the lists and packages/, so the
+# repo can go.
 share="$HOME/.local/share/shh"
 list="$HOME/.local/state/shh/installed"
 repo_url="https://github.com/kiran-why/Shh-dotfiles.git"
 tab=$(printf '\t')
 
-# what shh reads: the installed copies. Started from the repo (sh scripts/shh
-# config, install.sh): its files, they can be newer than $share;
-# ~/.local/bin/shh finds no lib/lib.sh in ~/.local
+# Read the installed copies, or the files of the repo when started from
+# it ('sh scripts/shh config', install.sh): they can be newer.
+#
+# ~/.local/bin/shh finds no lib/lib.sh in ~/.local, so it is not the repo.
 repo=$(cd "$(dirname "$0")/.." && pwd -P)
 from_repo=0
 [ ! -f "$repo/lib/lib.sh" ] || from_repo=1
@@ -26,7 +30,8 @@ if [ "$from_repo" = 1 ]; then lib_file="$repo/lib/lib.sh"; else lib_file="$share
 [ -f "$lib_file" ] || { echo "lib.sh not found: $lib_file, run sh lib/link.sh from the repo" >&2; exit 1; }
 . "$lib_file"
 
-# the repo has a folder per distro ($distro: lib.sh), share only this one's
+# The repo has a folder per distro ('$distro': lib.sh), share only this
+# one's.
 if [ "$from_repo" = 1 ]; then
     link_file="$repo/lib/link.sh"
     components_file="$repo/components/${distro}_components.txt"
@@ -42,10 +47,11 @@ else
     distro_file="$share/distro.sh"
     recipes_dir="$share/repo"
 fi
-# scripts/hardware: what the machine is (cards)
+# scripts/hardware tells what the machine is (the cards).
 if [ "$from_repo" = 1 ]; then hardware_script="$repo/scripts/hardware"; else hardware_script="$HOME/.local/bin/hardware"; fi
 
-# pkg_*, svc_check, seat_groups; missing: only doctor and installing fzf need it
+# Load pkg_*, svc_check and seat_groups. When the file is missing, only
+# doctor and the install of fzf need it.
 [ ! -f "$distro_file" ] || . "$distro_file"
 
 usage() {
@@ -62,30 +68,31 @@ usage() {
 # █    █  █ █ ▀▄█ █▀▀   █  █ ▀█ 
 #  ▀▀▀  ▀▀  ▀   ▀ ▀    ▀▀▀  ▀▀▀ 
 
-# choices for the small menus: "value<TAB>shown text"
+# The choices of the small menus, as "value<TAB>shown text".
 modes="copy${tab}Copy   copies, the repo can be deleted
 link${tab}Link   links to the repo, edits land in it"
-# the same look, options and keys in both (config/vim, config/nvim)
+# Both have the same look, options and keys (config/vim, config/nvim).
 editors="vim${tab}Vim      fewer dependencies
 nvim${tab}Neovim"
 file_managers="broot${tab}Broot    folders as a tree
 yazi${tab}Yazi     previews, tabs"
-# xkb options for switching the layout
+# The xkb options for switching the layout.
 toggles="alt_shift_toggle${tab}Alt+Shift
 ctrl_shift_toggle${tab}Ctrl+Shift
 win_space_toggle${tab}Super+Space
 caps_toggle${tab}Caps Lock
 lalt_lshift_toggle${tab}Left Alt+Left Shift"
-# DNS servers, comma-separated (install.sh: /etc/resolvconf.conf); others: by hand in $shh_config
+# DNS servers, comma-separated (install.sh: /etc/resolvconf.conf). Others
+# are set by hand in the config.
 dns_list="dhcp${tab}DHCP         from the network
 1.1.1.1,1.0.0.1${tab}Cloudflare   1.1.1.1
 9.9.9.9,149.112.112.112${tab}Quad9        9.9.9.9
 8.8.8.8,8.8.4.4${tab}Google       8.8.8.8"
 
-# copies or links now: link.sh keeps what is installed
+# Copies or links now: link.sh keeps what is installed.
 if [ -L "$HOME/.local/share/shh/lib.sh" ]; then mode_now=link; else mode_now=copy; fi
 
-# set_value NAME VALUE: change NAME in $shh_config, or add it
+# Change NAME in the config, or add it: set_value NAME VALUE.
 set_value() {
     if grep -q "^$1=" "$shh_config"; then
         sed -i "s|^$1=.*|$1=$2|" "$shh_config"
@@ -94,46 +101,51 @@ set_value() {
     fi
 }
 
-# toggle NAME [DEFAULT]: yes <-> no; DEFAULT when NAME is not set (yes)
+# Switch NAME between yes and no: toggle NAME [DEFAULT].
+#
+# DEFAULT is the value when NAME is not set (yes).
 toggle() {
     local default="${2:-yes}"
     if [ "$(setting "$1" "$default")" = yes ]; then set_value "$1" no; else set_value "$1" yes; fi
     note="$(cap "$1"): $(setting "$1" "$default")"
 }
 
-# lines are "key<TAB>text": only the text shows, the key says what was picked
+# Show a menu. The lines are "key<TAB>text": only the text shows, the key
+# tells what was picked.
 menu() {
     fzf --info=hidden --no-input --delimiter="$tab" --with-nth=2 "$@"
 }
 
-# cap TEXT: TEXT with a capital first letter (menus show it so, the keys stay)
+# Print TEXT with a capital first letter. Menus show it so, the keys stay.
 cap() {
     printf '%s%s' "$(printf '%.1s' "$1" | tr '[:lower:]' '[:upper:]')" "${1#?}"
 }
 
-# line KEY BOX LABEL TEXT: a menu line
+# Print a menu line: line KEY BOX LABEL TEXT.
 line() {
     printf '%s\t%-3s %-14s %s\n' "$1" "$2" "$(cap "$3")" "$4"
 }
 
-# yes_no NAME TEXT [DEFAULT]: a line with [x] or [ ]
+# Print a line with [x] or [ ]: yes_no NAME TEXT [DEFAULT].
 yes_no() {
     if [ "$(setting "$1" "${3:-yes}")" = yes ]; then line "$1" '[x]' "$1" "$2"; else line "$1" '[ ]' "$1" "$2"; fi
 }
 
-# label_of LIST KEY: the shown text of KEY in LIST
+# Print the shown text of KEY in LIST: label_of LIST KEY.
 label_of() {
     printf '%s\n' "$1" | awk -F "$tab" -v k="$2" '$1 == k { print $2 }'
 }
 
-# choose LABEL LIST: pick one, print its key (nothing on Esc)
+# Pick one of LIST and print its key (nothing on Esc): choose LABEL LIST.
 choose() {
     printf '%s\n' "$2" | menu --border-label=" $(cap "$1") " | cut -f1
 }
 
-# center TEXT [WIDTH]: TEXT in the middle of the menu (window width minus the
-# border and the cursor column); with no terminal as it is. WIDTH: for
-# non-ASCII text, dash counts bytes in ${#1}
+# Print TEXT in the middle of the menu: center TEXT [WIDTH].
+#
+# The middle is the window width minus the border and the cursor column.
+# With no terminal the text stays as it is. WIDTH is for non-ASCII text:
+# dash counts bytes in '${#1}'.
 center() {
     local cols pad
     cols=$(stty size 2>/dev/null </dev/tty | cut -d" " -f2)
@@ -142,15 +154,16 @@ center() {
     printf '%*s%s\n' "$pad" '' "$1"
 }
 
-# loop LABEL HEADER LINES ACT [ART]: a menu that stays open. LINES prints the
-# lines, ACT KEY does the change and may set $note. ART goes above HEADER,
-# under an empty line. Esc leaves
+# Show a menu that stays open: loop LABEL HEADER LINES ACT [ART].
+#
+# LINES prints the lines, 'ACT KEY' does the change and may set '$note'.
+# ART goes above HEADER, under an empty line. Esc leaves.
 loop() {
     local lines pick header pos=1
     note=''
     while :; do
         lines=$("$3")
-        # a last line of one space: an empty line above the list
+        # A last line of one space makes an empty line above the list.
         header=$([ -z "${5:-}" ] || printf ' \n%s\n' "$5"; center "$2"; [ -z "$note" ] || center "$note"; echo ' ')
         pick=$(printf '%s\n' "$lines" |
             menu --border-label=" $(cap "$1") " --header="$header" --bind="load:pos($pos)") || return 0
@@ -162,7 +175,7 @@ loop() {
 top_lines() {
     line settings '' settings 'Install options >'
     line features '' features 'Desktop tools >'
-    # an empty line between the two groups; Enter on it does nothing
+    # An empty line between the two groups. Enter on it does nothing.
     printf -- '-\t\n'
     line misc '' misc 'Additional packages >'
     # Only KISS has parts in the recipes group (components.txt).
@@ -174,7 +187,7 @@ top_act() {
         settings)
             loop settings 'Enter: change   Esc: back' settings_lines settings_act ;;
         features|misc)
-            # features: the parts with no group
+            # The features tab holds the parts with no group.
             tab_group=$1
             [ "$1" != features ] || tab_group=''
             loop "$1" 'Enter: on / off   Esc: back' group_lines group_act ;;
@@ -193,7 +206,7 @@ settings_lines() {
     line gpu '' graphics "$(setting gpu auto) >"
     line editor '' editor "$(setting editor vim) >"
     line files '' 'file manager' "$(setting files broot) >"
-    # distro_settings: distro.sh (Artix: aur helper, pacman)
+    # distro_settings comes from distro.sh (Artix: aur helper, pacman).
     ! command -v distro_settings >/dev/null || distro_settings
     yes_no nobeep 'Mute the motherboard beeper'
     yes_no maxhz 'Highest refresh rate of every screen'
@@ -221,7 +234,8 @@ settings_act() {
             toggle "$1" no
             return 0 ;;
         *)
-            # distro_act: distro.sh (Artix: aur helper); not its line: a yes / no
+            # distro_act comes from distro.sh (Artix: aur helper). A line that is
+            # not its own is a yes / no.
             if ! command -v distro_act >/dev/null || ! value=$(distro_act "$1"); then
                 toggle "$1"
                 return 0
@@ -232,12 +246,12 @@ settings_act() {
     note="$(cap "$1"): $value"
 }
 
-# group GROUP: "name|default" of the parts in GROUP (components.txt)
+# Print "name|default" of the parts in a group (components.txt).
 group() {
     read_list "$components_file" | awk -F'|' -v g="$1" '$5 == g { print $1 "|" $6 }'
 }
 
-# the tab of $tab_group: a line per part, Enter turns it on / off
+# Print the tab of '$tab_group': a line per part, Enter turns it on / off.
 group_lines() {
     local name default
     group "$tab_group" | while IFS='|' read -r name default; do
@@ -296,8 +310,10 @@ all_recipe_act() {
     note="${1#recipe_}: $(setting "$1" yes)"
 }
 
-# every xkb layout as "code<TAB>name"; before the install there is no
-# evdev.lst yet (it comes with sway), so a short list
+# Print every xkb layout as "code<TAB>name".
+#
+# Before the install there is no evdev.lst yet (it comes with sway), so
+# a short list is used.
 all_layouts() {
     local lst=/usr/share/X11/xkb/rules/evdev.lst
     if [ -f "$lst" ]; then
@@ -311,7 +327,7 @@ all_layouts() {
         "pt${tab}Portuguese" "tr${tab}Turkish" "cz${tab}Czech"
 }
 
-# the layouts turned on first, in their order, then the rest
+# Print the layouts turned on first, in their order, then the rest.
 layout_lines() {
     all_layouts | awk -F "$tab" -v now="$(setting layouts us,ru)" '
         { name[$1] = $2; order[++n] = $1 }
@@ -323,8 +339,8 @@ layout_lines() {
         }'
 }
 
-# found_cards: the cards scripts/hardware finds, as the choices below
-# (amd,nvidia); "nothing" in a VM or with no card
+# Print the cards scripts/hardware finds, as the choices below
+# (amd,nvidia). "nothing" in a VM or with no card.
 found_cards() {
     local cards
     cards=$(sh "$hardware_script" 2>/dev/null |
@@ -333,7 +349,8 @@ found_cards() {
     printf '%s\n' "${cards:-nothing}"
 }
 
-# graphics: auto, or the drivers picked by hand (gpu=amd,nvidia; gpu_drivers: lib.sh)
+# Print the graphics menu: auto, or the drivers picked by hand
+# (gpu=amd,nvidia; gpu_drivers: lib.sh).
 gpu_lines() {
     local now card label text
     now=$(setting gpu auto)
@@ -353,8 +370,10 @@ gpu_lines() {
     done
 }
 
-# gpu_act KEY: auto; or a card on <-> off, starting from the cards found.
-# The NVIDIA driver and nouveau can't be both; none left = auto
+# Switch to auto, or turn a card on or off, starting from the cards found.
+#
+# The NVIDIA driver and nouveau can't be on both. With none left it is
+# auto again.
 gpu_act() {
     local now
     if [ "$1" = auto ]; then
@@ -380,7 +399,7 @@ gpu_act() {
     note="Graphics: ${now:-auto}"
 }
 
-# layout_act CODE: on -> off (one has to stay), off -> on at the end
+# Turn a layout off (one has to stay) or on, at the end of the list.
 layout_act() {
     local now
     now=$(setting layouts us,ru)
@@ -398,12 +417,12 @@ layout_act() {
     note="Layouts: $now"
 }
 
-# shh config: tabs settings, features, misc (and recipes on KISS);
-# every change goes to $shh_config at once
+# Show 'shh config': the tabs settings, features, misc (and recipes on
+# KISS). Every change goes to the config at once.
 config() {
     [ -f "$components_file" ] || error "not found: $components_file (sh lib/link.sh)"
     command -v fzf >/dev/null || pkg_install "" fzf || error "cannot install fzf"
-    # the look of every menu; .zprofile sets it only after the install
+    # The look of every menu. .zprofile sets it only after the install.
     if [ -z "${FZF_DEFAULT_OPTS_FILE:-}" ] && [ -f "$repo/config/fzf/fzfrc" ]; then
         export FZF_DEFAULT_OPTS_FILE="$repo/config/fzf/fzfrc"
     fi
@@ -416,7 +435,8 @@ config() {
             >"$shh_config"
     fi
 
-    # font Bloody (patorjk.com), like the fastfetch logo, N made narrower; 47 columns wide
+    # The font Bloody (patorjk.com), like the fastfetch logo, with N made
+    # narrower. 47 columns wide.
     art=$(while IFS= read -r l; do center "$l" 47; done <<'EOF'
  ▄████▄   ▒█████   ███▄  █   █████▒ ██▓  ▄████
 ▒██▀ ▀█  ▒██▒  ██▒ ██ ▀█ █ ▓██   ▒ ▓██▒ ██▒ ▀█▒
@@ -441,16 +461,16 @@ EOF
 #  ▀▀  ▀    ▀▀▀  ▀  ▀   ▀   ▀▀▀▀ 
 
 update() {
-    # tmp is not local: the EXIT trap runs after update returns
+    # 'tmp' is not local: the EXIT trap runs after update returns.
     local repo
 
-    # installed with --link: update the repo the links point to
+    # Installed with '--link': update the repo the links point to.
     if [ -L "$share/lib.sh" ]; then
         repo=$(cd "$(dirname "$(readlink -f "$share/lib.sh")")/.." && pwd -P)
         step "updating the repo: $repo"
         git -C "$repo" pull --ff-only ||
             error "git pull failed (local changes? see git -C $repo status)"
-        # exec: git pull may have replaced this very file
+        # 'exec', as 'git pull' may have replaced this very file.
         exec sh "$repo/install.sh"
     fi
 
@@ -467,18 +487,19 @@ update() {
 
 problems=0
 
-# bad TEXT: a warning that counts as a problem
+# Print a warning that counts as a problem.
 bad() {
     warn "$1"
     problems=$((problems + 1))
 }
 
-# svc_check (distro.sh): 0 up, 1 down, 2 unknown, 3 can't read the state
+# Check the services. svc_check (distro.sh) gives 0 up, 1 down,
+# 2 unknown, 3 can't read the state.
 check_services() {
     step "services (services.txt)"
 
     local svc down rc
-    # a part turned off in shh config has its service off too
+    # A part turned off in 'shh config' has its service off too.
     for svc in $(read_list "$services_file" | without "$(off_items "$components_file" 4)"); do
         rc=0
         down=$(svc_check "$svc") || rc=$?
@@ -492,7 +513,8 @@ check_services() {
     done
 }
 
-# every file from the list is there (a broken link counts as missing)
+# Check that every file from the list is there. A broken link counts as
+# missing.
 check_files() {
     step "files"
 
@@ -505,18 +527,18 @@ check_files() {
     [ "$found" = 1 ] || ok "all $n files in place"
 }
 
-# common.csv + system/packages/DRIVER.csv, like install.sh
+# Check the packages: common.csv and the driver lists, like install.sh.
 check_packages() {
     step "packages"
 
     local hw hardware csv names missing pkg
-    hardware=$(sh "$HOME/.local/bin/hardware" 2>/dev/null || true)
+    hardware=$(sh "$hardware_script" 2>/dev/null || true)
     names=$(for hw in common $(gpu_drivers "$hardware"); do
         csv="$packages_dir/$hw.csv"
         [ ! -f "$csv" ] || read_list "$csv" | cut -d, -f2
     done | without "$(off_items "$components_file" 2)")
 
-    # pkg_missing (distro.sh) prints the missing ones
+    # pkg_missing (distro.sh) prints the missing ones.
     missing=$(pkg_missing $names)
 
     for pkg in $missing; do
@@ -525,17 +547,18 @@ check_packages() {
     [ -n "$missing" ] || ok "all $(printf '%s\n' "$names" | wc -l) packages installed"
 }
 
-# what sway needs without elogind
+# Check what sway needs without elogind.
 check_session() {
     step "session"
 
     if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
         ok "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
     else
-        bad "XDG_RUNTIME_DIR is not set (PAM sets it at login: sh install.sh)"
+        bad "XDG_RUNTIME_DIR is not set (the login sets it: sh install.sh)"
     fi
 
-    # id -nG USER: /etc/group; id -nG: this login (needs a relogin to change)
+    # 'id -nG USER' reads /etc/group, 'id -nG' this login (it needs a
+    # relogin to change).
     local user group
     user=$(id -un)
     for group in $(printf %s "$seat_groups" | tr , " "); do
@@ -565,9 +588,12 @@ doctor() {
 # █    █  █ █    █  █ █▀█  
 #  ▀▀▀  ▀▀  ▀▀▀▀  ▀▀  ▀  ▀ 
 
-# the palette lives in each program's own config; config/foot/foot.ini lists it.
-# Edits the installed files: with --link that is the repo, with copies
-# the next update puts the repo colors back (yours stay in .bak files)
+# Change a color in every config: color OLD NEW.
+#
+# The palette lives in each program's own config, config/foot/foot.ini
+# lists it. The installed files are edited. With '--link' that is the
+# repo, with copies the next update puts the colors of the repo back
+# (yours stay in .bak files).
 color() {
     [ "$#" -eq 2 ] || { usage >&2; exit 1; }
     [ -f "$list" ] || error "no $list (sh lib/link.sh)"
@@ -579,20 +605,21 @@ color() {
         printf '%s' "$c" | grep -qx '[0-9a-f]\{6\}' || error "not a color: $c (6 hex digits, like e6e6e6)"
     done
 
-    # configs and scripts; not shh itself (its help has a color in it)
+    # Configs and scripts, but not shh itself: its help has a color in it.
     files=$(while IFS="$tab" read -r k f; do
         case "$f" in "$share"/*|*/shh) continue ;; esac
         printf '%s\n' "$f"
     done <"$list")
 
-    # from now on both are one color: changing it later changes both
-    # one name per line; xargs -0: busybox has no -d
+    # From now on both are one color: changing it later changes both.
+    #
+    # One name per line. 'xargs -0', as busybox has no '-d'.
     ! printf '%s\n' "$files" | tr '\n' '\0' | xargs -r -0 grep -qiI -- "$new" || warn "$new is already used too"
 
     files=$(printf '%s\n' "$files" | tr '\n' '\0' | xargs -r -0 grep -liI -- "$old" || true)
     [ -n "$files" ] || error "$old is not used in the configs"
 
-    # readlink -f: with --link, edit the repo file, keep the link
+    # 'readlink -f': with '--link' edit the repo file and keep the link.
     printf '%s\n' "$files" | while IFS= read -r f; do
         sed -i "s/$old/$new/gI" "$(readlink -f "$f")"
         ok "$f"

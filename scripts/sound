@@ -1,19 +1,20 @@
 #!/bin/sh
-# sound - start PipeWire with sway and stop it when sway exits
-# (no systemd to do it for us)
+# Start PipeWire with sway and stop it when sway exits (there is no
+# systemd to do it for us).
 
 set -eu
 
-# leftovers from a crashed session would block the new pipewire
+# Leftovers from a crashed session would block the new pipewire.
 for prog in pipewire-pulse wireplumber pipewire; do
-    # no -u: busybox pkill lacks it, and a user signals only their own processes anyway
+    # No '-u': busybox pkill lacks it, and a user signals only their own
+    # processes anyway.
     pkill -x "$prog" || true
 done
 
 pipewire &
 pipewire_pid=$!
 
-# wait up to 5 s for the socket; errors land in ~/.local/state/shh/wm.log
+# Wait up to 5 s for the socket. Errors land in ~/.local/state/shh/wm.log.
 socket="$XDG_RUNTIME_DIR/pipewire-0"
 tries=0
 until [ -S "$socket" ]; do
@@ -30,6 +31,6 @@ wireplumber_pid=$!
 pipewire-pulse &
 pulse_pid=$!
 
-# blocks until sway exits
+# Blocks until sway exits.
 swaymsg -t subscribe '["shutdown"]' >/dev/null 2>&1 || true
 kill "$pulse_pid" "$wireplumber_pid" "$pipewire_pid" 2>/dev/null || true

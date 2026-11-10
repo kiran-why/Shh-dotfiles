@@ -4,12 +4,15 @@
 # █ ▀ ▄▄▄  █  ▄    ▄▄▄ █▄▄  
 # █ █ █  █ █▄█    ▀▀▄▄ █  █ 
 # ▀ ▀ ▀  ▀ ▀  ▀ ▀ ▀▀▀  ▀  ▀ 
-# link.sh - put the repo into $HOME: copies, or symlinks with --link
+# Put the repo into $HOME: copies, or symlinks with '--link'.
+#
 #   config/ -> ~/.config   home/ -> ~   scripts/ -> ~/.local/bin
 #   wallpapers/ -> ~/wallpapers
-#   lib/*.sh, this distro's system/DISTRO/ and components/DISTRO_components.txt -> ~/.local/share/shh (flat)
-# file by file; a file that is not ours goes to NAME.bak-DATE, never deleted.
-# ours = listed in ~/.local/state/shh/installed
+#   lib/*.sh, system/DISTRO/ and components/DISTRO_components.txt
+#   -> ~/.local/share/shh (flat)
+#
+# Works file by file. A file that is not ours is renamed to NAME.bak-DATE
+# and never deleted. Ours are the files in ~/.local/state/shh/installed.
 
 set -eu
 
@@ -17,10 +20,12 @@ set -eu
 #  ▀▀▄ █▀▀    █     █    █  █ ▀▄█ █ ▀█  ▀▀▄ 
 # ▀▀▀  ▀▀▀▀   ▀     ▀   ▀▀▀ ▀   ▀  ▀▀▀ ▀▀▀  
 
-# readlink -f: shh runs this file through ~/.local/share/shh/link.sh.
-# lib.sh lies next to it: <repo>/lib or ~/.local/share/shh
+# Find lib.sh, which lies next to this file: <repo>/lib or ~/.local/share/shh.
+#
+# 'readlink -f' is for shh, which runs this file through a link in share.
 script_dir=$(cd "$(dirname "$(readlink -f "$0")")" && pwd -P)
-# the repo root; from ~/.local/share/shh it is ~/.local/share (install_all refuses it)
+# The repo root. From ~/.local/share/shh it is ~/.local/share, which
+# install_all refuses.
 dots_path=$(cd "$script_dir/.." && pwd -P)
 
 config_dir="$HOME/.config"
@@ -35,19 +40,19 @@ uninstall=0
 done_count=0
 skipped=0
 backups=0
-# for the lists at the end: our files updated, yours moved to .bak
+# For the lists at the end: our files updated, yours moved to .bak.
 updated=''
 backed_up=''
 
-# copies by default; once installed with --link, it stays links
+# Copies by default. Once installed with '--link', it stays links.
 mode=copy
 [ ! -L "$share_dir/lib.sh" ] || mode=link
 
 [ -f "$script_dir/lib.sh" ] || { echo "lib.sh not found in $script_dir" >&2; exit 1; }
 . "$script_dir/lib.sh"
 
-# distro_undo for print_system: next to this file in share, system/DISTRO/ in the repo.
-# loaded now: --uninstall removes share/distro.sh
+# Load distro_undo for print_system: next to this file in share, or in
+# system/DISTRO/ in the repo. Loaded now, as '--uninstall' removes it.
 for distro_file in "$script_dir/distro.sh" "$dots_path/system/$distro/distro.sh"; do
     [ ! -f "$distro_file" ] || { . "$distro_file"; break; }
 done
@@ -69,12 +74,13 @@ usage() {
 
 checksum() { sha256sum <"$1" | cut -d' ' -f1; }
 
-# key SRC: what the list keeps for SRC: the link target or the hash of the copy
+# Print what the list keeps for a file: the link target or the hash of
+# the copy.
 key() {
     if [ "$mode" = link ]; then echo "$1"; else checksum "$1"; fi
 }
 
-# same DST KEY: DST is still exactly what we put there
+# Check that DST is still exactly what we put there: same DST KEY.
 same() {
     if [ -L "$1" ]; then
         [ "$(readlink "$1")" = "$2" ]
@@ -83,8 +89,9 @@ same() {
     fi
 }
 
-# ours DST: we put DST there and nobody changed it, so no backup is needed.
-# A link into the repo is ours too: that is how link.sh worked before the list
+# Check that we put DST there and nobody changed it, so no backup is needed.
+#
+# A link into the repo is ours too: link.sh worked that way before the list.
 ours() {
     local old
     if [ -L "$1" ]; then
@@ -95,7 +102,7 @@ ours() {
     [ -n "$old" ] && same "$1" "$old"
 }
 
-# put_aside DST: remove our old DST, rename anything else to DST.bak-DATE
+# Remove our old DST, rename anything else to DST.bak-DATE.
 put_aside() {
     if ours "$1"; then
         [ "$dry_run" = 1 ] || rm "$1" || error "cannot remove $1"
@@ -111,7 +118,7 @@ put_aside() {
 "
 }
 
-# install_file SRC DST: copy or link one file and add it to the list
+# Copy or link one file and add it to the list: install_file SRC DST.
 install_file() {
     local src="$1"
     local dst="$2"
@@ -119,7 +126,7 @@ install_file() {
     k=$(key "$src")
     printf '%s\t%s\n' "$k" "$dst" >>"$new_list"
 
-    # already in place: the right link, or a copy with the same content
+    # Already in place: the right link, or a copy with the same content.
     if { [ "$mode" = link ] && same "$dst" "$k"; } ||
        { [ "$mode" = copy ] && [ ! -L "$dst" ] && same "$dst" "$k"; }; then
         ok "$dst"
@@ -142,28 +149,30 @@ install_file() {
     done_count=$((done_count + 1))
 }
 
-# install_tree SRC DST: a file, or a folder file by file
+# Install a file, or a folder file by file: install_tree SRC DST.
 install_tree() {
     local src="$1"
     local dst="$2"
 
     [ -e "$src" ] || error "source not found: $src"
-    # a part turned off in shh config (components.txt)
+    # Skip a part turned off in 'shh config' (components.txt).
     case "$off_files" in *" ${src#"$dots_path/"} "*) return 0 ;; esac
     if [ ! -d "$src" ]; then
         install_file "$src" "$dst"
         return
     fi
 
-    # a link or a file where our folder goes (old link.sh linked whole folders)
+    # A link or a file is where our folder goes (old link.sh linked folders).
     if [ -L "$dst" ] || { [ -e "$dst" ] && [ ! -d "$dst" ]; }; then
         put_aside "$dst"
     fi
     install_entries "$src" "$dst"
 }
 
-# install_entries FROM TO: everything in FROM (hidden too) into TO; TO itself
-# is never moved, even if it is a link (~/.config can be one)
+# Install everything in a folder (hidden files too) into another.
+#
+# The target folder itself is never moved, even if it is a link
+# (~/.config can be one).
 install_entries() {
     local f
     for f in "$1"/.[!.]* "$1"/*; do
@@ -173,8 +182,9 @@ install_entries() {
     done
 }
 
-# restore DST: put the oldest DST.bak-DATE (from before the dotfiles) back;
-# the date in the name sorts, so the first one is the oldest
+# Put the oldest DST.bak-DATE (from before the dotfiles) back.
+#
+# The date in the name sorts, so the first one is the oldest.
 restore() {
     local bak
     for bak in "$1".bak-*; do
@@ -186,7 +196,7 @@ restore() {
     done
 }
 
-# remove_entry KEY DST: delete DST if it is still ours, then empty folders above it
+# Delete DST if it is still ours, then the empty folders above it.
 remove_entry() {
     local dir="${2%/*}"
 
@@ -212,7 +222,8 @@ remove_entry() {
     done
 }
 
-# system changes stay: a mistake here breaks the login (seat, XDG_RUNTIME_DIR)
+# Print the system changes. They stay: a mistake here breaks the login
+# (seat, XDG_RUNTIME_DIR).
 print_system() {
     echo
     echo "install.sh also changed the system; undo by hand only what you need:"
@@ -228,7 +239,7 @@ uninstall_all() {
     done <"$list"
     if [ "$dry_run" = 0 ]; then
         rm "$list"
-        # state/shh, then state and .local if they are empty now (like remove_entry)
+        # Remove state/shh, then state and .local if they are empty now.
         dir="${list%/*}"
         while [ "$dir" != "$HOME" ] && rmdir "$dir" 2>/dev/null; do
             dir="${dir%/*}"
@@ -240,14 +251,17 @@ uninstall_all() {
     print_system
 }
 
-# install_input: ~/.config/sway/input from shh config (layouts, switch layout).
-# Made here, not in the repo, so always a copy, even with --link
+# Make ~/.config/sway/input from 'shh config' (layouts, switch layout).
+#
+# The file is made here, not kept in the repo, so it is always a copy,
+# even with '--link'.
 install_input() {
     local layouts toggle old_mode="$mode"
     layouts=$(setting layouts us,ru)
     toggle=$(setting layout_toggle alt_shift_toggle)
 
-    # the file can be edited by hand; a bad value breaks the keyboard in sway
+    # The config can be edited by hand, and a bad value breaks the keyboard
+    # in sway.
     if ! printf '%s\n' "$layouts" | grep -qx '[a-z]\{2,\}\(,[a-z]\{2,\}\)*'; then
         warn "layouts=$layouts in $shh_config is not like us,ru, using us,ru"
         layouts=us,ru
@@ -280,13 +294,13 @@ install_input() {
 install_all() {
     [ -d "$dots_path/config" ] || error "run lib/link.sh from the repo, not from $script_dir"
 
-    # this distro's lists ($distro: lib.sh)
+    # The lists of this distro ('$distro' is set in lib.sh).
     local system_dir="$dots_path/system/$distro"
     local components="$dots_path/components/${distro}_components.txt"
     [ -f "$system_dir/distro.sh" ] && [ -f "$components" ] ||
         error "not supported: ${distro:-unknown distro} (no system/${distro:-DISTRO}/distro.sh or its components file)"
 
-    # files of the parts turned off, " a b ": install_tree skips them
+    # The files of the parts turned off, as " a b ". install_tree skips them.
     off_files=" $(off_items "$components" 3 | tr '\n' ' ') ${distro_skip:-} "
 
     local f k dst first_wall=0
@@ -294,23 +308,24 @@ install_all() {
     install_input
     install_entries "$dots_path/home"    "$HOME"
     install_entries "$dots_path/scripts" "$bin_dir"
-    # scripts/wallpaper takes the newest picture: on the first install make it
-    # wallpapers/DISTRO.jpg; later runs keep what you picked with touch
+    # scripts/wallpaper shows the newest picture. On the first install that
+    # must be wallpapers/DISTRO.jpg, later runs keep what you picked.
     [ -e "$HOME/wallpapers/$distro.jpg" ] || first_wall=1
     install_tree "$dots_path/wallpapers" "$HOME/wallpapers"
     [ "$first_wall" = 0 ] || [ "$dry_run" = 1 ] || [ ! -e "$HOME/wallpapers/$distro.jpg" ] ||
         touch "$HOME/wallpapers/$distro.jpg"
-    # flat in share: shh and installed systems expect these paths
+    # Flat in share: shh and installed systems expect these paths.
     install_tree "$script_dir/lib.sh"              "$share_dir/lib.sh"
     install_tree "$script_dir/link.sh"             "$share_dir/link.sh"
     install_tree "$system_dir/services.txt"        "$share_dir/services.txt"
     install_tree "$components"                     "$share_dir/components.txt"
     install_tree "$system_dir/packages"            "$share_dir/packages"
     install_tree "$system_dir/distro.sh"           "$share_dir/distro.sh"
-    # Our package recipes (KISS only): shh config lists them and kiss_repos copies them.
+    # Our package recipes (KISS only): 'shh config' lists them and kiss_repos
+    # copies them.
     [ ! -d "$system_dir/repo" ] || install_tree "$system_dir/repo" "$share_dir/repo"
 
-    # files that left the repo since the last run
+    # Remove the files that left the repo since the last run.
     if [ -f "$list" ]; then
         while IFS="$tab" read -r k dst; do
             awk -F "$tab" -v d="$dst" '$2 == d { found = 1 } END { exit !found }' "$new_list" ||
@@ -326,7 +341,7 @@ install_all() {
     echo
     echo "done ($mode): $done_count put in place, $skipped already ok, $backups backed up"
 
-    # easy to miss in the long list above
+    # Easy to miss in the long list above.
     if [ -n "$updated" ]; then
         echo
         info "updated from the repo:"
@@ -356,7 +371,7 @@ done
 
 [ "$(id -u)" -ne 0 ] || error "do not run as root, run as your user"
 
-# install.sh shows the logo itself
+# install.sh shows the logo itself.
 [ -n "${DOTS_NO_LOGO:-}" ] || logo
 
 [ "$dry_run" = 0 ] || info "dry run: nothing will be changed"

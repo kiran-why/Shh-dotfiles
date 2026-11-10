@@ -1,6 +1,6 @@
-# ~/.config/sway/features/clipboard - clipboard history (shh config: clipboard)
+# The clipboard history (shh config: clipboard).
 
-# keeps every copy for scripts/clipboard
+# Keeps every copy for scripts/clipboard.
 exec wl-paste --watch cliphist store
 
 # clipboard history

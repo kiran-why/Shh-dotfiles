@@ -1,11 +1,14 @@
 #!/bin/sh
-# lock - lock the screen and turn the screens off ($mod+Escape); again while
-# locked: the screens on. The password can be typed with them off too.
-# No swayidle (on Artix it needs elogind): this script turns them on after the unlock
+# Lock the screen and turn the screens off ($mod+Escape). Again while
+# locked: the screens go on. The password can be typed with them off too.
+#
+# There is no swayidle (on Artix it needs elogind), so this script turns
+# the screens on after the unlock.
 
 set -eu
 
-# locked already (the key is --locked): only the screens on, no second swaylock
+# Locked already (the key is '--locked'): only turn the screens on, no
+# second swaylock.
 if pgrep -x swaylock >/dev/null; then
     swaymsg 'output * power on' >/dev/null
     exit 0
@@ -13,6 +16,6 @@ fi
 
 swaylock &
 swaymsg 'output * power off' >/dev/null
-# wait returns when swaylock exits, that is after the unlock
+# 'wait' returns when swaylock exits, that is after the unlock.
 wait $! || true
 swaymsg 'output * power on' >/dev/null

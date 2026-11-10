@@ -2,7 +2,8 @@
 
 cd scripts
 
-# the help texts need xmlto, not on KISS: the scripts are the same without them
+# The help texts need xmlto, which KISS lacks. The scripts are the same
+# without them.
 for s in xdg-desktop-menu xdg-desktop-icon xdg-mime xdg-icon-resource \
          xdg-open xdg-email xdg-screensaver xdg-settings; do
     :> "$s.txt"

@@ -1,6 +1,6 @@
 #!/bin/sh
-# screenshot - save a region to ~/media/screenshots and copy it (Print)
-# screenshot full: all screens, no selecting (Shift+Print)
+# Save a region to ~/media/screenshots and copy it (Print).
+# 'screenshot full' takes all screens, with no selecting (Shift+Print).
 
 set -eu
 
@@ -11,8 +11,8 @@ mkdir -p "$dir"
 if [ "${1:-}" = full ]; then
     grim "$file"
 else
-    # -b dim, -c border color, -w border width; without </dev/null slurp
-    # waits for boxes on stdin
+    # '-b' is the dim, '-c' the border color, '-w' the border width.
+    # Without '</dev/null' slurp waits for boxes on stdin.
     geometry=$(slurp -b '#00000080' -c '#e6e6e6ff' -w 1 </dev/null) || exit 0
     grim -g "$geometry" "$file"
 fi

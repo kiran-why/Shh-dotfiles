@@ -1,8 +1,9 @@
 #!/bin/sh -e
 
-# latin, greek, cyrillic: the text fonts for pages and programs
+# Latin, greek and cyrillic: the text fonts for pages and programs.
 for zip in ./*.zip; do
-    # -o: both zips have AUTHORS.txt...; without it unzip asks and there is no stdin
+    # '-o': both zips have an AUTHORS.txt. Without it unzip asks, and there
+    # is no stdin.
     unzip -o -q "$zip"
 done
 

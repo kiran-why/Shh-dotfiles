@@ -1,25 +1,27 @@
 #!/bin/sh
-# ~/.config/swaybar/status.sh - the right side of swaybar:
-# recording dot, clock, battery, the menu button (scripts/menu)
+# The right side of swaybar: the recording dot, the clock, the battery
+# and the menu button (scripts/menu).
 
-# no "set -e": one failed check must not kill the bar
+# There is no 'set -e': one failed check must not kill the bar.
 set -u
 
-# same as sway/colors
+# The same colors as in sway/colors.
 white='#e6e6e6'
 red='#d7263d'
 
-# block NAME TEXT COLOR; 20 = gap between blocks in px
+# Print a block: block NAME TEXT COLOR. 20 is the gap between blocks in px.
 block() {
     printf '{"name":"%s","full_text":"%s","color":"%s","markup":"pango","separator":false,"separator_block_width":20}' \
         "$1" "$2" "$3"
 }
 
-# scripts/record writes the pid of wf-recorder here
+# scripts/record writes the pid of wf-recorder here.
 rec_file="${XDG_RUNTIME_DIR:-/tmp}/shh-record.pid"
 
-# while scripts/record runs; /proc: the file stays if record was killed,
-# comm: by then the pid may belong to another program
+# Print the recording dot while scripts/record runs.
+#
+# /proc is checked, as the file stays if record was killed. The name is
+# checked too: by then the pid may belong to another program.
 rec() {
     local pid= comm=
     read -r pid 2>/dev/null <"$rec_file" || return 0
@@ -30,12 +32,12 @@ rec() {
     printf ','
 }
 
-# a click on the clock shows the date instead of the time, the next one the
-# time again; a file, because clock() runs in a subshell and the clicks in
-# the main process
+# A click on the clock shows the date instead of the time, the next one
+# the time again. The state is a file, because clock() runs in a subshell
+# and the clicks in the main process.
 date_flag="${XDG_RUNTIME_DIR:-/tmp}/shh-bar-date"
 
-# clock TIME DATE
+# Print the clock: clock TIME DATE.
 clock() {
     if [ -e "$date_flag" ]; then
         block clock "$2" "$white"
@@ -44,16 +46,17 @@ clock() {
     fi
 }
 
-# the low battery notification shows once per discharge
+# The low battery notification shows once per discharge.
 low_flag="${XDG_RUNTIME_DIR:-/tmp}/shh-battery-low"
 
-# laptops only; red and a notification at 10% or less
+# Print the battery (laptops only). Red and a notification at 10% or
+# less.
 bat() {
     local b cap status icon color low
     for b in /sys/class/power_supply/BAT*; do
         [ -r "$b/capacity" ] || continue
         read -r cap <"$b/capacity"
-        # some batteries report a bit over 100
+        # Some batteries report a bit over 100.
         [ "$cap" -le 100 ] || cap=100
         status=
         read -r status 2>/dev/null <"$b/status" || :
@@ -66,7 +69,7 @@ bat() {
             color=$red
             low=1
         else
-            # empty to full, one per 10%
+            # From empty to full, one icon per 10%.
             set -- 󰂎 󰁺 󰁻 󰁼 󰁽 󰁾 󰁿 󰂀 󰂁 󰂂 󰁹
             shift $((($cap + 5) / 10))
             icon=$1
@@ -102,8 +105,8 @@ case "$id" in
 esac
 menu_button=$(block menu "$logo" "$white")
 
-# scripts wake the loop with USR1 to redraw now (record);
-# the pid file is written after the trap, so an early signal can't kill it
+# Scripts wake the loop with USR1 to redraw now (record). The pid file is
+# written after the trap, so an early signal can't kill the loop.
 bar_pid="${XDG_RUNTIME_DIR:-/tmp}/shh-bar.pid"
 
 status_loop() {
@@ -111,12 +114,13 @@ status_loop() {
     sh -c 'echo "$PPID"' >"$bar_pid"
     while :; do
         woke=
-        # date format: man date; one call, so the clock and the sleep agree
+        # One call of date, so the clock and the sleep agree (format: man date).
         set -- $(date '+%s %H:%M %d.%m')
         printf '[%s%s%s,%s],\n' "$(rec)" "$(clock "$2" "$3")" "$(bat)" "$menu_button"
-        # once a minute, right when it changes; the rest comes as USR1;
-        # wait, unlike sleep, returns at once on a signal;
-        # woke: a USR1 during the redraw would be lost for a whole minute
+        # Redraw once a minute, right when it changes. The rest comes as
+        # USR1. 'wait', unlike 'sleep', returns at once on a signal. 'woke'
+        # catches a USR1 during the redraw, which would else be lost for a
+        # whole minute.
         sleep $((60 - $1 % 60)) &
         [ -n "$woke" ] || wait $! || :
         kill $! 2>/dev/null
@@ -127,12 +131,12 @@ printf '{"version":1,"click_events":true}\n[\n'
 
 status_loop &
 loop_pid=$!
-# on a reload the new bar may have written its pid already
+# On a reload the new bar may have written its pid already.
 trap 'kill "$loop_pid" 2>/dev/null
       [ "$(cat "$bar_pid" 2>/dev/null)" != "$loop_pid" ] || rm -f "$bar_pid"' EXIT
 trap 'exit' INT TERM
 
-# clicks: button 1 is the left one
+# Handle the clicks. Button 1 is the left one.
 while read -r click; do
     what=$(printf '%s\n' "${click#,}" | jq -r '"\(.name) \(.button)"' 2>/dev/null) || continue
     case "$what" in

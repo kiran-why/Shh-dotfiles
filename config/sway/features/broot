@@ -1,4 +1,4 @@
-# ~/.config/sway/features/broot - the file manager (shh config: file manager)
+# The file manager broot (shh config: file manager).
 
 # file manager
 bindsym --to-code --no-repeat $mod+f exec footclient --app-id=files broot

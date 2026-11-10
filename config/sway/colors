@@ -1,4 +1,4 @@
-# ~/.config/sway/colors - the palette, in one place
+# The palette, in one place.
 
 set $black #000000
 set $white #e6e6e6

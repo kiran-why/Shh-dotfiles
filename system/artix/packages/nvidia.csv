@@ -1,5 +1,5 @@
-# system/artix/packages/nvidia.csv - NVIDIA GTX 16xx, RTX and newer (scripts/hardware prints "nvidia")
-# same format as common.csv. Older cards: nvidia-580xx.csv
+# NVIDIA GTX 16xx, RTX and newer (scripts/hardware prints "nvidia"). Older
+# cards are in nvidia-580xx.csv. The same format as common.csv.
 
 ,nvidia-open,NVIDIA kernel driver (open modules, built for the stock linux kernel)
 ,nvidia-utils,NVIDIA OpenGL and Vulkan libraries and tools

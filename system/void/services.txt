@@ -1,13 +1,13 @@
-# system/void/services.txt - runit services started at boot (/etc/sv/NAME, from their packages in common.csv)
-# no NVIDIA lists: on musl there is no NVIDIA driver, nouveau (mesa) runs the card
+# The runit services started at boot (/etc/sv/NAME, from their packages in
+# common.csv).
 
 seatd
-# iwd and bluetoothd need dbus; runit restarts them until it is up
+# iwd and bluetoothd need dbus. runit restarts them until dbus is up.
 dbus
 iwd
-# wired network (wifi is iwd's); dhcpcd-eth0 stays off
+# The wired network (wifi is iwd's). dhcpcd-eth0 stays off.
 dhcpcd
-# network time
+# Network time.
 chronyd
-# bluetooth, needs dbus
+# Bluetooth, needs dbus.
 bluetoothd

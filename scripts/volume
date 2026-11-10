@@ -1,13 +1,15 @@
 #!/bin/sh
-# volume - sound menu: volume up / down, mute, input and output devices
-# opened from the bar menu (scripts/menu).
-# volume up | down | mute: no menu, for the volume keys, shows the level
+# The sound menu: volume up / down, mute, input and output devices.
+# Opened from the bar menu (scripts/menu).
+#
+# 'volume up | down | mute' shows no menu: it is for the volume keys and
+# shows the level.
 
 set -eu
 
 out=@DEFAULT_AUDIO_SINK@
 mic=@DEFAULT_AUDIO_SOURCE@
-# the step and the max (1.0 = 100%)
+# The step and the max (1.0 is 100%).
 step=5%
 max=1.0
 
@@ -15,20 +17,21 @@ menu() {
     fzf --info=hidden --no-input --border=none "$@"
 }
 
-# the last header line: one space, so an empty line sits above the list
+# The last header line is one space, so an empty line sits above the list.
 gap=$(printf '\n ')
 
-# the banner of the main menu: scripts/menu draws it and $MENU_TEXT
-# under it in the middle, again on every resize
+# The banner of the main menu. scripts/menu draws it and '$MENU_TEXT'
+# under it in the middle, again on every resize.
 banner="result,resize:transform-header:sh '$HOME/.local/bin/menu' --header volume"
 export MENU_TEXT=
 
-# wpctl prints harmless "RTKit error" lines that would mess up the menu
+# Hide the harmless "RTKit error" lines of wpctl, which would mess up
+# the menu.
 wp() {
     wpctl "$@" 2>/dev/null
 }
 
-# line PERCENT: ━━━━━─────
+# Print a level as a bar: line PERCENT.
 line() {
     local full=$((($1 + 5) / 10)) i=0 text=''
     [ "$full" -gt 10 ] && full=10
@@ -39,17 +42,17 @@ line() {
     printf '%s' "$text"
 }
 
-# name NODE: the device name people see
+# Print the device name people see.
 name() {
     wp inspect "$1" | sed -n 's/.*node\.description = "\(.*\)"/\1/p' | head -n 1
 }
 
-# default_id NODE: the id behind @DEFAULT_AUDIO_SINK@ / SOURCE@ ("id 45, type ...")
+# Print the id behind @DEFAULT_AUDIO_SINK@ or SOURCE@ ("id 45, type ...").
 default_id() {
     wp inspect "$1" | sed -n '1s/^id \([0-9]*\),.*/\1/p'
 }
 
-# the level, then the output, then the input with its mute icon
+# Print the level, then the output, then the input with its mute icon.
 now() {
     local vol pct icon mic_icon
     vol=$(wp get-volume "$out") || { echo 'no sound: pipewire is not running'; return; }
@@ -60,7 +63,7 @@ now() {
         "$(name "$out")" "$mic_icon" "$(name "$mic" || true)"
 }
 
-# outputs first, then inputs; the current ones are marked
+# Pick a device: outputs first, then inputs, the current ones marked.
 pick_device() {
     local id
     id=$(pw-dump 2>/dev/null | jq -r --arg o "$(default_id "$out")" --arg i "$(default_id "$mic")" '
@@ -78,12 +81,12 @@ pick_device() {
     fi
 }
 
-# action NODE: "Mute" or "Unmute", what a pick will do
+# Print what a pick will do to a node: "Mute" or "Unmute".
 action() {
     case "$(wp get-volume "$1" || true)" in *MUTED*) echo Unmute ;; *) echo Mute ;; esac
 }
 
-# mute or unmute the sound or the mic, Esc goes back
+# Mute or unmute the sound or the mic. Esc goes back.
 mute_menu() {
     local pick
     pick=$(printf '%s\n' "$(action "$out") volume" "$(action "$mic") mic" |
@@ -94,7 +97,8 @@ mute_menu() {
     esac
 }
 
-# the same tag makes mako replace the last one instead of stacking them
+# Show the level. The same tag makes mako replace the last notification
+# instead of stacking them.
 notify_level() {
     local text
     text=$(now)
@@ -108,7 +112,7 @@ case "${1:-}" in
     mute) wp set-mute "$out" toggle; notify_level; exit 0 ;;
 esac
 
-# pos keeps the cursor on the last picked line
+# 'pos' keeps the cursor on the last picked line.
 pos=1
 while :; do
     MENU_TEXT="$(now)$gap"

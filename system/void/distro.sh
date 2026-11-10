@@ -3,20 +3,25 @@
 #  ▄▄█ ▀  ▄▄▄ ▄█▄  ▄ ▄▄  ▄▄     ▄▄▄ █▄▄
 # █  █ █ ▀▀▄▄  █   █▀   █  █   ▀▀▄▄ █  █
 #  ▀▀▀ ▀ ▀▀▀    ▀▀ ▀     ▀▀  ▀ ▀▀▀  ▀  ▀
-# distro.sh - what is Void (musl, runit) only: xbps, runit services, the login
-# loaded after lib.sh by install.sh, link.sh and shh; every distro has the same functions
+# What only Void has (musl, runit): xbps, runit services, the login.
+#
+# Loaded after lib.sh by install.sh, link.sh and shh. Every distro.sh has
+# the same functions.
 
-# _seatd: screen and input for sway (the group of Void's seatd);
-# audio, video: the sound card and the GPU (no elogind)
+# The groups of the user. _seatd: screen and input for sway (the group of
+# Void's seatd). audio, video: the sound card and the GPU (no elogind).
 seat_groups=_seatd,audio,video
-# https, not ping: ICMP is often blocked; a few sites, one can be down or blocked
+# The sites for the internet check. https, not ping: ICMP is often
+# blocked. A few of them, as one can be down or blocked.
 online_sites='https://voidlinux.org https://github.com'
 pkg_remove='sudo xbps-remove -R'
-# the root commands of power_run, for the sudoers rule (install.sh); "" = no arguments
+# The root commands of power_run, for the sudoers rule (install.sh).
+# "" means no arguments.
 power_cmds='/usr/bin/poweroff "", /usr/bin/reboot "", /usr/bin/zzz ""'
 
-# power_run poweroff | reboot | suspend (scripts/power); -n: fail, don't ask for a password.
-# zzz prints "Zzzz..."
+# Power off, reboot or suspend (scripts/power).
+#
+# 'sudo -n' fails instead of asking for a password. zzz prints "Zzzz...".
 power_run() {
     case "$1" in
         suspend) sudo -n /usr/bin/zzz >/dev/null ;;
@@ -24,11 +29,12 @@ power_run() {
     esac
 }
 
-# distro_check: stop when this system can't take the setup
+# Stop when this system can't take the setup.
 distro_check() {
     [ -d /var/service ] && command -v sv >/dev/null || error "runit is not the init system here"
 
-    # NVIDIA's driver is built for glibc only; on musl nouveau (mesa) runs the card
+    # NVIDIA's driver is built for glibc only. On musl nouveau (mesa) runs
+    # the card.
     case "$(xbps-uhelper arch 2>/dev/null)" in
         *-musl) case "$hardware" in
                     *nvidia*) warn "NVIDIA: no NVIDIA driver on musl, nouveau (mesa) runs the card" ;;
@@ -36,12 +42,13 @@ distro_check() {
         *)      warn "this setup is tested on Void musl only" ;;
     esac
 
-    # both drive the wifi card; this setup uses iwd
+    # Both drive the wifi card, and this setup uses iwd.
     if [ -e /var/service/wpa_supplicant ]; then
         warn "wpa_supplicant is on, it fights with iwd over wifi"
         info "turn it off: sudo rm /var/service/wpa_supplicant"
     fi
-    # its handler.sh (Void's acpid) suspends on a closed lid as root, unlocked
+    # The handler.sh of Void's acpid suspends on a closed lid as root, with
+    # no screen lock.
     if [ -e /var/service/acpid ]; then
         warn "acpid is on, it suspends on a closed lid without the screen lock"
         info "turn it off: sudo rm /var/service/acpid"
@@ -60,21 +67,22 @@ pkg_installed() {
     xbps-query "$1" >/dev/null 2>&1
 }
 
-# pkg_install TAG PKG: no tags on Void, every package comes from xbps.
-# </dev/null: xbps must not read the rest of our list.
-# An old xbps refuses to install anything until it updates itself:
-# that happens on a fresh system, when shh config installs fzf
+# Install a package: pkg_install TAG PKG (no tags on Void).
+#
+# '</dev/null' keeps xbps from reading the rest of our list. An old xbps
+# refuses to install anything until it updates itself. That happens on a
+# fresh system, when 'shh config' installs fzf.
 pkg_install() {
     sudo xbps-install -y "$2" </dev/null && return 0
     sudo xbps-install -Suy xbps </dev/null && sudo xbps-install -y "$2" </dev/null
 }
 
-# pkg_exists TAG PKG (--check): 0 found, 1 not found; prints nothing
+# Check that a package exists ('--check'): 0 found, 1 not found.
 pkg_exists() {
     xbps-query -R "$2" >/dev/null 2>&1
 }
 
-# pkg_missing NAMES: print the ones not installed
+# Print the packages that are not installed.
 pkg_missing() {
     local pkg
     for pkg in "$@"; do
@@ -82,7 +90,7 @@ pkg_missing() {
     done
 }
 
-# pkg_leftovers NAMES: print the installed ones
+# Print the packages that are installed.
 pkg_leftovers() {
     local pkg
     for pkg in "$@"; do
@@ -90,8 +98,10 @@ pkg_leftovers() {
     done
 }
 
-# distro_prepare: the package manager and repos, before any package.
-# xbps first: while it is old, xbps-install -u refuses to update anything else
+# Update the package manager and the system, before any package.
+#
+# xbps goes first: while it is old, 'xbps-install -u' refuses to update
+# anything else.
 distro_prepare() {
     step "system update"
     sudo xbps-install -Suy xbps </dev/null || error "cannot update xbps (no internet?)"
@@ -99,7 +109,8 @@ distro_prepare() {
     ok "system updated"
 }
 
-# vmware_clipboard: the clipway fork of open-vm-tools is not packaged for Void
+# Skip the VMware clipboard: the clipway fork of open-vm-tools is not
+# packaged for Void.
 vmware_clipboard() {
     [ "$hardware" != vmware ] || info "VMware clipboard: not packaged for Void, skipped"
 }
@@ -108,9 +119,11 @@ vmware_clipboard() {
 #  ▀▀▄ █▀▀  █▀█  ▀▄ ▄▀  █  █    █▀▀   ▀▀▄
 # ▀▀▀  ▀▀▀▀ ▀  ▀   ▀   ▀▀▀  ▀▀▀ ▀▀▀▀ ▀▀▀
 
-# svc_apply ON OFF: a runit service is on while /var/service/NAME links to
-# /etc/sv/NAME: runsvdir starts it within 5 s and at every boot.
-# OFF (turned off in shh config): the link goes, runsvdir stops the service
+# Turn services on and off: svc_apply ON OFF.
+#
+# A runit service is on while /var/service/NAME links to /etc/sv/NAME:
+# runsvdir starts it within 5 s and at every boot. Without the link
+# runsvdir stops it.
 svc_apply() {
     local svc
     for svc in $1; do
@@ -127,10 +140,12 @@ svc_apply() {
     done
 }
 
-# svc_check SVC (shh doctor): 0 up, 1 down (prints the state), 2 not on.
-# sv status works for root only (runsv makes supervise/ 0700), so a user
-# looks at the processes: runsv SVC runs the service as its child, and its
-# log/ too (Void gives every service one: vlogger), so the logger doesn't count
+# Check a service for 'shh doctor': 0 up, 1 down (prints the state), 2 not on.
+#
+# 'sv status' works for root only (runsv makes supervise/ 0700). A user
+# looks at the processes instead: 'runsv SVC' runs the service as its
+# child. Its log/ is a child too (Void gives every service one), so the
+# logger does not count.
 svc_check() {
     local state pid
     [ -e "/var/service/$1" ] || return 2
@@ -141,35 +156,43 @@ svc_check() {
         esac
     fi
     pid=$(pgrep -x -f "runsv $1") || { echo " runsv not running"; return 1; }
-    # pgrep -l: "PID NAME" lines; grep -v: any line that is not a logger
+    # 'pgrep -l' prints "PID NAME" lines, 'grep -v' finds one that is not a
+    # logger.
     pgrep -l -P "$pid" | grep -qvE ' (vlogger|svlogd)$' || { echo " down"; return 1; }
 }
 
-# svc_ctl start | stop SVC (settings > Services): now, till the reboot
-# (sv up / down; runit has no dependencies: with dbus off iwd fails and restarts)
+# Start or stop a service now, till the reboot (settings > Svc).
+#
+# runit has no dependencies: with dbus off iwd fails and restarts.
 svc_ctl() {
     local cmd=up
     [ "$1" = start ] || cmd=down
     sudo sv "$cmd" "/var/service/$2" >/dev/null
 }
 
-# svc_list (settings > Svc > All): every service, one per line; only the ones
-# linked in /var/service are enabled (svc_check 2 for the rest)
+# Print every service, one per line (settings > Svc > All).
+#
+# Only the ones linked in /var/service are on (svc_check gives 2 for the
+# rest).
 svc_list() {
     { ls /etc/sv; ls /var/service; } | sort -u
 }
 
-# consoles nobody uses: tty1 runs sway, tty2 stays for repairs (svc_apply turns them off)
+# The consoles nobody uses, turned off by svc_apply. tty1 runs sway, tty2
+# stays for repairs.
 svc_unused='agetty-tty3 agetty-tty4 agetty-tty5 agetty-tty6'
 
-# the vpn service (scripts/vpn): our own, as root. The package's sing-box
-# service runs as _sing_box and can't read the root-only config
+# The vpn service (scripts/vpn): our own, run as root. The sing-box
+# service of the package runs as _sing_box and can't read the root-only
+# config.
 vpn_svc=shh-vpn
 
-# vpn_setup RUN: make the service that runs RUN. Known to runit after this,
-# but not started at boot: a "down" file in it (vpn > start at boot removes it).
-# log/ like Void's own services (vlogger to syslog): without it
-# sing-box writes over the login prompt on the console
+# Make the service that runs the command '$1'.
+#
+# runit knows it after this, but a "down" file keeps it from starting at
+# boot (vpn > Start at boot removes the file). The log/ is like the one
+# of Void's own services (vlogger to syslog). Without it sing-box writes
+# over the login prompt.
 vpn_setup() {
     sudo sh -s -- "$1" <<'EOF' || error "cannot make the runit service shh-vpn"
 set -e
@@ -184,19 +207,19 @@ fi
 EOF
 }
 
-# vpn_ctl start | stop | restart (sv: up, down, restart)
+# Start, stop or restart the vpn ('sv up', 'down', 'restart').
 vpn_ctl() {
     local cmd="$1"
     case "$1" in start) cmd=up ;; stop) cmd=down ;; esac
     sudo sv "$cmd" /var/service/shh-vpn >/dev/null
 }
 
-# vpn_boot: is it started at boot?
+# Check if the vpn starts at boot.
 vpn_boot() {
     [ -e /var/service/shh-vpn ] && [ ! -e /etc/sv/shh-vpn/down ]
 }
 
-# vpn_boot_set yes | no
+# Make the vpn start at boot, or not: vpn_boot_set yes | no.
 vpn_boot_set() {
     if [ "$1" = yes ]; then sudo rm -f /etc/sv/shh-vpn/down; else sudo touch /etc/sv/shh-vpn/down; fi
 }
@@ -205,16 +228,18 @@ vpn_boot_set() {
 #  ▀▀▄ █▀▀   ▀▀▄  ▀▀▄  █  █  █ █ ▀▄█
 # ▀▀▀  ▀▀▀▀ ▀▀▀  ▀▀▀  ▀▀▀  ▀▀  ▀   ▀
 
-# session_setup: XDG_RUNTIME_DIR at login (sway won't start without it) and ALSA through PipeWire
+# Set up the login session: XDG_RUNTIME_DIR at login (sway won't start
+# without it) and ALSA through PipeWire.
 session_setup() {
-    # Void's system-login already has the line; dumb_runtime_dir brings the module
+    # Void's system-login already has the line, and dumb_runtime_dir brings
+    # the module.
     if grep -q pam_dumb_runtime_dir /etc/pam.d/system-login; then
         info "dumb_runtime_dir: XDG_RUNTIME_DIR at login"
     else
         warn "no pam_dumb_runtime_dir in /etc/pam.d/system-login, sway needs XDG_RUNTIME_DIR"
     fi
 
-    # ALSA programs play through pipewire (Void handbook: PipeWire)
+    # ALSA programs play through pipewire (Void handbook: PipeWire).
     local conf
     sudo mkdir -p /etc/alsa/conf.d
     for conf in 50-pipewire.conf 99-pipewire-default.conf; do
@@ -224,17 +249,17 @@ session_setup() {
     info "alsa: through pipewire"
 }
 
-# user_groups GROUPS: add the user to GROUPS (comma-separated)
+# Add the user to GROUPS (comma-separated).
 user_groups() {
     sudo usermod -aG "$1" "$USER"
 }
 
-# user_shell SHELL: the login shell of the user
+# Set the login shell of the user.
 user_shell() {
     sudo chsh -s "$1" "$USER"
 }
 
-# distro_undo: what install.sh changed in the system (link.sh --uninstall)
+# Print what install.sh changed in the system ('link.sh --uninstall').
 distro_undo() {
     echo "  packages   packages/*.csv        sudo xbps-remove -R NAME"
     echo "  services   services.txt          sudo rm /var/service/NAME"

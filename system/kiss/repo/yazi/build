@@ -1,6 +1,6 @@
 #!/bin/sh -e
 
-# the build script reads the commit from git, a tarball has none
+# The build script reads the commit from git, and a tarball has none.
 export VERGEN_GIT_SHA=kiss
 
 cargo build --release --locked

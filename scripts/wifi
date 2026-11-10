@@ -1,6 +1,6 @@
 #!/bin/sh
-# wifi - available networks (connect), known networks (forget), check internet, disconnect
-# opened from the bar menu (scripts/menu)
+# The wifi menu: available networks (connect), known networks (forget),
+# check the internet, disconnect. Opened from the bar menu (scripts/menu).
 
 set -eu
 
@@ -8,15 +8,15 @@ menu() {
     fzf --info=hidden --no-input --border=none "$@"
 }
 
-# the last header line: one space, so an empty line sits above the list
+# The last header line is one space, so an empty line sits above the list.
 gap=$(printf '\n ')
 
-# the banner of the main menu: scripts/menu draws it and $MENU_TEXT
-# under it in the middle, again on every resize
+# The banner of the main menu. scripts/menu draws it and '$MENU_TEXT'
+# under it in the middle, again on every resize.
 banner="result,resize:transform-header:sh '$HOME/.local/bin/menu' --header wifi"
 export MENU_TEXT=
 
-# iwctl colors its output
+# Strip the colors iwctl puts on its output.
 plain() {
     sed 's/\x1b\[[0-9;]*m//g'
 }
@@ -29,21 +29,23 @@ if [ -z "$devices" ]; then
     sleep 3
     exit 1
 fi
-# more than one (a usb wifi stick): ask which
+# More than one device (a usb wifi stick): ask which.
 if [ "$(echo "$devices" | wc -l)" -gt 1 ]; then
     dev=$(echo "$devices" | menu) || exit 0
 else
     dev=$devices
 fi
 
-# the network we are connected to
+# Print the network we are connected to.
 current() {
     iwctl station "$dev" show | plain |
         sed -n 's/^ *Connected network  *\(.*[^ ]\) *$/\1/p'
 }
 
-# available networks as "name<TAB>bars  security  name": columns by the
-# header, so names with spaces work. Signal: 4 stars, the weak part gray
+# Print the available networks as "name<TAB>bars  security  name".
+#
+# The columns are cut by the header, so names with spaces work. The
+# signal is 4 stars, the weak part gray.
 networks() {
     iwctl station "$dev" get-networks | awk '
         BEGIN { split("▂ ▄ ▆ █", bar, " ") }
@@ -57,14 +59,15 @@ networks() {
             stars = substr(p, sig); total = gsub(/\*/, "", stars)
             gray = 0
             if (match($0, /\033\[1;90m\*+/)) { g = substr($0, RSTART, RLENGTH); gray = gsub(/\*/, "", g) }
-            # a bar per bright star; no substr: it cuts UTF-8 by bytes
+            # A bar per bright star. No substr: it cuts UTF-8 by bytes.
             bars = ""
             for (i = 1; i <= 4; i++) bars = bars (i <= total - gray ? bar[i] : " ")
             printf "%s\t%s  %-6s %s%s\n", name, bars, security, name, (now ? "  (now)" : "")
         }'
 }
 
-# saved networks, one name per line (column "Name" up to "Security")
+# Print the saved networks, one name per line (the column "Name" up to
+# "Security").
 known() {
     iwctl known-networks list | awk '
         { p = $0; gsub(/\033\[[0-9;]*m/, "", p) }
@@ -78,7 +81,8 @@ scan() {
     sleep 2
 }
 
-# pick a network and connect; iwd asks for the password itself. Esc goes back
+# Pick a network and connect. iwd asks for the password itself. Esc goes
+# back.
 available_menu() {
     local pick
     scan
@@ -102,7 +106,7 @@ available_menu() {
     done
 }
 
-# forget a saved network (its password too). Esc goes back
+# Forget a saved network (its password too). Esc goes back.
 known_menu() {
     local pick
     while :; do
@@ -112,7 +116,8 @@ known_menu() {
     done
 }
 
-# https, not ping: ICMP is often blocked; a few sites, one can be down
+# Check the internet. https, not ping: ICMP is often blocked. A few
+# sites, as one can be down.
 check_internet() {
     local site
     for site in https://github.com https://kernel.org https://wikipedia.org; do
@@ -124,7 +129,7 @@ check_internet() {
     note='Internet: no connection'
 }
 
-# pos keeps the cursor on the last picked line; note: the last check
+# 'pos' keeps the cursor on the last picked line, 'note' the last check.
 pos=1
 note=''
 while :; do

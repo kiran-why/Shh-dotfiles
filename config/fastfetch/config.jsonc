@@ -1,18 +1,21 @@
-// ~/.config/fastfetch/config.jsonc - system info in every new foot window
-// rows are "│ icon Name │ │ value │"; a value is padded to 34 columns
-// ({name<34}), keep that width when adding a row or the box breaks.
-// colors: {#90} border, {#37} names, {#97} values, {#} reset.
-// check: fastfetch -c ~/.config/fastfetch/config.jsonc
+// The system info in every new foot window.
+//
+// The rows are "│ icon Name │ │ value │". A value is padded to 34 columns
+// ({name<34}): keep that width when adding a row, or the box breaks.
+// Colors: {#90} border, {#37} names, {#97} values, {#} reset.
+// Check: 'fastfetch -c ~/.config/fastfetch/config.jsonc'.
 {
     "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
     "logo": {
-        // our own logo on every distro: pick a file in logos/ (no "$" in it: $1 … $9 are colors)
+        // Our own logo on every distro: pick a file in logos/. No "$" in it, as
+        // $1 … $9 are colors.
         "type": "file",
         "source": "~/.config/fastfetch/logos/bloody.txt",
         "color": {
             "1": "white"
         },
-        // top: (box rows 13 - logo rows) / 2, the logo sits in the middle
+        // The top is (box rows 13 - logo rows) / 2, so the logo sits in the
+        // middle.
         "padding": {
             "top": 2,
             "right": 3
@@ -26,14 +29,14 @@
         }
     },
     "modules": [
-        // one box: system and hardware
+        // One box: the system and the hardware.
         { "type": "custom", "format": "{#90}┌────────────┐ ┌────────────────────────────────────┐" },
         { "type": "os",         "key": "{#90}│{#37}  OS       {#90}│", "format": "{#90}│{#97} {pretty-name<34} {#90}│{#}" },
         { "type": "kernel",     "key": "{#90}│{#37}  Kernel   {#90}│", "format": "{#90}│{#97} {release<34} {#90}│{#}" },
         { "type": "initsystem", "key": "{#90}│{#37}  Init     {#90}│", "format": "{#90}│{#97} {name<34} {#90}│{#}" },
         { "type": "uptime",     "key": "{#90}│{#37}  Uptime   {#90}│", "format": "{#90}│{#97} {formatted<34} {#90}│{#}" },
         { "type": "packages",   "key": "{#90}│{#37}  Packages {#90}│", "format": "{#90}│{#97} {all<34} {#90}│{#}" },
-        // the widths count on "foot" and "zsh": fastfetch only runs in foot
+        // The widths count on "foot" and "zsh": fastfetch only runs in foot.
         { "type": "terminal",   "key": "{#90}│{#37}  Term     {#90}│", "format": "{#90}│{#97} {pretty-name} {version<29} {#90}│{#}" },
         { "type": "shell",      "key": "{#90}│{#37}  Shell    {#90}│", "format": "{#90}│{#97} {pretty-name} {version<30} {#90}│{#}" },
         { "type": "cpu",        "key": "{#90}│{#37}  CPU      {#90}│", "format": "{#90}│{#97} {name<34} {#90}│{#}" },

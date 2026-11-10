@@ -4,18 +4,21 @@
 # ▄▄▄▄   ▄▄  ▄▄▄  ▄  ▄ 
 # █ █ █ █▀▀▀ █  █ █  █ 
 # ▀ ▀ ▀  ▀▀▀ ▀  ▀  ▀▀▀ 
-# menu - the bar button: wifi, volume, bluetooth, vpn, settings, power.
-# A pick opens its menu in this window, Esc there comes back here.
-# A part turned off in shh config has no script in ~/.local/bin, so no line.
-# menu open: the window, or closes it when it is open (the bar and $mod+m run this)
-# menu --header NAME: the banner of a menu, the window fits the menu (header below)
+# The menu of the bar button: wifi, volume, bluetooth, vpn, settings, power.
+#
+# A pick opens its menu in this window, Esc there comes back here. A part
+# turned off in 'shh config' has no script in ~/.local/bin, so no line.
+#
+# 'menu open' opens the window, or closes it when it is open (the bar and
+# $mod+m run this). 'menu --header NAME' prints the banner of a menu and
+# makes the window fit it.
 
 set -eu
 
 bin="$HOME/.local/bin"
 tab=$(printf '\t')
 
-# "script<TAB>icon  Name >", only the installed ones
+# Print "script<TAB>icon  Name >" for the installed scripts.
 lines() {
     local s
     for s in 'wifi	  Wifi >' \
@@ -28,9 +31,11 @@ lines() {
     done
 }
 
-# art NAME: the banner of a menu: font Bloody (patorjk.com) like the fastfetch
-# logo, lowercase drawn by hand (Bloody has none); shorter words where the
-# window is too narrow: bluetooth = bluez, settings = prefs, services = svc
+# Print the banner of a menu.
+#
+# The font is Bloody (patorjk.com), like the fastfetch logo. Bloody has
+# no lowercase, so it is drawn by hand. Where the window is too narrow the
+# word is shorter: bluetooth = bluez, settings = prefs, services = svc.
 art() {
     case "$1" in
         menu) cat <<'EOF'
@@ -140,24 +145,27 @@ EOF
     esac
 }
 
-# chars TEXT: its width; wc -m counts characters, ${#var} in dash bytes
+# Print the width of TEXT. 'wc -m' counts characters, '${#var}' counts
+# bytes in dash.
 chars() {
     printf '%s' "$1" | wc -m
 }
 
-# pad WIDTH: stdin moved to the middle of fzf (FZF_COLUMNS);
-# 4 = the border and the cursor column, like center() in shh
+# Move stdin to the middle of fzf (FZF_COLUMNS): pad WIDTH.
+#
+# The 4 is the border and the cursor column, like center() in shh.
 pad() {
     local p=$(( (${FZF_COLUMNS:-0} - 4 - $1) / 2 ))
     [ "$p" -gt 0 ] || p=0
     sed "s/^/$(printf '%*s' "$p" '')/"
 }
 
-# header NAME: an empty line, the art of NAME, an empty line, $MENU_TEXT,
-# all in the middle. fzf runs it when the list is ready and on every resize
-# (sway sets the width after the window opens): the menus bind
-# result,resize:transform-header:sh ~/.local/bin/menu --header NAME
-# (not load: their own load:pos(N) would replace it)
+# Print the header of a menu: an empty line, the banner, an empty line
+# and '$MENU_TEXT', all in the middle.
+#
+# fzf runs this when the list is ready and on every resize (sway sets the
+# width after the window opens). The menus bind it to 'result,resize',
+# not to 'load': their own 'load:pos(N)' would replace it.
 header() {
     local a l w=0
     a=$(art "$1")
@@ -175,10 +183,12 @@ EOF
     done
 }
 
-# fit ROWS: the floating window fzf runs in gets ROWS rows, its top stays put
-# (resize set keeps the middle, so move it back): rows come and go at the bottom.
-# One row in px from its height now; 16 = pad=8x8 in foot.ini, 2 = the sway border (look).
-# Our own resize runs header again, then the rows match and it stops
+# Give the floating window of fzf ROWS rows, keeping its top in place.
+#
+# 'resize set' keeps the middle, so the window is moved back: rows come
+# and go at the bottom. The height of a row is taken from the window:
+# 16 is 'pad=8x8' in foot.ini, 2 is the sway border. Our own resize runs
+# the header again, then the rows match and it stops.
 fit() {
     local win id x y h bottom px
     [ "${FZF_LINES:-0}" -gt 0 ] && [ "$1" -ne "$FZF_LINES" ] || return 0
@@ -190,29 +200,30 @@ fit() {
 $win
 EOF
     px=$(( (h - 16) / FZF_LINES * $1 + 18 ))
-    # a long list scrolls instead of going off the screen
+    # A long list scrolls instead of going off the screen.
     [ "$((y + px))" -le "$bottom" ] || px=$((bottom - y))
     swaymsg "[con_id=$id] resize set height $px px, move absolute position $x px $y px" >/dev/null 2>&1 || true
 }
 
 case "${1:-}" in
-    # rows: the header, the lines and one empty line at the bottom
+    # The rows: the header, the lines and one empty line at the bottom.
     --header)
         out=$(header "${2:-menu}")
         printf '%s\n' "$out"
         fit $(( $(printf '%s\n' "$out" | wc -l) + ${FZF_TOTAL_COUNT:-0} + 1 ))
         exit 0 ;;
-    # open: close the menu if it is open (kill fails, exit 2, when there is none),
-    # else open it as tall as this menu (header 10 rows); sway/rules sets the width
+    # Close the menu if it is open ('kill' fails with 2 when there is
+    # none), else open it as tall as this menu (the header is 10 rows).
+    # sway/rules sets the width.
     open)
         swaymsg '[app_id="menu"] kill' >/dev/null 2>&1 && exit 0
         exec footclient --app-id=menu --window-size-chars="50x$(($(lines | wc -l) + 11))" "$0" ;;
 esac
 
-# no text under the art here (a menu opened from here sets its own)
+# No text under the banner here. A menu opened from here sets its own.
 export MENU_TEXT=
 
-# pos keeps the cursor on the last picked line
+# 'pos' keeps the cursor on the last picked line.
 pos=1
 while :; do
     list=$(lines)
@@ -220,6 +231,6 @@ while :; do
         fzf --info=hidden --no-input --border=none --delimiter="$tab" --with-nth=2 \
             --bind="result,resize:transform-header:sh '$0' --header menu" --bind="load:pos($pos)") || exit 0
     pos=$(printf '%s\n' "$list" | grep -nxF -- "$pick" | cut -d: -f1)
-    # a menu that fails (no wifi device...) just comes back here
+    # A menu that fails (no wifi device) just comes back here.
     "$bin/${pick%%"$tab"*}" || true
 done
