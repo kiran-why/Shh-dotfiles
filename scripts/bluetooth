@@ -117,6 +117,10 @@ pair_new() {
         [ -n "$mac" ] || continue    # "Look again"
 
         echo "pairing with $name..."
+        # Pairable also means bondable in BlueZ. When it is off, the pairing
+        # works but the key is not kept, so the device is lost after it
+        # disconnects and has to be paired again.
+        bt pairable on >/dev/null || true
         if bt pair "$mac" >/dev/null; then
             # trusted devices may reconnect by themselves
             bt trust "$mac" >/dev/null || true
