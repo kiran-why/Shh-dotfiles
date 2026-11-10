@@ -33,12 +33,14 @@ if [ "$from_repo" = 1 ]; then
     services_file="$repo/system/$distro/services.txt"
     packages_dir="$repo/system/$distro/packages"
     distro_file="$repo/system/$distro/distro.sh"
+    recipes_dir="$repo/system/$distro/repo"
 else
     link_file="$share/link.sh"
     components_file="$share/components.txt"
     services_file="$share/services.txt"
     packages_dir="$share/packages"
     distro_file="$share/distro.sh"
+    recipes_dir="$share/repo"
 fi
 # scripts/hardware: what the machine is (cards)
 if [ "$from_repo" = 1 ]; then hardware_script="$repo/scripts/hardware"; else hardware_script="$HOME/.local/bin/hardware"; fi
@@ -163,6 +165,8 @@ top_lines() {
     # an empty line between the two groups; Enter on it does nothing
     printf -- '-\t\n'
     line misc '' misc 'Additional packages >'
+    # Only KISS has parts in the recipes group (components.txt).
+    [ -z "$(group recipes)" ] || line recipes '' recipes 'KISS recipes >'
 }
 
 top_act() {
@@ -174,6 +178,9 @@ top_act() {
             tab_group=$1
             [ "$1" != features ] || tab_group=''
             loop "$1" 'Enter: on / off   Esc: back' group_lines group_act ;;
+        recipes)
+            tab_group=recipes
+            loop recipes 'Enter: on / off   Esc: back' recipe_lines recipe_act ;;
     esac
     note=''
 }
@@ -240,6 +247,49 @@ group_lines() {
 
 group_act() {
     toggle "$1" "$(group "$tab_group" | awk -F'|' -v n="$1" '$1 == n { print $2 }')"
+}
+
+# The KISS recipes tab, laid out like the bar menu's Svc.
+#
+# On top are the packages of our recipes that the setup can do without
+# (bash); off means install.sh does not install them. The last line opens
+# every recipe in system/kiss/repo.
+recipe_lines() {
+    group_lines
+    printf -- '-\t\n'
+    line all '' 'all recipes' 'Every recipe, even the ones the setup needs >'
+}
+
+recipe_act() {
+    case "$1" in
+        all)
+            loop 'all recipes' 'Enter: on / off   Esc: back' all_recipe_lines all_recipe_act \
+                "$(center '! Off: kiss builds the kiss-community recipe instead, it may break')"
+            note='' ;;
+        # The empty line between the two groups.
+        -) ;;
+        *) group_act "$1" ;;
+    esac
+}
+
+# Every recipe of ours with its version.
+#
+# A recipe that is off (recipe_NAME=no) is not copied for kiss
+# (kiss_repos: distro.sh). That counts from the next build of the package:
+# what is installed stays as it is.
+all_recipe_lines() {
+    local dir name box
+    for dir in "$recipes_dir"/*/; do
+        dir=${dir%/} name=${dir##*/}
+        box='[x]'
+        [ "$(setting "recipe_$name" yes)" = yes ] || box='[ ]'
+        line "recipe_$name" "$box" "$name" "$(cut -d' ' -f1 "$dir/version")"
+    done
+}
+
+all_recipe_act() {
+    toggle "$1"
+    note="${1#recipe_}: $(setting "$1" yes)"
 }
 
 # every xkb layout as "code<TAB>name"; before the install there is no
@@ -344,7 +394,7 @@ layout_act() {
     note="Layouts: $now"
 }
 
-# shh config: tabs settings, features, misc;
+# shh config: tabs settings, features, misc (and recipes on KISS);
 # every change goes to $shh_config at once
 config() {
     [ -f "$components_file" ] || error "not found: $components_file (sh lib/link.sh)"

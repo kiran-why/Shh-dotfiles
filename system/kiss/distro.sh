@@ -65,11 +65,17 @@ distro_check() {
 # █▀▀  █▀▀█ █    █▀▄  █▀▀█ █ ▀█ █▀▀   ▀▀▄
 # ▀    ▀  ▀  ▀▀▀ ▀  ▀ ▀  ▀  ▀▀▀ ▀▀▀▀ ▀▀▀
 
-# kiss_repos: clone the repos that are missing and copy our recipes.
-# A copy: kiss u would run git pull in the dotfiles repo otherwise.
-# Started from ~/.local/bin there are no recipes next to distro.sh, the copy stays
+# Clone the repos that are missing and copy our recipes.
+#
+# The recipes are copied, not linked: 'kiss u' would otherwise run 'git
+# pull' in the dotfiles repo. They come from the repo (install.sh) or from
+# ~/.local/share/shh/repo (link.sh puts them there for shh).
+#
+# A recipe turned off in shh config (recipe_NAME=no) is left out, so kiss
+# finds the one from kiss-community instead. '-L' copies the files behind
+# the links of a 'link.sh --link' install, not the links themselves.
 kiss_repos() {
-    local url src
+    local url src recipe
     mkdir -p "$kiss_dir" || error "cannot create $kiss_dir"
     for url in https://github.com/kiss-community/repo \
                https://github.com/kiss-community/community \
@@ -78,8 +84,12 @@ kiss_repos() {
             git clone --depth 1 "$url" "$kiss_dir/${url##*/}" || error "cannot clone $url"
     done
     src="${system_dir:-${distro_file%/*}}/repo"
-    [ ! -d "$src" ] || { rm -rf "$kiss_dir/shh" && cp -R "$src" "$kiss_dir/shh"; } ||
-        error "cannot copy the recipes to $kiss_dir/shh"
+    [ -d "$src" ] || return 0
+    rm -rf "$kiss_dir/shh" && mkdir "$kiss_dir/shh" || error "cannot make $kiss_dir/shh"
+    for recipe in "$src"/*; do
+        [ "$(setting "recipe_${recipe##*/}" yes)" = no ] && continue
+        cp -RL "$recipe" "$kiss_dir/shh/" || error "cannot copy $recipe to $kiss_dir/shh"
+    done
 }
 
 pkg_installed() {

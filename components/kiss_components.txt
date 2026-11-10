@@ -1,7 +1,8 @@
 # components/kiss_components.txt - parts shh config can turn off (KISS names); everything else is always installed
 # name|packages|files (repo paths)|services|group|default
 # group = the tab in shh config: empty = features, misc = programs we always use;
-# settings = its own line in settings (maxhz); xwayland = settings > xwayland; editor = settings > editor; files = settings > file manager
+# settings = its own line in settings (maxhz); xwayland = settings > xwayland; editor = settings > editor; files = settings > file manager;
+# recipes = KISS recipes, packages of our own recipes (system/kiss/repo) we can do without
 # default: empty = on, no = off
 # packages stay in system/kiss/packages/common.csv too; sway lines of a part go in config/sway/features/NAME
 # no screenshare: KISS's firefox is built without dbus, the portal can't reach it
@@ -42,3 +43,6 @@ yazi|yazi|config/yazi config/sway/features/yazi||files|
 
 # settings > maxhz
 maxhz||scripts/maxhz config/sway/features/maxhz||settings|
+
+# recipes: packages from system/kiss/repo that the setup does not need
+bash|bash|||recipes|
