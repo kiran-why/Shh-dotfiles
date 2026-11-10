@@ -7,7 +7,7 @@
 # loaded after lib.sh by install.sh, link.sh and shh; every distro has the same functions
 
 # video: the group seatd gives its socket to (libseat's seatd.run), and the GPU;
-# audio: the sound card; wheel: iwd lets only wheel and netdev use iwctl
+# audio: the sound card; wheel: sudo
 seat_groups=audio,video,wheel
 # https, not ping: ICMP is often blocked; a few sites, one can be down or blocked
 online_sites='https://kisslinux.github.io https://codeberg.org https://github.com'
@@ -15,12 +15,27 @@ pkg_remove='kiss r'
 # the root commands of power_run, for the sudoers rule (install.sh); "" = no arguments.
 # no zzz here: suspend is "mem" written to /sys/power/state
 power_cmds='/usr/bin/poweroff "", /usr/bin/reboot "", /usr/bin/tee /sys/power/state'
+# repo files link.sh leaves out here: KISS's sway has no tray (no sd-bus), tray_output is an error
+distro_skip='config/swaybar/tray'
 
 # the repos kiss builds from, cloned by kiss_repos; shh = our recipes. Ours come
 # first, the first recipe found wins
 kiss_dir="$HOME/.local/share/kiss"
 export KISS_PATH="$kiss_dir/shh:$kiss_dir/repo/core:$kiss_dir/repo/extra:$kiss_dir/repo/wayland:$kiss_dir/community/community:$kiss_dir/kiss-dbus/dbus"
 export KISS_PROMPT=0
+# Limit the number of parallel build jobs.
+#
+# kiss sets nothing here, so make runs on a single core while samurai
+# (ninja) and cargo start a job for every thread. A large C++ file (the
+# v8 in nodejs) needs around 2 GB to compile, which kills the build when
+# memory runs out. One job per 2 GB of memory, but never more jobs than
+# threads.
+#
+# Values set earlier (for example in /etc/profile) are kept. session_setup
+# writes the same values to /etc/profile.d so 'kiss b' after login uses them.
+build_jobs=$(awk -v n="$(nproc)" '/^MemTotal/ { j = int($2 / 2097152); print (j < 1 ? 1 : j > n ? n : j) }' /proc/meminfo)
+export MAKEFLAGS="${MAKEFLAGS:--j$build_jobs}" SAMUFLAGS="${SAMUFLAGS:--j$build_jobs}" \
+    CARGO_BUILD_JOBS="${CARGO_BUILD_JOBS:-$build_jobs}"
 
 # power_run poweroff | reboot | suspend (scripts/power); -n: fail, don't ask for a password
 power_run() {
@@ -125,13 +140,39 @@ vmware_clipboard() {
 # svc_apply ON OFF: a runit service is on while /var/service/NAME links to
 # /etc/sv/NAME: runsvdir starts it within 5 s and at every boot.
 # OFF (turned off in shh config): the link goes, runsvdir stops the service.
-# kiss-dbus's iwd comes without a service, so it gets ours
+# eiwd's service runs iwd -d (debug floods tty1), so it gets ours. Again on every
+# run: kiss U can bring the package's files back
 svc_apply() {
     local svc
-    write_root /etc/sv/iwd/run "$(printf '#!/bin/sh\nexec iwd 2>&1')"
-    sudo chmod 755 /etc/sv/iwd/run || error "cannot chmod /etc/sv/iwd/run"
+    write_root /etc/sv/eiwd/run "$(printf '#!/bin/sh\nexec iwd 2>&1')"
+    sudo chmod 755 /etc/sv/eiwd/run || error "cannot chmod /etc/sv/eiwd/run"
+    # Make mdevd load drivers for new devices.
+    #
+    # mdevd loads no drivers on its own. The MODALIAS rule goes first and
+    # starts with '-' so the rules below still run for the same device.
+    # The '-q' keeps modprobe quiet about drivers built into the kernel,
+    # which would otherwise print hundreds of "not found" lines at boot.
+    #
+    # An older rule without '-q' is replaced: '1i' inserts the new rule
+    # above the first line and 'd' then drops every old one.
+    grep -q '^-\$MODALIAS=.*@modprobe -q ' /etc/mdevd.conf ||
+        sudo sed -i -e '1i -$MODALIAS=.* 0:0 660 @modprobe -q "$MODALIAS"' \
+            -e '/^-\$MODALIAS=/d' /etc/mdevd.conf ||
+        error "cannot add the driver rule to /etc/mdevd.conf"
+
+    # Run the rules for the devices that are already there at boot
+    # (coldplug), not only for the ones plugged in later.
+    grep -q 'mdevd -C' /etc/sv/mdevd/run ||
+        sudo sed -i 's/exec mdevd /exec mdevd -C /' /etc/sv/mdevd/run ||
+        error "cannot turn on coldplug in /etc/sv/mdevd/run"
 
     for svc in $1; do
+        # Skip bluetoothd when the kernel has no bluetooth support.
+        # It cannot start without it and runit would restart it forever.
+        if [ "$svc" = bluetoothd ] && [ ! -d /sys/class/bluetooth ]; then
+            info "skipped bluetoothd: the kernel has no bluetooth"
+            continue
+        fi
         [ -d "/etc/sv/$svc" ] || error "no service $svc in /etc/sv"
         if [ ! -e "/var/service/$svc" ]; then
             sudo ln -s "/etc/sv/$svc" /var/service/ || error "cannot enable $svc"
@@ -164,7 +205,7 @@ svc_check() {
 }
 
 # svc_ctl start | stop SVC (settings > Services): now, till the reboot
-# (sv up / down; runit has no dependencies: with dbus off iwd fails and restarts)
+# (sv up / down; runit has no dependencies: with dbus off bluetoothd fails and restarts)
 svc_ctl() {
     local cmd=up
     [ "$1" = start ] || cmd=down
@@ -236,8 +277,9 @@ for light in /sys/class/backlight/*/brightness; do
     [ -e \"\$light\" ] && chgrp video \"\$light\" && chmod g+w \"\$light\"
 done"
     write_root /etc/profile.d/shh.sh "export XDG_RUNTIME_DIR=/run/user/\$(id -u)
-export KISS_PATH=$KISS_PATH"
-    info "XDG_RUNTIME_DIR at login, brightness: group video"
+export KISS_PATH=$KISS_PATH
+export MAKEFLAGS=\"\${MAKEFLAGS:-$MAKEFLAGS}\" SAMUFLAGS=\"\${SAMUFLAGS:-$SAMUFLAGS}\" CARGO_BUILD_JOBS=\"\${CARGO_BUILD_JOBS:-$CARGO_BUILD_JOBS}\""
+    info "XDG_RUNTIME_DIR at login, brightness: group video, build jobs: $SAMUFLAGS"
 
     [ -e /etc/asound.conf ] || [ -L /etc/asound.conf ] ||
         sudo ln -s /usr/share/alsa/alsa.conf.d/99-pipewire-default.conf /etc/asound.conf ||
@@ -269,7 +311,7 @@ distro_undo() {
     echo "  services   services.txt          sudo rm /var/service/NAME"
     echo "  shell      zsh                   the last field of your line in /etc/passwd"
     echo "  groups     audio, video, wheel   sudo delgroup $(id -un) GROUP"
-    echo "  /etc       rc.d/shh.boot, profile.d/shh.sh (XDG_RUNTIME_DIR, brightness, KISS_PATH), sv/iwd,"
+    echo "  /etc       rc.d/shh.boot, profile.d/shh.sh (XDG_RUNTIME_DIR, brightness, KISS_PATH), sv/eiwd/run, sv/mdevd/run, mdevd.conf,"
     echo "             dhcpcd.conf (denyinterfaces wl*), iwd/main.conf, modprobe.d/nobeep.conf, asound.conf, pipewire/pipewire.conf.d/shh.conf,"
     echo "             sudoers.d/shh-power (poweroff, reboot, sleep): sudo rm /etc/sudoers.d/shh-power;"
     echo "             older versions of some are next to them as FILE.bak-DATE"

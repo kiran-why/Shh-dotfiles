@@ -287,7 +287,7 @@ install_all() {
         error "not supported: ${distro:-unknown distro} (no system/${distro:-DISTRO}/distro.sh or its components file)"
 
     # files of the parts turned off, " a b ": install_tree skips them
-    off_files=" $(off_items "$components" 3 | tr '\n' ' ') "
+    off_files=" $(off_items "$components" 3 | tr '\n' ' ') ${distro_skip:-} "
 
     local f k dst first_wall=0
     install_entries "$dots_path/config"  "$config_dir"

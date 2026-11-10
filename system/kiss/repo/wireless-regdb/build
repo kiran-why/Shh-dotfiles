@@ -1,0 +1,10 @@
+#!/bin/sh -e
+
+# Install the database of wifi rules for each country (allowed channels
+# and transmit power). cfg80211 loads it as firmware. Without it the
+# kernel falls back to the strict world rules: fewer channels, less power.
+#
+# The '.p7s' file is its signature, which the kernel checks against the
+# keys built into it.
+mkdir -p "$1/usr/lib/firmware"
+cp regulatory.db regulatory.db.p7s "$1/usr/lib/firmware/"

@@ -1,12 +1,12 @@
 # system/kiss/packages/common.csv - installed on every machine
 # tag,package,description: the tag stays empty, kiss finds a package through KISS_PATH
-# (repo: core extra wayland; community; kiss-dbus: dbus iwd bluez mako; system/kiss/repo: our own recipes)
+# (repo: core extra wayland; community; kiss-dbus: dbus bluez mako; system/kiss/repo: our own recipes)
 # check names: sh install.sh --check
 # a runit service comes inside its package (/etc/sv), no *-s6 packages here
 
 # system: libseat has the seatd daemon, no elogind
 ,libseat,screen and input for sway without root (seatd service)
-,dbus,message bus (iwd and bluetoothd need it; services.txt)
+,dbus,message bus (bluetoothd needs it; services.txt)
 ,curl,downloads: install.sh and wifi check the internet, vpn gets the subscription
 
 # shell and terminal tools
@@ -22,6 +22,8 @@
 ,fastfetch,system info when a terminal opens
 
 # desktop
+# mesa's build needs clang (clang-cpp) but its depends lack it
+,clang,C/C++ compiler libraries for mesa's build
 ,sway,tiling wayland compositor (includes swaybar and swaymsg)
 ,mesa,OpenGL for sway on every graphics card and in a VM
 
@@ -44,7 +46,8 @@
 ,pipewire,sound server
 
 # network
-,iwd,wifi daemon
+,eiwd,wifi daemon: iwd without dbus (no iwctl, networks in /var/lib/iwd)
+,wireless-regdb,wifi rules of each country: all channels and full power (system/kiss/repo)
 ,openresolv,DNS config for iwd
 ,dhcpcd,DHCP for wired network (iwd only does wifi)
 ,chrony,network time: sets the clock at boot
