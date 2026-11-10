@@ -85,14 +85,19 @@ bat() {
     done
 }
 
-# far right: the logo of this distro (nf-linux-*), CRUX has none: tux.
-# no os-release: "." of a missing file kills dash
+# Show the logo of this distro on the far right, as the menu button.
+#
+# The logo comes from the Nerd Fonts nf-linux-* set. KISS has none
+# there, so it gets a heart (nf-md-heart), a play on the name. CRUX
+# and any other distro get Tux. The os-release check comes first
+# because '.' of a missing file kills dash.
 id=
 [ ! -r /etc/os-release ] || id=$(. /etc/os-release; echo "${ID:-}")
 case "$id" in
     artix)  logo='' ;;
     void)   logo='' ;;
     gentoo) logo='' ;;
+    kiss)   logo='󰋑' ;;
     *)      logo='' ;;
 esac
 menu_button=$(block menu "$logo" "$white")

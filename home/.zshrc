@@ -10,14 +10,19 @@
 # █▀▀  █▀█  █  █ █ ▀ █ █▀▀    █   
 # ▀    ▀  ▀  ▀▀  ▀   ▀ ▀      ▀   
                                 
-# the folder, then "<distro icon> :" (red after an error); %F{N} = foot.ini color.
-# no icon on the TTY: no nerd font there
-# icons: Nerd Fonts nf-linux-*, picked by ID in /etc/os-release; others get tux
+# The prompt is the folder, then "<distro icon> :", where ':' turns red
+# after an error. '%F{N}' is a color from foot.ini.
+#
+# The icon is picked by ID in /etc/os-release from the Nerd Fonts
+# nf-linux-* set. KISS has no icon there, so it gets a heart
+# (nf-md-heart), a play on the name. Any other distro gets Tux.
+# The TTY has no Nerd Font, so the prompt there has no icon at all.
 distro_id=$([ -r /etc/os-release ] && . /etc/os-release && echo "${ID:-}")
 case "$distro_id" in
     artix)  icon=$'\uf31f' ;;
     void)   icon=$'\uf32e' ;;
     gentoo) icon=$'\uf30d' ;;
+    kiss)   icon=$'\U000f02d1' ;;
     *)      icon=$'\uf31a' ;;
 esac
 if [ "$TERM" = linux ]; then
