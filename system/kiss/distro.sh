@@ -184,6 +184,17 @@ svc_apply() {
             continue
         fi
         [ -d "/etc/sv/$svc" ] || error "no service $svc in /etc/sv"
+        # Send the output of the service to /var/log/NAME, not the console.
+        #
+        # runsvdir is started by init on the console, so a service without
+        # a log/ prints everything over the boot messages and the login
+        # prompt. svlogd keeps the last 10 files of 1 MB each. runsv sees a
+        # new log/ only when it starts again, so this works after a reboot.
+        if ! sudo test -e "/etc/sv/$svc/log/run"; then
+            sudo mkdir -p "/var/log/$svc" || error "cannot create /var/log/$svc"
+            write_root "/etc/sv/$svc/log/run" "$(printf '#!/bin/sh\nexec svlogd -tt /var/log/%s' "$svc")"
+            sudo chmod 755 "/etc/sv/$svc/log/run" || error "cannot chmod /etc/sv/$svc/log/run"
+        fi
         if [ ! -e "/var/service/$svc" ]; then
             sudo ln -s "/etc/sv/$svc" /var/service/ || error "cannot enable $svc"
             info "enabled $svc"
@@ -335,7 +346,7 @@ distro_undo() {
     echo "  services   services.txt          sudo rm /var/service/NAME"
     echo "  shell      zsh                   the last field of your line in /etc/passwd"
     echo "  groups     audio, video, wheel   sudo delgroup $(id -un) GROUP"
-    echo "  /etc       rc.d/shh.boot (/run/user, brightness), profile.d/shh.sh (XDG_RUNTIME_DIR, LANG, KISS_PATH, build jobs), profile (KISS_PATH line removed), sv/eiwd/run, sv/mdevd/run, mdevd.conf,"
+    echo "  /etc       rc.d/shh.boot (/run/user, brightness), profile.d/shh.sh (XDG_RUNTIME_DIR, LANG, KISS_PATH, build jobs), profile (KISS_PATH line removed), sv/eiwd/run, sv/mdevd/run, sv/*/log (output to /var/log/NAME), mdevd.conf,"
     echo "             dhcpcd.conf (denyinterfaces wl*), iwd/main.conf, modprobe.d/nobeep.conf, asound.conf, pipewire/pipewire.conf.d/shh.conf,"
     echo "             sudoers.d/shh-power (poweroff, reboot, sleep): sudo rm /etc/sudoers.d/shh-power;"
     echo "             older versions of some are next to them as FILE.bak-DATE"
