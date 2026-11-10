@@ -17,7 +17,8 @@ set -eu
 dots_path=$(cd "$(dirname "$0")" && pwd -P)
 
 # temporary sudo rule (enable_nopasswd)
-sudoers_tmp="/etc/sudoers.d/dotfiles-temp"
+# zz-: sudo reads sudoers.d in order and the last match wins, so a later %wheel rule would undo NOPASSWD
+sudoers_tmp="/etc/sudoers.d/zz-dotfiles-temp"
 
 # start_log: a copy of the output, the last run only
 install_log="$HOME/.local/state/shh/install.log"

@@ -6,7 +6,8 @@ set -eu
 
 # leftovers from a crashed session would block the new pipewire
 for prog in pipewire-pulse wireplumber pipewire; do
-    pkill -u "$(id -u)" -x "$prog" || true
+    # no -u: busybox pkill lacks it, and a user signals only their own processes anyway
+    pkill -x "$prog" || true
 done
 
 pipewire &
