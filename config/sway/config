@@ -12,3 +12,5 @@ include ~/.config/sway/workspaces
 # parts shh config can turn off; only the ones turned on are installed
 include ~/.config/sway/features/*
 include ~/.config/swaybar/bar
+# not on every distro (sway without tray support errors on it); a missing file is skipped
+include ~/.config/swaybar/tray
