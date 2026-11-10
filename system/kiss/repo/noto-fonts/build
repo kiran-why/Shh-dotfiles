@@ -2,7 +2,8 @@
 
 # latin, greek, cyrillic: the text fonts for pages and programs
 for zip in ./*.zip; do
-    unzip -q "$zip"
+    # -o: both zips have AUTHORS.txt...; without it unzip asks and there is no stdin
+    unzip -o -q "$zip"
 done
 
 mkdir -p "$1/usr/share/fonts/TTF"

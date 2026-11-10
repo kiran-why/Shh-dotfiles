@@ -1,0 +1,27 @@
+#!/bin/sh -e
+
+export CFLAGS="$CFLAGS -DSYS_BASHRC='\"/etc/bash/bashrc\"'"
+
+# Mark the generated files as newer than their sources.
+#
+# A git checkout gives every file the same random order of times, so make
+# may think 'configure' is older than 'configure.ac' and run autoconf,
+# which is not installed. The 'sleep' makes the second pair strictly newer.
+touch configure.ac aclocal.m4
+sleep 1
+touch config.h.in configure
+
+# Unlike community's recipe there is no '/usr/bin/sh -> bash' link here.
+#
+# busybox stays the system shell; bash is only for the programs that ask
+# for it by name.
+
+./configure \
+    --prefix=/usr \
+    --without-bash-malloc \
+    --without-installed-readline \
+    --disable-nls
+
+make
+make DESTDIR="$1" install
+
