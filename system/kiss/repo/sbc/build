@@ -1,0 +1,14 @@
+#!/bin/sh -e
+
+# The SBC codec, the one every Bluetooth headset speaks (A2DP).
+#
+# Only the library is needed, for pipewire's bluez5 plugin. The tools are
+# left out, and so is the tester, which would pull in libsndfile.
+./configure \
+    --prefix=/usr \
+    --disable-static \
+    --disable-tools \
+    --disable-tester
+
+make
+make DESTDIR="$1" install
