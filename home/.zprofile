@@ -32,6 +32,12 @@ export EDITOR
 # no accessibility bus (8 MB) unless shh config > settings asks for screen readers
 grep -q '^a11y=yes' "$HOME/.config/shh/config" 2>/dev/null || export NO_AT_BRIDGE=1 GTK_A11Y=none
 
+# Every PipeWire program (the daemons, wpctl) asks RTKit for realtime priority
+# and prints six "RTKit error" warnings when it is missing. We never install
+# rtkit (it pulls in polkit), so keep only real errors from that module.
+# PipeWire and WirePlumber read separate variables.
+export PIPEWIRE_DEBUG=mod.rt:E WIREPLUMBER_DEBUG=mod.rt:E
+
 # █   █ ▀█▀ █▀▀▄ ▀▀█▀▀ █  █ ▄▀▀▄ █        █▄ ▄█ ▄▀▀▄ ▄▀▀▀ █  █ ▀█▀ █▄  █ █▀▀▀ ▄▀▀▀ 
 # ▀▄ ▄▀  █  █▀█    █   █  █ █▀▀█ █        █ ▀ █ █▀▀█ █    █▀▀█  █  █ ▀▄█ █▀▀   ▀▀▄ 
 #   ▀   ▀▀▀ ▀  ▀   ▀    ▀▀  ▀  ▀ ▀▀▀▀     ▀   ▀ ▀  ▀  ▀▀▀ ▀  ▀ ▀▀▀ ▀   ▀ ▀▀▀▀ ▀▀▀  
