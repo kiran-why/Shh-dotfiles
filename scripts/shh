@@ -341,11 +341,16 @@ layout_lines() {
 
 # Print the cards scripts/hardware finds, as the choices below
 # (amd,nvidia). "nothing" in a VM or with no card.
+menu_cards() {
+    local cards
+    cards=$(sh "$hardware_script" 2>/dev/null) || cards=''
+    "$1" "$cards" | sed 's/^nvidia-580xx$/nvidia/' |
+        grep -x 'amd\|intel\|nvidia\|nouveau' | sort -u | paste -sd, -
+}
+
 found_cards() {
     local cards
-    cards=$(sh "$hardware_script" 2>/dev/null |
-        sed 's/^nvidia-580xx$/nvidia/; s/^nvidia-legacy$/nouveau/' |
-        grep -x 'amd\|intel\|nvidia\|nouveau' | paste -sd, -) || true
+    cards=$(menu_cards available_drivers)
     printf '%s\n' "${cards:-nothing}"
 }
 
@@ -356,11 +361,13 @@ gpu_lines() {
     now=$(setting gpu auto)
     if [ "$now" = auto ]; then line auto '[x]' auto 'By the card, recommended'
     else line auto '[ ]' auto 'By the card, recommended'; fi
+    now=$(menu_cards gpu_drivers)
     for card in amd intel nvidia nouveau; do
         case "$card" in
             amd)     label=AMD;     text='' ;;
             intel)   label=Intel;   text='' ;;
-            nvidia)  label=NVIDIA;  text='The NVIDIA driver' ;;
+            nvidia)  [ -f "$packages_dir/nvidia.csv" ] || [ -f "$packages_dir/nvidia-580xx.csv" ] || continue
+                     label=NVIDIA;  text='The NVIDIA driver' ;;
             nouveau) label=Nouveau; text='The free NVIDIA driver' ;;
         esac
         case ",$now," in
@@ -372,8 +379,7 @@ gpu_lines() {
 
 # Switch to auto, or turn a card on or off, starting from the cards found.
 #
-# The NVIDIA driver and nouveau can't be on both. With none left it is
-# auto again.
+# The NVIDIA driver and nouveau can't be on both.
 gpu_act() {
     local now
     if [ "$1" = auto ]; then
@@ -381,11 +387,7 @@ gpu_act() {
         note="Graphics: auto"
         return 0
     fi
-    now=$(setting gpu auto)
-    if [ "$now" = auto ]; then
-        now=$(found_cards)
-        [ "$now" != nothing ] || now=''
-    fi
+    now=$(menu_cards gpu_drivers)
     case ",$now," in
         *",$1,"*) now=$(printf '%s\n' "$now" | tr , '\n' | grep -vxF -- "$1" | paste -sd, -) ;;
         *)
@@ -395,8 +397,8 @@ gpu_act() {
             esac
             now="${now:+$now,}$1" ;;
     esac
-    set_value gpu "${now:-auto}"
-    note="Graphics: ${now:-auto}"
+    set_value gpu "${now:-none}"
+    note="Graphics: ${now:-none}"
 }
 
 # Turn a layout off (one has to stay) or on, at the end of the list.

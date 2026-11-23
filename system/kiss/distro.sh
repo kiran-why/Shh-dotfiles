@@ -57,17 +57,31 @@ power_run() {
 distro_check() {
     [ -d /var/service ] && command -v sv >/dev/null || error "runit is not the init system here"
 
-    # NVIDIA's driver is built for glibc only. On musl nouveau (mesa) runs
-    # the card.
-    case "$hardware" in
-        *nvidia*) warn "NVIDIA: no NVIDIA driver on musl, nouveau (mesa) runs the card" ;;
-    esac
-
     # sudo is not in base, and install.sh needs it to build anything.
     if ! command -v sudo >/dev/null; then
         info "as root: kiss U first, then kiss b sudo (the community repo must be in KISS_PATH)"
         info "then: addgroup $USER wheel, and in visudo uncomment the line %wheel ALL=(ALL:ALL) ALL"
     fi
+}
+
+# KISS builds its own kernel. Leave the running display and modules alone.
+gpu_kernel_hint() {
+    local opts
+    case "$1" in
+        amd)     opts='DRM_AMDGPU / DRM_RADEON' ;;
+        intel)   opts='DRM_I915 / DRM_XE' ;;
+        nvidia*) opts=DRM_NOUVEAU ;;
+        *) return 0 ;;
+    esac
+    info "custom kernel: to omit this driver, disable $opts at the next kernel build"
+    info "keep the driver for any display you still use"
+}
+
+# Only the stock Mesa build without Vulkan needs the old GL path.
+nouveau_legacy_gl() {
+    [ -z "${VK_DRIVER_FILES:-}${VK_ICD_FILENAMES:-}${VK_ADD_DRIVER_FILES:-}${LD_LIBRARY_PATH:-}" ] &&
+        [ ! -e /usr/lib/libvulkan_nouveau.so ] &&
+        grep -Fq -- "-Dvulkan-drivers=''" /var/db/kiss/installed/mesa/build 2>/dev/null
 }
 
 # █▀▀▄ ▄▀▀▄ ▄▀▀▀ █ ▄▀ ▄▀▀▄ ▄▀▀▀ █▀▀▀ ▄▀▀▀

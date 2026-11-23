@@ -8,6 +8,22 @@
 
 set -eu
 
+# Test the login workaround only for a modern card actually bound to nouveau.
+if [ "${1:-}" = --nouveau-gl ]; then
+    for dev in /sys/bus/pci/drivers/nouveau/*:*; do
+        [ -r "$dev/device" ] && read -r pci_id <"$dev/device" || continue
+        [ "$((pci_id))" -ge "$((0x1e00))" ] || continue
+        share="$HOME/.local/share/shh"
+        packages_dir="$share/packages"
+        . "$share/lib.sh"
+        gpu_drivers nvidia | grep -qx nouveau || exit 1
+        . "$share/distro.sh"
+        command -v nouveau_legacy_gl >/dev/null && nouveau_legacy_gl
+        exit $?
+    done
+    exit 1
+fi
+
 dmi=/sys/devices/virtual/dmi/id
 id=$(cat "$dmi/sys_vendor" "$dmi/product_name" "$dmi/board_name" 2>/dev/null |
     tr '[:upper:]' '[:lower:]')

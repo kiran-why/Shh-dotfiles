@@ -107,22 +107,31 @@ part_on() {
     esac
 }
 
-# Print the graphics drivers to install, one per line.
-#
-# On 'auto' these are the cards scripts/hardware found ('$1'), else the
-# ones picked in 'shh config' (gpu=amd,nvidia). Every name has a list in
-# system/DISTRO/packages/NAME.csv.
+# Resolve PCI card names against the driver packages of this distro.
+available_drivers() {
+    local card
+    for card in $1; do
+        case "$card" in
+            nvidia|nvidia-580xx) [ -f "$packages_dir/$card.csv" ] || card=nouveau ;;
+            nvidia-legacy) card=nouveau ;;
+        esac
+        printf '%s\n' "$card"
+    done
+}
+
+# Print the effective selection. An empty manual selection stays off.
 gpu_drivers() {
     local gpu card
     gpu=$(setting gpu auto)
-    if [ "$gpu" = auto ]; then
-        printf '%s\n' "$1"
-        return 0
-    fi
+    case "$gpu" in
+        auto) available_drivers "$1"; return ;;
+        none) return 0 ;;
+    esac
     for card in $(printf '%s\n' "$gpu" | tr , ' '); do
-        # Take the open or the older 580xx driver, whichever fits the card found.
-        [ "$card" != nvidia ] || card=$(printf '%s\n' "$1" nvidia | grep -x 'nvidia\|nvidia-580xx' | head -n 1)
-        echo "$card"
+        if [ "$card" = nvidia ]; then
+            card=$(printf '%s\n' "$1" nvidia | grep -x 'nvidia\|nvidia-580xx\|nvidia-legacy' | head -n 1)
+        fi
+        available_drivers "$card"
     done
 }
 

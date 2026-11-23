@@ -230,42 +230,35 @@ configure_gpu() {
 
     local hw drivers want
     drivers=$(gpu_drivers "$hardware")
-    if [ -z "$drivers" ]; then
+    if [ -z "$drivers" ] && [ "$(setting gpu auto)" = auto ]; then
         warn "no graphics card found, only mesa is installed"
         return 0
     fi
     if [ "$(setting gpu auto)" != auto ]; then
         info "picked in shh config: $(setting gpu auto)"
-        # A card was found but left out by hand. It runs on mesa only, and
-        # its firmware may be offered for removal at the end.
+        # Package removal cannot remove a driver built with the kernel.
         for hw in $hardware; do
             case "$hw" in
                 amd|intel) want=$hw ;;
                 nvidia*)   want='nvidia\|nvidia-580xx\|nouveau' ;;
                 *)         continue ;;
             esac
-            printf '%s\n' "$drivers" | grep -qx "$want" ||
+            if ! printf '%s\n' "$drivers" | grep -qx "$want"; then
                 warn "$hw card found, but its driver is not picked (shh config > settings > graphics)"
+                if command -v gpu_kernel_hint >/dev/null; then gpu_kernel_hint "$hw"; fi
+            fi
         done
     fi
 
     for hw in $drivers; do
         case "$hw" in
-            # Picked in 'shh config' on a distro without it (Void musl).
-            nvidia|nvidia-580xx) [ -f "$packages_dir/$hw.csv" ] || {
-                warn "no $hw driver for this system, nouveau (mesa) runs the card"
-                continue; } ;;
-        esac
-        case "$hw" in
             nvidia|nvidia-580xx)
                 # sway needs kernel modesetting, which the 580xx driver has off by default.
                 write_root /etc/modprobe.d/nvidia-modeset.conf "options nvidia_drm modeset=1"
                 info "$hw: kernel modesetting on (after reboot)" ;;
-            nvidia-legacy)
-                warn "this NVIDIA card is too old for the NVIDIA driver, nouveau (mesa) runs it" ;;
             nouveau)
                 info "nouveau: the free NVIDIA driver, in the kernel and mesa; nothing to install"
-                info "the NVIDIA driver blocks it: remove its packages (asked at the end), then reboot" ;;
+                ;;
             *)
                 info "$hw: nothing to set" ;;
         esac

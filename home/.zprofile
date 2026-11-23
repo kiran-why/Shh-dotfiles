@@ -54,9 +54,10 @@ case "$hardware" in
         [ -n "${WLR_NO_HARDWARE_CURSORS:-}" ] || export WLR_NO_HARDWARE_CURSORS=1 ;;
     # Hide the "not supported" bar of sway on the NVIDIA driver.
     *nvidia*)
-        # nouveau: Mesa 25.1+ runs GL on Turing and newer through Zink on
-        # NVK, and KISS's mesa has no Vulkan.
-        export SWAY_UNSUPPORTED_GPU=true NOUVEAU_USE_ZINK=0 ;;
+        export SWAY_UNSUPPORTED_GPU=true
+        if [ -z "${NOUVEAU_USE_ZINK+x}" ] && "$HOME/.local/bin/hardware" --nouveau-gl; then
+            export NOUVEAU_USE_ZINK=0
+        fi ;;
 esac
 
 # ▄▀▀▀ █   █ ▄▀▀▄ ▀▄ ▄▀ 

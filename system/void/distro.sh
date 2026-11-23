@@ -33,12 +33,8 @@ power_run() {
 distro_check() {
     [ -d /var/service ] && command -v sv >/dev/null || error "runit is not the init system here"
 
-    # NVIDIA's driver is built for glibc only. On musl nouveau (mesa) runs
-    # the card.
     case "$(xbps-uhelper arch 2>/dev/null)" in
-        *-musl) case "$hardware" in
-                    *nvidia*) warn "NVIDIA: no NVIDIA driver on musl, nouveau (mesa) runs the card" ;;
-                esac ;;
+        *-musl) ;;
         *)      warn "this setup is tested on Void musl only" ;;
     esac
 
