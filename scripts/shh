@@ -670,11 +670,16 @@ doctor_build() {
         done
         if [ -d "$parent" ] && [ -x "$parent" ] && [ -w "$parent" ]; then
             ok "writable build filesystem: $parent"
-            free=$(LC_ALL=C df -Pk "$parent" | awk 'NR == 2 && $4 ~ /^[0-9]+$/ {print $4}')
+            free=$(LC_ALL=C df -Pk "$parent" | LC_ALL=C awk '
+                NR == 2 && $4 ~ /^[0-9]+$/ {
+                    if ($4 == 0) print "0"
+                    else if ($4 * 1024 < 10000000) print "<0.01"
+                    else printf "%.2f", $4 * 1024 / 1000000000
+                }')
             case "$free" in
                 '') info "available space unknown" ;;
                 0) bad "no available space on build filesystem" ;;
-                *) info "available space: $free KiB" ;;
+                *) info "available space: $free GB" ;;
             esac
         else
             bad "build directory unavailable: $parent"
