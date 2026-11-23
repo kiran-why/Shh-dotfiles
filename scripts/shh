@@ -7,7 +7,7 @@
 # Look after the dotfiles: pick the parts, update, check, change a color,
 # uninstall.
 #
-# Usage: shh config | update [--dry-run] | diff | doctor [--config|--graphics|--build] | help
+# Usage: shh config | update [--dry-run] | diff | doctor [--config|--graphics|--build|--performance] | help
 
 set -eu
 
@@ -56,9 +56,11 @@ if [ "$from_repo" = 1 ]; then hardware_script="$repo/scripts/hardware"; else har
 
 doctor_usage() {
     echo "usage: shh doctor OPTION"
-    echo "  shh doctor --config    check services, installed files, packages and the session"
-    echo "  shh doctor --graphics  show DRM devices, renderer evidence and recent graphics errors"
-    echo "  shh doctor --build     check the distro's build/update tools without building"
+    printf '  shh doctor %-19s%s\n' \
+        '--config'      'check services, installed files, packages and the session' \
+        '--graphics'    'show DRM devices, renderer evidence and recent graphics errors' \
+        '--performance' 'sample system resources, desktop processes and Sway startup' \
+        '--build'       "check the distro's build/update tools without building"
 }
 
 usage() {
@@ -666,6 +668,110 @@ doctor_build() {
     [ "$problems" -eq 0 ]
 }
 
+# A single short sample. Keep the locale and working variables in this subshell.
+doctor_performance() (
+    export LC_ALL=C
+    step "system load and memory"
+    awk 'NR == 1 && $1 ~ /^[0-9]+[.][0-9]+$/ && $2 ~ /^[0-9]+[.][0-9]+$/ && $3 ~ /^[0-9]+[.][0-9]+$/ {
+             print "  load average (1/5/15 min): " $1 " " $2 " " $3; seen=1
+         }
+         END { if (!seen) print "  load average unknown" }' 2>/dev/null </proc/loadavg || info "load average unavailable"
+    awk '
+        $2 ~ /^[0-9]+$/ && $3 == "kB" { kb[$1]=$2 }
+        END {
+            available=("MemAvailable:" in kb) ? sprintf("%.1f", kb["MemAvailable:"]/1024) : "unknown"
+            total=("MemTotal:" in kb) ? sprintf("%.1f", kb["MemTotal:"]/1024) : "unknown"
+            print "  RAM available / total (MiB): " available " / " total
+            if ("SwapTotal:" in kb && "SwapFree:" in kb)
+                printf "  swap used / total (MiB): %.1f / %.1f\n", (kb["SwapTotal:"]-kb["SwapFree:"])/1024, kb["SwapTotal:"]/1024
+            else print "  swap unknown"
+        }' 2>/dev/null </proc/meminfo || info "memory unavailable"
+    if [ -r /proc/pressure/memory ]; then
+        awk '/^(some|full) / { print "  memory PSI " $0; seen=1 }
+             END { if (!seen) print "  memory PSI unknown" }' /proc/pressure/memory || info "memory PSI unavailable"
+    else
+        info "memory PSI unavailable"
+    fi
+
+    step "CPU sensors"
+    {
+        for file in /sys/devices/system/cpu/cpufreq/policy*/scaling_cur_freq; do
+            read -r value 2>/dev/null <"$file" && printf '%s\n' "$value"
+        done
+    } | awk '/^[0-9]+$/ {
+                 if (!n || $1+0 < lo) lo=$1+0
+                 if (!n || $1+0 > hi) hi=$1+0
+                 n++
+             }
+             END { if (n) printf "  CPU frequency (MHz, %d policies): %.1f to %.1f\n", n, lo/1000, hi/1000
+                   else print "  CPU frequency unavailable" }'
+    found=0
+    for file in /sys/class/hwmon/hwmon*/name; do
+        read -r chip 2>/dev/null <"$file" || continue
+        case "$chip" in coretemp|k10temp|zenpower|cpu_thermal) ;; *) continue ;; esac
+        for input in "${file%/*}"/temp*_input; do
+            read -r value 2>/dev/null <"$input" || continue
+            case "${value#-}" in ''|*[!0-9]*) continue ;; esac
+            read -r label 2>/dev/null <"${input%_input}_label" || label=${input##*/}
+            awk -v chip="$chip" -v label="$label" -v value="$value" 'BEGIN { printf "  %s %s: %.3f °C\n", chip, label, value/1000 }'
+            found=1
+        done
+    done
+    if [ "$found" = 0 ]; then
+        for file in /sys/class/thermal/thermal_zone*/type; do
+            read -r label 2>/dev/null <"$file" || continue
+            case "$label" in x86_pkg_temp|cpu-thermal|cpu_thermal) ;; *) continue ;; esac
+            read -r value 2>/dev/null <"${file%/*}/temp" || continue
+            case "${value#-}" in ''|*[!0-9]*) continue ;; esac
+            awk -v label="$label" -v value="$value" 'BEGIN { printf "  %s: %.3f °C\n", label, value/1000 }'
+            found=1
+        done
+    fi
+    [ "$found" = 1 ] || info "CPU temperature unavailable"
+
+    step "visible desktop processes (two snapshots about 1 s apart)"
+    {
+        for pass in 1 2; do
+            if [ "$pass" = 2 ]; then
+                sleep 1 || break
+                echo second
+            fi
+            for file in /proc/[0-9]*/stat; do
+                read -r stat 2>/dev/null <"$file" || continue
+                case "${stat#* }" in
+                    '(sway) '*|'(foot) '*|'(footclient) '*|'(pipewire) '*|'(pipewire-pulse) '*|'(wireplumber) '*) printf '%s\n' "$stat" ;;
+                esac
+            done
+        done
+    } | awk -v hz="$(getconf CLK_TCK 2>/dev/null || :)" -v page="$(getconf PAGESIZE 2>/dev/null || :)" '
+        /^second$/ { second=1; next }
+        # Only exact comm names without spaces are passed here. Match PID and start time.
+        NF >= 24 {
+            key=$1 SUBSEP $22 SUBSEP $2
+            ticks=$14+$15
+            if (!second) { before[key]=ticks; next }
+            cpu="unknown"
+            if (key in before && ticks >= before[key]) {
+                delta=ticks-before[key]
+                cpu=(hz+0 > 0) ? sprintf("%.3f s", delta/hz) : sprintf("%.0f ticks", delta)
+            }
+            rss=(page+0 > 0) ? sprintf("%.1f MiB", $24*page/1048576) : $24 " pages"
+            printf "  %s %s: RSS %s, CPU delta %s\n", $1, $2, rss, cpu
+            seen=1
+        }
+        END { if (!second) { print "  CPU sample failed"; exit 1 }
+              if (!seen) print "  no matching processes visible" }' || return 1
+
+    step "logged Sway startup (Linux boot and application readiness unmeasured)"
+    if chunk=$(log_window start "$HOME/.local/state/shh/wm.log"); then
+        marker=$(printf '%s\n' "$chunk" | awk '
+            /^[0-9]+:[0-5][0-9]:[0-5][0-9][.][0-9]+ (\[(INFO|DEBUG)\] )?\[sway\/server[.]c:[0-9]+\] Running compositor on wayland display / { print $1; exit }')
+        info "Sway main loop, log-relative time: ${marker:-unknown}"
+    else
+        info "wm.log unavailable"
+    fi
+)
+
 # Read at most 64 KiB plus one lookahead byte from a regular session log.
 log_window() {
     local LC_ALL=C chunk
@@ -836,6 +942,7 @@ case "${1:-}" in
                         1:) doctor_usage ;;
                         2:--config) doctor ;;
                         2:--graphics) doctor_graphics ;;
+                        2:--performance) doctor_performance ;;
                         2:--build) doctor_build ;;
                         *) doctor_usage >&2; exit 2 ;;
                     esac ;;
