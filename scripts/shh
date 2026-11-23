@@ -59,6 +59,7 @@ usage() {
     echo "  config   pick the parts and settings for install.sh (then: shh update)"
     echo "  update   install.sh from a fresh clone (it updates the system and the configs)"
     echo "  doctor   check services, installed files, packages and the session"
+    echo "  doctor --graphics   show DRM devices, renderer evidence and recent graphics errors"
     echo "  color OLD NEW  change a color in every config, e.g. shh color d7263d ff0000"
     echo "  uninstall [-n] remove what link.sh put in place, put the old files back (-n: only show)"
     echo "  help     show this help"
@@ -586,6 +587,74 @@ doctor() {
     ok "all good"
 }
 
+# Only report a renderer from a wlroots startup that reached Sway's main loop.
+# A request, or an attempt followed by fallback, is not proof.
+logged_renderer() {
+    LC_ALL=C awk '
+        /\[wlr\] \[util\/env\.c:[0-9]+\] Loading WLR_RENDERER option: / { requested=$NF }
+        /\[wlr\] \[render\/.*\] Creating .*renderer/ { attempts++ }
+        /\[wlr\] \[render\/pixman\/.*\] Created pixman buffer / { actual="pixman" }
+        /\[wlr\] \[render\/gles2\/.*\] GL renderer: / {
+            sub(/^.*\] GL renderer: /, ""); actual="GLES2 (" $0 ")"
+        }
+        /\[sway\/server\.c:[0-9]+\] Running compositor on wayland display/ { running=1; exit }
+        END {
+            printf "requested=%s; actual=%s\n", (requested ? requested : "unknown"),
+                (running && attempts == 1 && actual != "" ? actual : "unknown")
+        }
+    ' "$1"
+}
+
+# wm.log mixes Sway and client stderr. Only accept graphics messages from
+# known emitters; kernel evidence belongs to this boot, not necessarily this crash.
+graphics_errors() {
+    LC_ALL=C awk -v source="$1" '
+        source == "kernel" && $0 == "shh: dmesg unavailable" { print "  dmesg unavailable (restricted or missing)"; next }
+        {
+            s=tolower($0)
+            if (source == "kernel") {
+                if (s !~ /(nouveau|amdgpu|i915|drm|nvrm: xid|xe [0-9a-f]+:|sway\[[0-9]+\]: segfault.*(libegl|libgallium|libmesa|libdrm|_dri\.so))/) next
+            } else if (s !~ /^nouveau: kernel rejected pushbuf/ &&
+                !(s ~ /^[[:space:]]*([0-9:.]+ )?\[error\] \[(wlr\] \[(render|backend)\/|sway\/(server\.c:|desktop\/))/ &&
+                  s ~ /(egl|gles|drm|kms|gpu|renderer|atomic commit|page.flip)/)) next
+            if (s !~ /(error|fail|fault|hang|timed? ?out|reset|killed|rejected|segfault|nvrm: xid|cannot|unable)/) next
+            gsub(/[[:cntrl:]]/, " "); print substr($0, 1, 300)
+        }' | tail -n 6
+}
+
+doctor_graphics() {
+    local dir="$HOME/.local/state/shh" log lines renderer
+    step "DRM (direct access as $(id -un); seatd can grant session access)"
+    sh "$hardware_script" --graphics || bad "no DRM card node found or inventory unavailable"
+
+    step "Sway renderer"
+    info "requested (this shell): ${WLR_RENDERER:-auto}"
+    [ "${WLR_RENDERER:-}" != pixman ] || warn "pixman requests CPU rendering; this alone does not explain delays"
+    for log in wm.log wm-crash.log; do
+        renderer='requested=unknown; actual=unknown'
+        [ ! -r "$dir/$log" ] || renderer=$(logged_renderer "$dir/$log")
+        info "$log session: $renderer"
+    done
+
+    step "last failed session: wm-crash.log"
+    if [ -r "$dir/wm-crash.log" ]; then
+        lines=$(graphics_errors session <"$dir/wm-crash.log")
+        printf '%s\n' "${lines:-  no matching graphics errors}"
+    else
+        info "crash log unavailable"
+    fi
+    step "kernel: current boot (may be a different session)"
+    lines=$({ dmesg 2>/dev/null || echo 'shh: dmesg unavailable'; } | graphics_errors kernel)
+    printf '%s\n' "${lines:-  no matching graphics errors}"
+    # Link two concrete events by PID, not just by the name of a driver.
+    printf '%s\n' "$lines" | LC_ALL=C awk '
+        /sway\[[0-9]+\]: channel [0-9]+ killed!/ { pid=$0; sub(/^.*sway\[/,"",pid); sub(/\].*/,"",pid) }
+        /sway\[[0-9]+\]: segfault .* in libgallium/ && pid && index($0,"sway[" pid "]: segfault") {
+            print "  Possible GPU channel loss before a Mesa crash (Sway PID " pid "); trigger unknown."
+        }'
+    [ "$problems" -eq 0 ]
+}
+
 # ▄▀▀▀ ▄▀▀▄ █    ▄▀▀▄ █▀▀▄ 
 # █    █  █ █    █  █ █▀█  
 #  ▀▀▀  ▀▀  ▀▀▀▀  ▀▀  ▀  ▀ 
@@ -638,7 +707,11 @@ color() {
 case "${1:-}" in
     config)         config ;;
     update)         update ;;
-    doctor)         doctor ;;
+    doctor)         case "$#:${2:-}" in
+                        1:) doctor ;;
+                        2:--graphics) doctor_graphics ;;
+                        *) usage >&2; exit 2 ;;
+                    esac ;;
     color)          shift; color "$@" ;;
     uninstall)      shift; exec sh "$link_file" --uninstall "$@" ;;
     help|-h|--help) usage ;;

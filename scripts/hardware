@@ -8,6 +8,38 @@
 
 set -eu
 
+# Report the kernel's device identities, not the driver chosen in shh config.
+if [ "${1:-}" = --graphics ]; then
+    for dev in /sys/bus/pci/devices/*; do
+        read -r class 2>/dev/null <"$dev/class" || continue
+        case "$class" in 0x03*) ;; *) continue ;; esac
+        id=$(sed -n 's/^PCI_ID=//p' "$dev/uevent")
+        driver=$(readlink "$dev/driver") || driver=unbound
+        printf '  PCI %s [%s] driver=%s\n' "${dev##*/}" "$id" "${driver##*/}"
+    done
+    cards=0 renders=0
+    for node in /dev/dri/card[0-9]* /dev/dri/renderD[0-9]*; do
+        [ -c "$node" ] || continue
+        sys=/sys/class/drm/${node##*/}
+        dev=$(readlink -f "$sys/device") || dev=unknown
+        driver=$(readlink "$sys/device/driver") || driver=unknown
+        r=no w=no
+        [ ! -r "$node" ] || r=yes
+        [ ! -w "$node" ] || w=yes
+        printf '  %s device=%s driver=%s read=%s write=%s\n' "$node" "${dev##*/}" "${driver##*/}" "$r" "$w"
+        case "$node" in */card*) cards=$((cards + 1)) ;; *) renders=$((renders + 1)); continue ;; esac
+        for connector in "$sys"-*; do
+            read -r status 2>/dev/null <"$connector/status" || continue
+            [ "$status" = connected ] || continue
+            read -r enabled 2>/dev/null <"$connector/enabled" || enabled=unknown
+            printf '    %s: connected (%s)\n' "${connector##*/}" "$enabled"
+        done
+    done
+    [ "$renders" -gt 0 ] || echo '  no render node found'
+    [ "$cards" -gt 0 ]
+    exit
+fi
+
 # Test the login workaround only for a modern card actually bound to nouveau.
 if [ "${1:-}" = --nouveau-gl ]; then
     for dev in /sys/bus/pci/drivers/nouveau/*:*; do
