@@ -71,19 +71,28 @@ all_package_lines() {
 #
 # An old FILE with another text is renamed to FILE.bak-DATE first. A FILE
 # with the same text is left alone.
-write_root() {
-    local file="$1"
-    local text="$2"
-
-    if sudo test -e "$file"; then
-        [ "$(sudo cat "$file")" != "$text" ] || return 0
-        sudo mv "$file" "$file.bak-$stamp" || error "cannot back up $file"
-        msg "$red" "$sym_bak" "$file -> $file.bak-$stamp"
+write_root() (
+    local file="$1" text="$2" backup="$1.bak-$stamp" n=0 stage
+    if ! sudo test -L "$file" && sudo test -e "$file"; then
+        sudo test -f "$file" || error "expected a regular file: $file"
+        if printf '%s\n' "$text" | sudo cmp -s "$file" -; then return 0; fi
     fi
-
-    sudo mkdir -p "$(dirname "$file")" || error "cannot create $(dirname "$file")"
-    printf '%s\n' "$text" | sudo tee "$file" >/dev/null || error "cannot write $file"
-}
+    sudo mkdir -p "${file%/*}" || error "cannot create ${file%/*}"
+    stage=$(sudo mktemp -d "${file%/*}/.shh-write.XXXXXX") || error "cannot stage $file"
+    trap 'sudo rm -f "$stage/file"; sudo rmdir "$stage"' EXIT
+    trap 'exit 1' HUP INT TERM
+    printf '%s\n' "$text" | sudo tee "$stage/file" >/dev/null || error "cannot stage $file"
+    if sudo test -L "$file" || sudo test -e "$file"; then
+        while sudo test -L "$backup" || sudo test -e "$backup"; do
+            n=$((n + 1))
+            backup="$file.bak-$stamp-$n"
+        done
+        sudo mv -nT "$file" "$backup" && ! sudo test -e "$file" && ! sudo test -L "$file" ||
+            error "cannot back up $file"
+        msg "$red" "$sym_bak" "$file -> $backup"
+    fi
+    sudo mv -nT "$stage/file" "$file" && ! sudo test -e "$stage/file" || error "cannot publish $file"
+)
 
 # ▄▀▀▀ █  █ █▀▀▀ ▄▀▀▀ █ ▄▀ ▄▀▀▀ 
 # █    █▀▀█ █▀▀  █    █▀▄   ▀▀▄ 
@@ -171,14 +180,17 @@ EOF
 # after the menu, as fzf draws on the terminal. Programs see no terminal
 # from now on, so pacman prints no progress bars.
 start_log() {
-    local fifo
-    mkdir -p "$(dirname "$install_log")"
-    fifo=$(mktemp -u) || error "cannot make a temporary name"
-    mkfifo "$fifo" || error "cannot make $fifo"
-    tee "$install_log" <"$fifo" &
-    exec >"$fifo" 2>&1
-    # Both ends are open, so the name is not needed anymore.
-    rm -f "$fifo"
+    local fifo_dir
+    mkdir -p "$(dirname "$install_log")" || error "cannot create log directory"
+    fifo_dir=$(mktemp -d) || error "cannot make private log directory"
+    trap 'rm -f "$fifo_dir/log"; rmdir "$fifo_dir"' EXIT
+    trap 'exit 1' HUP INT TERM
+    mkfifo -m 600 "$fifo_dir/log" || error "cannot make log pipe"
+    tee "$install_log" <"$fifo_dir/log" &
+    exec >"$fifo_dir/log" 2>&1
+    rm "$fifo_dir/log"
+    rmdir "$fifo_dir"
+    trap - EXIT HUP INT TERM
     info "log: $install_log"
 }
 
