@@ -12,34 +12,19 @@
                                   // quiet  // minimal  // no useless GUI
 ```
 
-Dotfiles and an installer for Artix Linux (s6) and Void Linux (musl, runit). Gentoo and CRUX are on the way.
-
 A quiet sway desktop with no systemd. Terminal first: a GUI only where there is no way around it.
+
+**Supported distributions:** Artix Linux (s6), Void Linux (musl, runit), and KISS Linux Community (runit).
 
 <div align="center"><h2>• installation •</h2></div>
 
-You need a user in the `wheel` group (run everything as that user, **not root**) and internet.
-
-**Artix:** a fresh base install with s6 (pick `seatd-s6`).
-
-```sh
-sudo pacman -S git
-```
-
-**Void:** a fresh musl base install.
+Start from a base installation with internet access and Git installed.
+Run the commands as your **regular user, not root**. Your user must be in the `wheel` group and able to run commands with `sudo`.
 
 ```sh
-sudo xbps-install -Su xbps    # a fresh system must update xbps first
-sudo xbps-install -S git
-```
-
-**Then on both:**
-
-```sh
-git clone https://github.com/kiran-why/Shh-dotfiles.git ~/Shh-dotfiles
-cd ~/Shh-dotfiles
+git clone https://github.com/kiran-why/Shh-dotfiles.git
+cd Shh-dotfiles
 sh install.sh
-cd ~ && rm -rf ~/Shh-dotfiles    # optional: shh update downloads it again
 ```
 
 Reboot and log in on tty1: sway starts by itself.
