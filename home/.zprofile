@@ -72,6 +72,11 @@ if [ -z "${WAYLAND_DISPLAY:-}" ] && [ "$(tty)" = "/dev/tty1" ]; then
         exit
     fi
 
+    # Keep the last failed session across logins.
+    crash_log="${wm_log%/*}/wm-crash.log"
+    if mv -f "$wm_log" "$crash_log"; then
+        wm_log=$crash_log
+    fi
     echo "sway failed, the end of $wm_log:"
     tail -n 5 "$wm_log"
 fi
