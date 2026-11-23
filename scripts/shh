@@ -653,13 +653,33 @@ doctor() {
 }
 
 doctor_build() {
-    local tool
+    local tool dir parent free
     [ -n "${build_tools:-}" ] || error "no build checks for this distro: $distro"
     step "$distro build/update environment"
     for tool in git $build_tools; do
         if command -v "$tool" >/dev/null; then ok "$tool"; else bad "missing tool: $tool"; fi
     done
-    if [ -w "${TMPDIR:-/tmp}" ] && [ -d "${TMPDIR:-/tmp}" ] && [ -x "${TMPDIR:-/tmp}" ]; then
+    if [ "$distro" = kiss ]; then
+        dir=${KISS_TMPDIR:-${XDG_CACHE_HOME:-$HOME/.cache}/kiss/proc}
+        info "KISS working directory: $dir"
+        info "MAKEFLAGS=${MAKEFLAGS:-unset} SAMUFLAGS=${SAMUFLAGS:-unset} CARGO_BUILD_JOBS=${CARGO_BUILD_JOBS:-unset}"
+        case "$dir" in /*) parent=$dir ;; *) parent=$PWD/$dir ;; esac
+        while [ "$parent" != / ] && [ ! -e "$parent" ] && [ ! -L "$parent" ]; do
+            parent=${parent%/*}
+            parent=${parent:-/}
+        done
+        if [ -d "$parent" ] && [ -x "$parent" ] && [ -w "$parent" ]; then
+            ok "writable build filesystem: $parent"
+            free=$(LC_ALL=C df -Pk "$parent" | awk 'NR == 2 && $4 ~ /^[0-9]+$/ {print $4}')
+            case "$free" in
+                '') info "available space unknown" ;;
+                0) bad "no available space on build filesystem" ;;
+                *) info "available space: $free KiB" ;;
+            esac
+        else
+            bad "build directory unavailable: $parent"
+        fi
+    elif [ -w "${TMPDIR:-/tmp}" ] && [ -d "${TMPDIR:-/tmp}" ] && [ -x "${TMPDIR:-/tmp}" ]; then
         ok "temporary directory: ${TMPDIR:-/tmp}"
     else
         bad "temporary directory unavailable: ${TMPDIR:-/tmp}"

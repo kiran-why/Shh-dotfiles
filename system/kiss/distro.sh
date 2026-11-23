@@ -97,11 +97,32 @@ nouveau_legacy_gl() {
 # ~/.local/share/shh/repo (link.sh puts them there for shh).
 #
 # A recipe turned off in shh config (recipe_NAME=no) is left out, so kiss
-# finds the one from kiss-community instead. '-L' copies the files behind
+# searches the remaining repositories in order. '-L' copies the files behind
 # the links of a 'link.sh --link' install, not the links themselves.
-kiss_repos() {
-    local url src recipe
+kiss_repos() (
+    local url src recipe lock work overlay
+    overlay=$kiss_dir/shh
+    lock=$kiss_dir/.shh-update
     mkdir -p "$kiss_dir" || error "cannot create $kiss_dir"
+    mkdir "$lock" || error "overlay update in progress or interrupted: inspect $lock"
+    work=''
+    # The old tree can contain local edits. Only discard our staged copy.
+    trap '
+        if [ -n "$work" ]; then
+            if [ -d "$work/previous" ]; then
+                if [ ! -e "$overlay" ] && [ ! -L "$overlay" ]; then
+                    mv "$work/previous" "$overlay" || error "restore $work/previous to $overlay"
+                else
+                    info "previous recipes preserved: $work/previous"
+                fi
+            fi
+            rm -rf "$work/next"
+            [ -d "$work/previous" ] || rmdir "$work"
+        fi
+        rm -f "$lock/work"
+        rmdir "$lock"
+    ' 0
+    trap 'exit 1' HUP INT TERM
     for url in https://github.com/kiss-community/repo \
                https://github.com/kiss-community/community \
                https://codeberg.org/kiss-community/kiss-dbus; do
@@ -109,18 +130,50 @@ kiss_repos() {
             git clone --depth 1 "$url" "$kiss_dir/${url##*/}" || error "cannot clone $url"
     done
     src="${system_dir:-${distro_file%/*}}/repo"
-    [ -d "$src" ] || return 0
-    rm -rf "$kiss_dir/shh" && mkdir "$kiss_dir/shh" || error "cannot make $kiss_dir/shh"
+    [ -r "$src" ] && [ -d "$src" ] && [ -x "$src" ] || error "cannot read recipes: $src"
+    [ ! -L "$overlay" ] && { [ ! -e "$overlay" ] || [ -d "$overlay" ]; } ||
+        error "expected a directory: $overlay"
+    work=$(mktemp -d "$kiss_dir/.shh-recipes.XXXXXX") || error "cannot stage recipes"
+    echo "$work" > "$lock/work" || error "cannot record staging directory"
+    mkdir "$work/next" || error "cannot prepare overlay"
     for recipe in "$src"/*; do
+        [ -d "$recipe" ] || error "expected a recipe directory: $recipe"
         [ "$(setting "recipe_${recipe##*/}" yes)" = no ] && continue
-        cp -RL "$recipe" "$kiss_dir/shh/" || error "cannot copy $recipe to $kiss_dir/shh"
+        cp -RL "$recipe" "$work/next/" || error "cannot copy $recipe"
+        recipe_valid "$work/next/${recipe##*/}" || error "incomplete recipe: $recipe"
     done
+    [ ! -d "$overlay" ] || mv "$overlay" "$work/previous" || error "cannot save $overlay"
+    mv "$work/next" "$overlay" || error "cannot activate new recipes"
+)
+
+recipe_valid() {
+    local version release
+    [ -f "$1/version" ] && read -r version release < "$1/version" &&
+        [ -n "$release" ] && [ -f "$1/build" ] && [ -x "$1/build" ]
+}
+
+# Print the first matching directory. Missing local repositories make a miss
+# inconclusive (status 2). KISS only checks version and build after selection.
+recipe_find() {
+    local paths base missing=1
+    paths=$2:
+    while [ -n "$paths" ]; do
+        base=${paths%%:*} paths=${paths#*:}
+        [ -n "$base" ] || continue
+        if [ ! -d "$base" ] || [ ! -x "$base" ]; then
+            missing=2
+        elif [ -d "$base/$1" ]; then
+            printf '%s\n' "$base/$1"
+            return 0
+        fi
+    done
+    return "$missing"
 }
 
 # Compare the overlay that kiss_repos last copied with the next selection.
 # Only look in already-present search directories; never run kiss_repos here.
 recipe_preview() {
-    local dir name old new detail paths base rc
+    local dir name old new detail source rc
     for dir in "$recipes_dir"/* "$kiss_dir/shh"/*; do
         [ -d "$dir" ] || continue
         name=${dir##*/} old=off new=off detail=''
@@ -130,20 +183,37 @@ recipe_preview() {
             continue
         fi
         [ ! -d "$kiss_dir/shh/$name" ] || old=on
+        if [ "$new" = on ] && ! recipe_valid "$dir"; then
+            echo "$name: incomplete recipe: $dir (check version and executable build)"
+        fi
         if [ "$old:$new" = on:on ]; then
-            diff -qr "$kiss_dir/shh/$name" "$dir" >/dev/null && continue
-            rc=$?
-            [ "$rc" = 1 ] || { echo "$name: cannot compare recipes"; continue; }
-            detail='recipe files changed'
+            rc=0
+            diff -qr "$kiss_dir/shh/$name" "$dir" >/dev/null || rc=$?
+            if [ "$rc" = 0 ]; then
+                if [ -x "$kiss_dir/shh/$name/build" ]; then
+                    [ ! -x "$dir/build" ] || continue
+                else
+                    [ -x "$dir/build" ] || continue
+                fi
+                detail='build executability changed'
+            elif [ "$rc" = 1 ]; then
+                detail='recipe files changed'
+            else
+                echo "$name: cannot compare recipes"
+                continue
+            fi
         elif [ "$old" = "$new" ]; then
             continue
         elif [ "$new" = off ]; then
-            detail='no replacement in local repositories'
-            paths=${KISS_PATH#*:}:
-            while [ -n "$paths" ]; do
-                base=${paths%%:*} paths=${paths#*:}
-                [ ! -f "$base/$name/version" ] || { detail=$base/$name; break; }
-            done
+            if source=$(recipe_find "$name" "${KISS_PATH#*:}"); then
+                detail=$source
+                recipe_valid "$source" ||
+                    echo "$name: incomplete first replacement: $source (check version and executable build)"
+            else
+                rc=$?
+                detail='no replacement in local repositories'
+                [ "$rc" = 1 ] || detail="$detail (some repositories unavailable)"
+            fi
         else
             detail="next source: shh/$name"
         fi
@@ -165,7 +235,8 @@ xwayland_hint() {
 }
 
 pkg_installed() {
-    kiss l "$1" >/dev/null 2>&1
+    # kiss l validates the installed recipe, but also initializes cache directories.
+    recipe_valid "${KISS_ROOT:-}/${pkg_db:-var/db/kiss/installed}/$1"
 }
 
 # Build and install a package: pkg_install TAG PKG (no tags on KISS).
@@ -175,14 +246,38 @@ pkg_installed() {
 # the rest of our list. The first call can come from 'shh config', before
 # distro_prepare, hence the kiss_repos.
 pkg_install() {
-    [ -d "$kiss_dir/shh" ] || kiss_repos
+    [ -d "$kiss_dir/shh" ] || kiss_repos || return 1
     kiss b "$2" </dev/null && kiss i "$2" </dev/null
 }
 
-# Check that a package exists ('--check'): 0 found, 1 not found.
+# --check reads the active repositories. Before the first overlay copy,
+# use the selected bundled recipe, as kiss_repos would on first install.
 pkg_exists() {
-    [ -d "$kiss_dir/shh" ] || kiss_repos >/dev/null
-    kiss s "$2" >/dev/null 2>&1
+    local paths source installed='' rc
+    paths=$KISS_PATH
+    if [ ! -e "$kiss_dir/shh" ] && [ ! -L "$kiss_dir/shh" ]; then
+        paths=${paths#*:}
+        if [ "$(setting "recipe_$2" yes)" != no ]; then
+            paths=${system_dir:-${distro_file%/*}}/repo:$paths
+        fi
+    fi
+    if pkg_installed "$2"; then installed='installed; '; fi
+    if source=$(recipe_find "$2" "$paths"); then
+        if recipe_valid "$source"; then
+            echo "${installed}recipe: $source"
+            return 0
+        fi
+        echo "${installed}incomplete recipe: $source"
+        return 1
+    else
+        rc=$?
+    fi
+    if [ "$rc" = 2 ]; then
+        echo "${installed}local repositories unavailable"
+    else
+        echo "${installed}no repository recipe"
+    fi
+    return "$rc"
 }
 
 # Print the packages that are not installed.
@@ -207,7 +302,7 @@ pkg_leftovers() {
 # shortcut: a new OpenSSL soname breaks sudo during kiss U (its recipe has no depends), then: as root kiss b sudo
 distro_prepare() {
     step "system update"
-    kiss_repos
+    kiss_repos || error "cannot prepare KISS repositories"
     kiss u </dev/null || error "cannot update the repos (no internet?)"
     kiss U </dev/null || error "system update failed"
     ok "system updated"

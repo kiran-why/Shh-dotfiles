@@ -137,15 +137,16 @@ choose_parts() {
 check_packages() {
     step "checking package names"
 
-    local tag pkg desc note rc missing=0
+    local tag pkg desc note rc missing=0 skipped=0
 
     while IFS=, read -r tag pkg desc; do
         rc=0
         note=$(pkg_exists "$tag" "$pkg") || rc=$?
         case "$rc" in
             0) ok "$pkg${note:+ ($note)}" ;;
-            2) warn "skipped ($note): $pkg" ;;
-            *) warn "not found: $pkg"
+            2) warn "skipped ($note): $pkg"
+               skipped=$((skipped + 1)) ;;
+            *) if [ -n "$note" ]; then warn "$pkg ($note)"; else warn "not found: $pkg"; fi
                missing=$((missing + 1)) ;;
         esac
     done <<EOF
@@ -153,7 +154,11 @@ $(all_package_lines)
 EOF
 
     [ "$missing" -eq 0 ] || error "$missing package(s) not found"
-    ok "all packages exist"
+    if [ "$distro" = kiss ] && [ "$skipped" -gt 0 ]; then
+        warn "$skipped package(s) could not be checked"
+    else
+        ok "all packages exist"
+    fi
 }
 
 # ▀█▀ █▄  █ ▄▀▀▀ ▀▀█▀▀ ▄▀▀▄ █    █    
@@ -471,7 +476,8 @@ done
 logo
 
 if [ "$check_only" = 1 ]; then
-    check_system
+    # KISS name checks need only local recipe directories.
+    [ "$distro" = kiss ] || check_system
     check_packages
     exit 0
 fi
