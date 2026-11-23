@@ -15,6 +15,8 @@ seat_groups=audio,video,wheel
 # blocked. A few of them, as one can be down or blocked.
 online_sites='https://kisslinux.github.io https://codeberg.org https://github.com'
 pkg_remove='kiss r'
+build_tools='kiss cc make meson ninja pkg-config'
+pkg_query=kiss
 # The root commands of power_run, for the sudoers rule (install.sh).
 #
 # "" means no arguments. There is no zzz here: suspend is "mem" written to
@@ -113,6 +115,53 @@ kiss_repos() {
         [ "$(setting "recipe_${recipe##*/}" yes)" = no ] && continue
         cp -RL "$recipe" "$kiss_dir/shh/" || error "cannot copy $recipe to $kiss_dir/shh"
     done
+}
+
+# Compare the overlay that kiss_repos last copied with the next selection.
+# Only look in already-present search directories; never run kiss_repos here.
+recipe_preview() {
+    local dir name old new detail paths base rc
+    for dir in "$recipes_dir"/* "$kiss_dir/shh"/*; do
+        [ -d "$dir" ] || continue
+        name=${dir##*/} old=off new=off detail=''
+        if [ "$dir" = "$recipes_dir/$name" ]; then
+            [ "$(setting "recipe_$name" yes)" = no ] || new=on
+        elif [ -d "$recipes_dir/$name" ]; then
+            continue
+        fi
+        [ ! -d "$kiss_dir/shh/$name" ] || old=on
+        if [ "$old:$new" = on:on ]; then
+            diff -qr "$kiss_dir/shh/$name" "$dir" >/dev/null && continue
+            rc=$?
+            [ "$rc" = 1 ] || { echo "$name: cannot compare recipes"; continue; }
+            detail='recipe files changed'
+        elif [ "$old" = "$new" ]; then
+            continue
+        elif [ "$new" = off ]; then
+            detail='no replacement in local repositories'
+            paths=${KISS_PATH#*:}:
+            while [ -n "$paths" ]; do
+                base=${paths%%:*} paths=${paths#*:}
+                [ ! -f "$base/$name/version" ] || { detail=$base/$name; break; }
+            done
+        else
+            detail="next source: shh/$name"
+        fi
+        if pkg_installed "$name"; then detail="$detail; possible rebuild"; fi
+        printf '%s: shh %s -> %s (%s)\n' "$name" "$old" "$new" "$detail"
+    done
+}
+
+xwayland_hint() {
+    local header
+    header=$(sed -n '\|/wlr/config\.h$|p' /var/db/kiss/installed/wlroots/manifest 2>/dev/null) || header=''
+    if grep -Eq '^#define WLR_HAS_XWAYLAND[[:space:]]+0$' "$header" 2>/dev/null; then
+        echo 'Unavailable: installed wlroots built without Xwayland'
+    elif ! command -v Xwayland >/dev/null; then
+        echo 'Xwayland executable missing; requires compatible wlroots and Sway builds'
+    else
+        echo 'Requires Xwayland support in both wlroots and Sway; after a relogin'
+    fi
 }
 
 pkg_installed() {

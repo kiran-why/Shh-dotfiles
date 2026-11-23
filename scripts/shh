@@ -7,7 +7,7 @@
 # Look after the dotfiles: pick the parts, update, check, change a color,
 # uninstall.
 #
-# Usage: shh config | update | doctor | color OLD NEW | uninstall [-n] | help
+# Usage: shh config | update [--dry-run] | diff | doctor [config|graphics|build] | help
 
 set -eu
 
@@ -58,8 +58,11 @@ usage() {
     echo "usage: shh COMMAND"
     echo "  config   pick the parts and settings for install.sh (then: shh update)"
     echo "  update   install.sh from a fresh clone (it updates the system and the configs)"
-    echo "  doctor   check services, installed files, packages and the session"
-    echo "  doctor --graphics   show DRM devices, renderer evidence and recent graphics errors"
+    echo "  update --dry-run   preview this local checkout, without pulling or installing"
+    echo "  diff     preview dotfile changes and backups from the local checkout"
+    echo "  doctor config     check services, installed files, packages and the session (default)"
+    echo "  doctor graphics   show DRM devices, renderer evidence and recent graphics errors"
+    echo "  doctor build      check the distro's build/update tools without building"
     echo "  color OLD NEW  change a color in every config, e.g. shh color d7263d ff0000"
     echo "  uninstall [-n] remove what link.sh put in place, put the old files back (-n: only show)"
     echo "  help     show this help"
@@ -211,7 +214,11 @@ settings_lines() {
     ! command -v distro_settings >/dev/null || distro_settings
     yes_no nobeep 'Mute the motherboard beeper'
     yes_no maxhz 'Highest refresh rate of every screen'
-    yes_no xwayland 'X11 programs; after a relogin' no
+    if command -v xwayland_hint >/dev/null; then
+        yes_no xwayland "$(xwayland_hint)" no
+    else
+        yes_no xwayland 'X11 programs; after a relogin' no
+    fi
     yes_no a11y 'Screen readers in GTK programs; after a relogin' no
 }
 
@@ -273,13 +280,23 @@ recipe_lines() {
     group_lines
     printf -- '-\t\n'
     line all '' 'all recipes' 'Every recipe, even the ones the setup needs >'
+    line preview '' preview 'Changes since the last applied selection >'
+}
+
+show_recipe_changes() {
+    local changes
+    changes=$(recipe_preview)
+    printf '%s\n' "${changes:-No pending recipe changes.}"
 }
 
 recipe_act() {
     case "$1" in
+        preview)
+            show_recipe_changes | fzf --no-input --header='Local sources only; rebuilds are estimates. Esc: back' >/dev/null || :
+            ;;
         all)
             loop 'all recipes' 'Enter: on / off   Esc: back' all_recipe_lines all_recipe_act \
-                "$(center '! Off: kiss builds the kiss-community recipe instead, it may break')"
+                "$(center 'Off: next source in KISS_PATH, if present; installed package stays')"
             note='' ;;
         # The empty line between the two groups.
         -) ;;
@@ -484,6 +501,37 @@ update() {
     sh "$tmp/install.sh"
 }
 
+preview() {
+    local src="$repo" mode
+    if [ -L "$share/lib.sh" ]; then
+        src=$(cd "$(dirname "$(readlink -f "$share/lib.sh")")/.." && pwd -P)
+    elif [ "$from_repo" = 0 ]; then
+        src="$HOME/Shh-dotfiles"
+    fi
+    [ -f "$src/scripts/shh" ] && [ -f "$src/lib/link.sh" ] ||
+        error "no local checkout at $src; run sh scripts/shh $* from your checkout"
+    step "local checkout: $src (remote changes not fetched)"
+    if [ "$1" = update ]; then
+        packages_dir="$src/system/$distro/packages"
+        components_file="$src/components/${distro}_components.txt"
+        hardware_script="$src/scripts/hardware"
+        recipes_dir="$src/system/$distro/repo"
+        info "apply: update the system, install missing selections, configure GPU, network, services and login, then install dotfiles"
+        info "packages below use the local installed database; upgrade versions and dependency changes are unknown"
+        check_packages preview
+        if command -v recipe_preview >/dev/null; then
+            step "KISS recipe changes (possible rebuilds only)"
+            show_recipe_changes
+        fi
+    fi
+    mode=$(setting mode "$mode_now")
+    case "$mode" in copy|link) ;; *) error "unknown install mode: $mode" ;; esac
+    DOTS_NO_LOGO=1 sh "$src/lib/link.sh" -n --diff "--$mode"
+    if [ "$mode" = link ] && [ ! -L "$share/lib.sh" ] && [ "$1" = update ]; then
+        warn "switch to link from a persistent checkout with sh install.sh"
+    fi
+}
+
 # █▀▀▄ ▄▀▀▄ ▄▀▀▀ ▀▀█▀▀ ▄▀▀▄ █▀▀▄ 
 # █  █ █  █ █      █   █  █ █▀█  
 # ▀▀▀   ▀▀   ▀▀▀   ▀    ▀▀  ▀  ▀ 
@@ -535,6 +583,10 @@ check_packages() {
     step "packages"
 
     local hw hardware csv names missing pkg
+    if ! command -v "$pkg_query" >/dev/null; then
+        bad "cannot query installed packages: $pkg_query missing"
+        return
+    fi
     hardware=$(sh "$hardware_script" 2>/dev/null || true)
     names=$(for hw in common $(gpu_drivers "$hardware"); do
         csv="$packages_dir/$hw.csv"
@@ -545,7 +597,7 @@ check_packages() {
     missing=$(pkg_missing $names)
 
     for pkg in $missing; do
-        bad "not installed: $pkg (sh install.sh)"
+        if [ "${1:-}" = preview ]; then info "would install: $pkg"; else bad "not installed: $pkg (sh install.sh)"; fi
     done
     [ -n "$missing" ] || ok "all $(printf '%s\n' "$names" | wc -l) packages installed"
 }
@@ -585,6 +637,22 @@ doctor() {
     echo
     [ "$problems" -eq 0 ] || error "$problems problem(s)"
     ok "all good"
+}
+
+doctor_build() {
+    local tool
+    [ -n "${build_tools:-}" ] || error "no build checks for this distro: $distro"
+    step "$distro build/update environment"
+    for tool in git $build_tools; do
+        if command -v "$tool" >/dev/null; then ok "$tool"; else bad "missing tool: $tool"; fi
+    done
+    if [ -w "${TMPDIR:-/tmp}" ] && [ -d "${TMPDIR:-/tmp}" ] && [ -x "${TMPDIR:-/tmp}" ]; then
+        ok "temporary directory: ${TMPDIR:-/tmp}"
+    else
+        bad "temporary directory unavailable: ${TMPDIR:-/tmp}"
+    fi
+    info "installer log: $HOME/.local/state/shh/install.log"
+    [ "$problems" -eq 0 ]
 }
 
 # Only report a renderer from a wlroots startup that reached Sway's main loop.
@@ -635,6 +703,9 @@ doctor_graphics() {
         [ ! -r "$dir/$log" ] || renderer=$(logged_renderer "$dir/$log")
         info "$log session: $renderer"
     done
+    if command -v xwayland_hint >/dev/null; then
+        info "Xwayland: config=$(setting xwayland no); $(xwayland_hint)"
+    fi
 
     step "last failed session: wm-crash.log"
     if [ -r "$dir/wm-crash.log" ]; then
@@ -706,10 +777,16 @@ color() {
 
 case "${1:-}" in
     config)         config ;;
-    update)         update ;;
+    update)         case "$#:${2:-}" in
+                        1:) update ;;
+                        2:--dry-run) preview "$@" ;;
+                        *) usage >&2; exit 2 ;;
+                    esac ;;
+    diff)           [ "$#" = 1 ] || { usage >&2; exit 2; }; preview "$@" ;;
     doctor)         case "$#:${2:-}" in
-                        1:) doctor ;;
-                        2:--graphics) doctor_graphics ;;
+                        1:|2:config) doctor ;;
+                        2:graphics|2:--graphics) doctor_graphics ;;
+                        2:build) doctor_build ;;
                         *) usage >&2; exit 2 ;;
                     esac ;;
     color)          shift; color "$@" ;;

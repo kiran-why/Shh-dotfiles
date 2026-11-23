@@ -36,6 +36,8 @@ list="$HOME/.local/state/shh/installed"
 stamp=$(date +%Y%m%d-%H%M%S)
 tab=$(printf '\t')
 dry_run=0
+show_diff=0
+new_tree=0
 uninstall=0
 done_count=0
 skipped=0
@@ -60,8 +62,9 @@ done
 backup_msg() { msg "$red" "$sym_bak" "$1"; }
 
 usage() {
-    echo "usage: $0 [-n | --dry-run] [--link | --copy] [-u | --uninstall] [-h | --help]"
+    echo "usage: $0 [-n | --dry-run | --diff] [--link | --copy] [-u | --uninstall] [-h | --help]"
     echo "  -n, --dry-run    show what would be done, change nothing"
+    echo "  --diff           dry run with content differences; omit unchanged files"
     echo "  --link           symlinks to the repo: edits land in it (for working on the dotfiles)"
     echo "  --copy           copies, the repo can be deleted (the default)"
     echo "  -u, --uninstall  remove what is ours, put the old files back"
@@ -127,14 +130,21 @@ install_file() {
     printf '%s\t%s\n' "$k" "$dst" >>"$new_list"
 
     # Already in place: the right link, or a copy with the same content.
-    if { [ "$mode" = link ] && same "$dst" "$k"; } ||
-       { [ "$mode" = copy ] && [ ! -L "$dst" ] && same "$dst" "$k"; }; then
-        ok "$dst"
+    if [ "$new_tree" = 0 ] && { { [ "$mode" = link ] && same "$dst" "$k"; } ||
+       { [ "$mode" = copy ] && [ ! -L "$dst" ] && same "$dst" "$k"; }; }; then
+        [ "$show_diff" = 1 ] || ok "$dst"
         skipped=$((skipped + 1))
         return
     fi
 
-    if [ -e "$dst" ] || [ -L "$dst" ]; then
+    if [ "$new_tree" = 0 ] && { [ -e "$dst" ] || [ -L "$dst" ]; }; then
+        if [ "$show_diff" = 1 ]; then
+            if [ -L "$dst" ]; then
+                info "replace symlink: $dst -> $(readlink "$dst")"
+            elif [ -f "$dst" ]; then
+                diff -u "$dst" "$src" || [ "$?" = 1 ] || error "cannot compare $dst"
+            fi
+        fi
         put_aside "$dst"
     fi
     if [ "$dry_run" = 0 ]; then
@@ -145,7 +155,11 @@ install_file() {
             cp "$src" "$dst" || error "cannot copy $dst"
         fi
     fi
-    info "$dst"
+    if [ "$show_diff" = 1 ] && [ "$mode" = link ]; then
+        info "link $dst -> $src"
+    else
+        info "$dst"
+    fi
     done_count=$((done_count + 1))
 }
 
@@ -153,6 +167,7 @@ install_file() {
 install_tree() {
     local src="$1"
     local dst="$2"
+    local new_tree="$new_tree"
 
     [ -e "$src" ] || error "source not found: $src"
     # Skip a part turned off in 'shh config' (components.txt).
@@ -163,8 +178,9 @@ install_tree() {
     fi
 
     # A link or a file is where our folder goes (old link.sh linked folders).
-    if [ -L "$dst" ] || { [ -e "$dst" ] && [ ! -d "$dst" ]; }; then
+    if [ "$new_tree" = 0 ] && { [ -L "$dst" ] || { [ -e "$dst" ] && [ ! -d "$dst" ]; }; }; then
         put_aside "$dst"
+        [ "$dry_run" = 0 ] || new_tree=1
     fi
     install_entries "$src" "$dst"
 }
@@ -361,6 +377,7 @@ install_all() {
 for arg in "$@"; do
     case "$arg" in
         -n|--dry-run)   dry_run=1 ;;
+        --diff)         dry_run=1; show_diff=1 ;;
         --link)         mode=link ;;
         --copy)         mode=copy ;;
         -u|--uninstall) uninstall=1 ;;

@@ -15,6 +15,8 @@ seat_groups=seat,audio,video
 # blocked. A few of them, as one can be down or blocked.
 online_sites='https://artixlinux.org https://archlinux.org https://github.com'
 pkg_remove='sudo pacman -Rs'
+build_tools='pacman makepkg cc make'
+pkg_query=pacman
 # The root commands of power_run, for the sudoers rule (install.sh).
 #
 # "" means no arguments. Artix has no zzz: suspend is "mem" written to

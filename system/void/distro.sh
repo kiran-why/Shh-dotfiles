@@ -15,6 +15,8 @@ seat_groups=_seatd,audio,video
 # blocked. A few of them, as one can be down or blocked.
 online_sites='https://voidlinux.org https://github.com'
 pkg_remove='sudo xbps-remove -R'
+build_tools='xbps-query xbps-install'
+pkg_query=xbps-query
 # The root commands of power_run, for the sudoers rule (install.sh).
 # "" means no arguments.
 power_cmds='/usr/bin/poweroff "", /usr/bin/reboot "", /usr/bin/zzz ""'
