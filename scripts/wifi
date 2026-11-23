@@ -1,6 +1,6 @@
 #!/bin/sh
-# The wifi menu: available networks (connect), known networks (forget),
-# check the internet, disconnect. Opened from the bar menu (scripts/menu).
+# Manage wifi from the bar menu. KISS uses eiwd profiles; Artix and Void
+# use iwctl to scan, connect and forget networks.
 
 set -eu
 
@@ -20,21 +20,6 @@ export MENU_TEXT=
 plain() {
     sed 's/\x1b\[[0-9;]*m//g'
 }
-
-devices=$(for d in /sys/class/net/*; do
-    if [ -d "$d/wireless" ]; then echo "${d##*/}"; fi
-done)
-if [ -z "$devices" ]; then
-    echo 'no wifi device found'
-    sleep 3
-    exit 1
-fi
-# More than one device (a usb wifi stick): ask which.
-if [ "$(echo "$devices" | wc -l)" -gt 1 ]; then
-    dev=$(echo "$devices" | menu) || exit 0
-else
-    dev=$devices
-fi
 
 # Print the network we are connected to.
 current() {
@@ -129,9 +114,124 @@ check_internet() {
     note='Internet: no connection'
 }
 
+# Read a passphrase without echoing it. Restore the terminal even on Ctrl+C.
+eiwd_password() (
+    tty_mode=$(stty -g) || exit 1
+    trap 'stty "$tty_mode"; printf "\n" >&2' EXIT
+    trap 'exit 1' HUP INT TERM
+    stty -echo || exit 1
+    printf 'Passphrase: ' >&2
+    IFS= read -r pass && printf '%s' "$pass"
+)
+
+# Add a profile for autoconnect. eiwd watches the directory for new files.
+eiwd_add() {
+    local ssid name type pass size data
+    printf 'Network name: '
+    IFS= read -r ssid && [ -n "$ssid" ] || return 0
+    if [ "$(printf %s "$ssid" | wc -c)" -gt 32 ]; then
+        note='Network names are at most 32 bytes'
+        return
+    fi
+    type=$(printf '%s\n' 'Personal (password)' 'Open' |
+        menu --header="Security$gap") || return 0
+    # Match the filename encoding in 'iwd.network(5)'.
+    case "$ssid" in
+        *[!a-zA-Z0-9_' '-]*) name="=$(printf %s "$ssid" | od -An -tx1 -v | tr -d ' \n')" ;;
+        *) name=$ssid ;;
+    esac
+    case "$type" in
+        Open) name=$name.open; data='[Settings]' ;;
+        *)
+            name=$name.psk
+            pass=$(eiwd_password) && [ -n "$pass" ] || return 0
+            size=$(printf %s "$pass" | wc -c)
+            if [ "$size" -lt 8 ] || [ "$size" -gt 63 ]; then
+                note='Use a passphrase of 8 to 63 bytes'
+                return
+            fi
+            # Escape spaces and backslashes for the eiwd settings reader.
+            data=$(printf '%s\n' "$pass" | sed 's/\\/\\\\/g; s/ /\\s/g' |
+                iwd_passphrase "$ssid" 2>/dev/null) || { note='Could not make profile'; return; }
+            ;;
+    esac
+    # Publish a complete, private profile. 'ln' refuses to replace an old one.
+    if printf '%s\n' "$data" | sudo sh -ec '
+        umask 077
+        tmp=$(mktemp "$1/.shh-XXXXXX")
+        trap '\''rm -f "$tmp"'\'' EXIT
+        cat > "$tmp"
+        ln "$tmp" "$1/$2"
+    ' sh "$profiles" "$name"; then
+        note='Profile saved for autoconnect'
+    else
+        note='Not saved (existing profile or write failed)'
+    fi
+}
+
+eiwd_known() {
+    local names file
+    # Only filenames leave the root-owned directory, never the credentials.
+    names=$(sudo find "$profiles" -maxdepth 1 -type f \
+        \( -name '*.psk' -o -name '*.open' -o -name '*.8021x' \)) ||
+        { note='Could not list profiles'; return; }
+    [ -n "$names" ] || { note='No saved networks'; return; }
+    file=$(printf '%s\n' "$names" | sed 's|.*/||' | sort |
+        menu --header="Enter: forget profile$gap") || return 0
+    case "$file" in
+        */*) return 1 ;;
+        *.psk|*.open|*.8021x)
+            if sudo rm "$profiles/$file"; then note='Profile forgotten'; else note='Could not forget profile'; fi ;;
+    esac
+}
+
+# Keep the service switch available even when eiwd has removed its interface.
+eiwd_menu() {
+    local profiles=/var/lib/iwd state action cmd
+    while :; do
+        state=$(fastfetch -s Wifi --format json | jq -r '
+            .[] | .result[]? | "\(.inf.description): \(.conn.ssid | if . == "" or . == null then "disconnected" else . end)"') || state=''
+        if svc_check eiwd >/dev/null; then action='Stop Wifi'; cmd=stop
+        else action='Start Wifi'; cmd=start; state='Wifi is off'; fi
+        MENU_TEXT="${state:-No wifi device}${note:+
+$note}$gap"
+        pick=$(printf '%s\n' 'Add network >' 'Known networks >' 'Check internet' "$action" |
+            menu --bind="$banner" --bind="load:pos($pos)") || return 0
+        note=''
+        case "$pick" in
+            'Add network >')    pos=1; eiwd_add ;;
+            'Known networks >') pos=2; eiwd_known ;;
+            'Check internet')   pos=3; check_internet ;;
+            "$action")          pos=4; svc_ctl "$cmd" eiwd || note='Could not change wifi state' ;;
+        esac
+    done
+}
+
 # 'pos' keeps the cursor on the last picked line, 'note' the last check.
 pos=1
 note=''
+. "$HOME/.local/share/shh/lib.sh"
+if [ "$distro" = kiss ]; then
+    . "$HOME/.local/share/shh/distro.sh"
+    eiwd_menu
+    exit 0
+fi
+
+devices=$(for d in /sys/class/net/*; do
+    if [ -d "$d/wireless" ]; then echo "${d##*/}"; fi
+done)
+if [ -z "$devices" ]; then
+    echo 'no wifi device found'
+    sleep 3
+    exit 1
+fi
+# More than one device (a usb wifi stick): ask which.
+if [ "$(echo "$devices" | wc -l)" -gt 1 ]; then
+    dev=$(echo "$devices" | menu) || exit 0
+else
+    dev=$devices
+fi
+
 while :; do
     MENU_TEXT="$dev: $(current || true)${note:+
 $note}$gap"
