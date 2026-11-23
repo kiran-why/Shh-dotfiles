@@ -24,7 +24,7 @@ lines() {
     for s in 'wifi	  Wifi >' \
         'volume	󰕾  Volume >' \
         'bluetooth	  Bluez >' \
-        'vpn	󰖂  VPN >' \
+        'vpn	  VPN >' \
         'settings	󰒓  Prefs >' \
         'power	  Power >'; do
         [ ! -x "$bin/${s%%"$tab"*}" ] || printf '%s\n' "$s"
