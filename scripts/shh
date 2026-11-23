@@ -63,14 +63,16 @@ doctor_usage() {
 
 usage() {
     echo "usage: shh COMMAND"
-    echo "  config   pick the parts and settings for install.sh (then: shh update)"
-    echo "  update   install.sh from a fresh clone (it updates the system and the configs)"
-    echo "  update --dry-run   preview this local checkout, without pulling or installing"
-    echo "  diff     preview dotfile changes and backups from the local checkout"
-    echo "  doctor   list diagnostic options"
-    echo "  color OLD NEW  change a color in every config, e.g. shh color d7263d ff0000"
-    echo "  uninstall [-n] remove what link.sh put in place, put the old files back (-n: only show)"
-    echo "  help     show this help"
+    echo
+    printf '  %-22s%s\n' \
+        'config'           'pick the parts and settings for install.sh (then: shh update)' \
+        'update'           'install.sh from a fresh clone (it updates the system and the configs)' \
+        'update --dry-run' 'preview this local checkout, without pulling or installing' \
+        'diff'             'preview dotfile changes and backups from the local checkout' \
+        'doctor'           'list diagnostic options' \
+        'color OLD NEW'    'change a color in every config, e.g. shh color d7263d ff0000' \
+        'uninstall [-n]'   'remove what link.sh put in place, put the old files back (-n: only show)' \
+        'help'             'show this help'
 }
 
 # ▄▀▀▀ ▄▀▀▄ █▄  █ █▀▀▀ ▀█▀ ▄▀▀▀ 
@@ -684,16 +686,27 @@ log_window() {
 # A request, or an attempt followed by fallback, is not proof.
 logged_renderer() {
     LC_ALL=C awk '
-        /\[wlr\] \[util\/env\.c:[0-9]+\] Loading WLR_RENDERER option: / { requested=$NF }
-        /\[wlr\] \[render\/.*\] Creating .*renderer/ { attempts++ }
-        /\[wlr\] \[render\/pixman\/.*\] Created pixman buffer / { actual="pixman" }
-        /\[wlr\] \[render\/gles2\/.*\] GL renderer: / {
-            sub(/^.*\] GL renderer: /, ""); actual="GLES2 (" $0 ")"
+        { sub(/^[[:space:]]*([0-9:.]+ )?(\[(DEBUG|INFO|WARN|ERROR)\] )?/, "") }
+        /^\[wlr\] \[util\/env\.c:[0-9]+\] Loading WLR_RENDERER option: / { requested=$NF }
+        /^\[wlr\] \[render\/[^]]+\] Creating .*renderer/ {
+            attempts++
+            if ($0 ~ /^\[wlr\] \[render\/pixman\/[^]]+\] Creating pixman renderer/) backend="pixman"
+            if ($0 ~ /^\[wlr\] \[render\/gles2\/[^]]+\] Creating GLES2 renderer/) backend="gles2"
         }
-        /\[sway\/server\.c:[0-9]+\] Running compositor on wayland display/ { running=1; exit }
+        /^\[wlr\] \[render\/pixman\/[^]]+\] Created pixman buffer / {
+            if (backend != "pixman") conflict=1
+            actual="pixman"
+        }
+        /^\[wlr\] \[render\/gles2\/[^]]+\] GL renderer: [^[:space:]]/ {
+            if (backend != "gles2") conflict=1
+            sub(/^.*\] GL renderer: /, "")
+            if (actual != "" && actual != "GLES2 (" $0 ")") conflict=1
+            actual="GLES2 (" $0 ")"
+        }
+        /^\[sway\/server\.c:[0-9]+\] Running compositor on wayland display / { running=1; exit }
         END {
             printf "requested=%s; actual=%s\n", (requested ? requested : "unknown"),
-                (running && attempts == 1 && actual != "" ? actual : "unknown")
+                (running && attempts == 1 && !conflict && actual != "" ? actual : "unknown")
         }
     '
 }
@@ -707,11 +720,13 @@ graphics_errors() {
             s=tolower($0)
             if (source == "kernel") {
                 if (s !~ /(nouveau|amdgpu|i915|drm|nvrm: xid|xe [0-9a-f]+:|sway\[[0-9]+\]: segfault.*(libegl|libgallium|libmesa|libdrm|_dri\.so))/) next
-            } else if (s !~ /^nouveau: kernel rejected pushbuf/ &&
-                !(s ~ /^[[:space:]]*([0-9:.]+ )?\[error\] \[(wlr\] \[(render|backend)\/|sway\/(server\.c:|desktop\/))/ &&
-                  s ~ /(egl|gles|drm|kms|gpu|renderer|atomic commit|page.flip)/)) next
+                label="kernel"
+            } else if (s ~ /^nouveau: kernel rejected pushbuf/) label="Nouveau (process unknown)"
+            else if (s ~ /^[[:space:]]*([0-9:.]+ )?\[error\] \[(wlr\] \[(render|backend)\/|sway\/(server\.c:|desktop\/))/ &&
+                     s ~ /(egl|gles|drm|kms|gpu|renderer|atomic commit|page.flip)/) label="Sway/wlroots"
+            else next
             if (s !~ /(error|fail|fault|hang|timed? ?out|reset|killed|rejected|segfault|nvrm: xid|cannot|unable)/) next
-            gsub(/[[:cntrl:]]/, " "); print substr($0, 1, 300)
+            gsub(/[[:cntrl:]]/, " "); print "  " label ": " substr($0, 1, 300)
         }' | tail -n 6
 }
 
@@ -720,9 +735,11 @@ doctor_graphics() {
     step "DRM (direct access as $(id -un); seatd can grant session access)"
     sh "$hardware_script" --graphics || bad "no DRM card node found or inventory unavailable"
 
-    step "Sway renderer"
+    step "Sway renderer (actual refers only to the logged startup)"
     info "requested (this shell): ${WLR_RENDERER:-auto}"
     [ "${WLR_RENDERER:-}" != pixman ] || warn "pixman requests CPU rendering; this alone does not explain delays"
+    [ -z "${WLR_NO_HARDWARE_CURSORS+x}" ] || info "this shell: WLR_NO_HARDWARE_CURSORS=$WLR_NO_HARDWARE_CURSORS"
+    [ -z "${NOUVEAU_USE_ZINK+x}" ] || info "this shell: NOUVEAU_USE_ZINK=$NOUVEAU_USE_ZINK"
     for log in wm.log wm-crash.log; do
         if chunk=$(log_window start "$dir/$log"); then
             renderer=$(printf '%s\n' "$chunk" | logged_renderer)
@@ -735,16 +752,20 @@ doctor_graphics() {
         info "Xwayland: config=$(setting xwayland no); $(xwayland_hint)"
     fi
 
-    step "last failed session: wm-crash.log"
-    if chunk=$(log_window end "$dir/wm-crash.log"); then
-        lines=$(printf '%s\n' "$chunk" | graphics_errors session)
-        printf '%s\n' "${lines:-  no matching graphics errors in last 64 KiB}"
-    else
-        info "crash log unavailable"
-    fi
-    step "kernel: current boot (may be a different session)"
-    lines=$({ dmesg 2>/dev/null || echo 'shh: dmesg unavailable'; } | graphics_errors kernel)
-    printf '%s\n' "${lines:-  no matching graphics errors}"
+    for log in wm.log wm-crash.log; do
+        step "graphics errors: $log"
+        if chunk=$(log_window end "$dir/$log"); then
+            lines=$(printf '%s\n' "$chunk" | graphics_errors session)
+            printf '%s\n' "${lines:-  no matching graphics errors in last 64 KiB}"
+        elif [ "$log" = wm-crash.log ]; then
+            info "crash log unavailable"
+        else
+            info "session log unavailable"
+        fi
+    done
+    step "kernel: current boot, last 256 lines (may be a different session)"
+    lines=$({ dmesg 2>/dev/null || echo 'shh: dmesg unavailable'; } | tail -n 256 | graphics_errors kernel)
+    printf '%s\n' "${lines:-  no matching graphics errors in this window}"
     # Link two concrete events by PID, not just by the name of a driver.
     printf '%s\n' "$lines" | LC_ALL=C awk '
         /sway\[[0-9]+\]: channel [0-9]+ killed!/ { pid=$0; sub(/^.*sway\[/,"",pid); sub(/\].*/,"",pid) }
