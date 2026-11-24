@@ -7,7 +7,7 @@
 # Look after the dotfiles: pick the parts, update, check, change a color,
 # uninstall.
 #
-# Usage: shh config | update [--dry-run] | diff | doctor [--config|--graphics|--build|--performance|--network] | help
+# Usage: shh config | update [--dry-run] | diff | doctor [--config|--graphics|--build|--performance|--network|--audio] | help
 
 set -eu
 
@@ -59,6 +59,7 @@ doctor_usage() {
     printf '  shh doctor %-19s%s\n' \
         '--config'      'check services, installed files, packages and the session' \
         '--graphics'    'show DRM devices, renderer evidence and recent graphics errors' \
+        '--audio'        'inspect session audio, local sockets, ALSA and default devices' \
         '--network'     'inspect local interfaces, Wi-Fi, routes and DNS configuration' \
         '--performance' 'sample system resources, desktop processes and Sway startup' \
         '--build'       "check the distro's build/update tools without building"
@@ -835,6 +836,239 @@ network_backend() {
     else info "UNKNOWN: iwd process not confirmed"; fi
 }
 
+# A missing session component is actionable only after the startup window.
+audio_missing() {
+    if [ "$settled" = yes ]; then bad "FAIL: $1 (current snapshot)"
+    elif [ "$active" = yes ]; then warn "UNKNOWN: $1 (startup may be in progress)"
+    else info "$1 (session expectation unknown here)"; fi
+}
+
+audio_alsa() {
+    step "ALSA hardware (kernel inventory)"
+    for file in /proc/asound/cards /proc/asound/pcm; do
+        if [ -x /proc ] && [ ! -e /proc/asound ]; then
+            info "UNAVAILABLE: kernel ALSA inventory /proc/asound absent"; break
+        elif [ -x /proc/asound ] && [ ! -e "$file" ]; then
+            info "UNAVAILABLE: $file absent"
+        elif [ -f "$file" ] && rows=$(cat "$file" 2>/dev/null); then
+            case "$file" in
+                */cards) pattern='^[[:space:]]*[0-9]+ [[]' ;;
+                */pcm) pattern='^[0-9]+-[0-9]+:' ;;
+            esac
+            if matches=$(printf '%s\n' "$rows" | grep -E "$pattern"); then
+                info "$file"
+                printf '%s\n' "$matches"
+            elif [ "$file" = /proc/asound/cards ] && [ "$rows" = '--- no soundcards ---' ]; then
+                warn "WARN: ALSA reports no cards"
+            elif [ "$file" = /proc/asound/pcm ] && [ -z "$rows" ]; then
+                info "no ALSA playback or capture PCM listed"
+            else info "UNKNOWN: unrecognized $file inventory"; fi
+        else info "UNAVAILABLE: cannot read $file"; fi
+    done
+    if [ -x /dev ] && [ ! -e /dev/snd ]; then
+        warn "WARN: /dev/snd absent"
+        return
+    fi
+    if [ ! -d /dev/snd ] || [ ! -r /dev/snd ] || [ ! -x /dev/snd ]; then
+        info "UNAVAILABLE: cannot inspect /dev/snd"
+        return
+    fi
+    nodes=0
+    for node in /dev/snd/controlC* /dev/snd/pcmC*; do
+        [ -c "$node" ] || continue
+        nodes=$((nodes + 1))
+        if [ ! -r "$node" ] || [ ! -w "$node" ]; then warn "WARN: limited direct user access to $node"; fi
+    done
+    info "ALSA control/PCM device nodes: $nodes"
+}
+
+# Read just the audio inventory; status also contains video nodes and client names.
+audio_wp_list() {
+    awk -v section="$1:" '
+        /^Audio$/ { audio=1; next }
+        /^[[:alpha:]]/ { if (inside) closed=1; inside=0; audio=0 }
+        audio && /[[:alpha:]]+:$/ { if (inside) closed=1; inside=($NF == section); if (inside) seen=1; next }
+        audio && inside {
+            if (match($0, /[0-9]+[.] /)) { print substr($0, RSTART); next }
+            if ($0 ~ /[[:alnum:]]/) unknown=1
+        }
+        END { if (!seen || !closed || unknown) exit 1 }'
+}
+
+audio_devices() {
+    for kind in sink source; do
+        case "$kind" in
+            sink) section=Sinks; target=@DEFAULT_AUDIO_SINK@ ;;
+            source) section=Sources; target=@DEFAULT_AUDIO_SOURCE@ ;;
+        esac
+        if [ "$backend" = wpctl ]; then
+            if ! rows=$(printf '%s\n' "$inventory" | audio_wp_list "$section"); then
+                info "UNKNOWN: $kind inventory"; continue
+            fi
+        elif ! rows=$(audio_pactl list short "${kind}s"); then
+            info "UNAVAILABLE: $kind inventory"; continue
+        elif [ -n "$rows" ] && ! printf '%s\n' "$rows" | awk 'NF < 2 || $1 !~ /^[0-9]+$/ { exit 1 }'; then
+            info "UNKNOWN: $kind inventory"; continue
+        fi
+        if [ -z "$rows" ]; then
+            if [ "$kind" = sink ]; then audio_missing "server lists no playback sink"
+            else info "no capture source listed"; fi
+            continue
+        fi
+        info "$section (virtual devices may be included)"
+        printf '%s\n' "$rows"
+        if [ "$backend" = wpctl ]; then
+            name=$(audio_wpctl inspect "$target" | sed -n 's/.*node\.description = "\(.*\)"/\1/p')
+            level=$(audio_wpctl get-volume "$target") || level=UNAVAILABLE
+        else
+            name=$(audio_pactl "get-default-$kind") || name=
+            level=UNAVAILABLE
+            if [ -n "$name" ]; then
+                vol=$(audio_pactl "get-$kind-volume" "$name") || vol=UNAVAILABLE
+                mute=$(audio_pactl "get-$kind-mute" "$name") || mute=UNAVAILABLE
+                level="$vol / $mute"
+            fi
+        fi
+        case "$level" in
+            *MUTED*|*'Mute: yes'*) warn "WARN: default $kind is muted (may be intentional)" ;;
+            'Volume: 0.00'|'Volume: 0.0'|'Volume: 0') warn "WARN: default $kind volume is zero (may be intentional)" ;;
+        esac
+        info "default $kind: ${name:-UNKNOWN} / ${level:-UNKNOWN}"
+    done
+}
+
+# A socket file can survive a crash or belong to an activation service.
+audio_listener() (
+    inode=$(awk -v path="$1" '$4=="00010000" && $5=="0001" && $6=="01" {
+        n=$7; for (i=1;i<=7;i++) sub(/^[^[:space:]]+[[:space:]]+/, ""); if ($0==path) print n
+    }' /proc/net/unix 2>/dev/null) || exit 1
+    case "$inode" in ''|*[!0-9]*) exit 1 ;; esac
+    for pid in $2; do
+        for fd in /proc/"$pid"/fd/*; do
+            [ -S "$fd" ] && [ "$(readlink "$fd" 2>/dev/null)" = "socket:[$inode]" ] && exit 0
+        done
+    done
+    exit 1
+)
+
+audio_wpctl() { PIPEWIRE_REMOTE="$runtime/pipewire-0" timeout -s KILL 2 wpctl "$@" 2>/dev/null; }
+audio_pactl() (
+    # libpulse can create a cookie on first use. Keep its config paths unwritable.
+    unset PULSE_COOKIE
+    HOME=/dev/null XDG_CONFIG_HOME=/dev/null/pulse PULSE_CONFIG_PATH=/dev/null/pulse \
+        PULSE_CLIENTCONFIG=/dev/null DISPLAY= timeout -s KILL 2 pactl -s "unix:$runtime/pulse/native" "$@" 2>/dev/null
+)
+
+doctor_audio() (
+    export LC_ALL=C
+    step "session and audio processes"
+    uid=$(id -u)
+    runtime=${XDG_RUNTIME_DIR:-}
+    sway_socket=${SWAYSOCK:-}
+    sway_start= pw_pids= pulse_pids=
+    active=no settled=no visible=' ' partial=no
+    [ -r /proc/self/stat ] && [ -r /proc ] && [ -x /proc ] || partial=yes
+    for file in /proc/[0-9]*/stat; do
+        if ! read -r stat 2>/dev/null <"$file"; then
+            [ ! -d "${file%/stat}" ] || partial=yes
+            continue
+        fi
+        case "${stat#* }" in
+            '(sway) '*|'(pipewire) '*|'(pipewire-pulse) '*|'(wireplumber) '*) ;;
+            *) continue ;;
+        esac
+        set -- $stat
+        case "$3" in Z|X) continue ;; esac
+        owner=$(awk '/^Uid:/ { print $3 }' "${file%/stat}/status" 2>/dev/null) || owner=
+        if [ -z "$owner" ]; then partial=yes; continue; fi
+        [ "$owner" = "$uid" ] || continue
+        prog=${2#(}; prog=${prog%)}
+        visible="$visible$prog "
+        case "$prog" in
+            pipewire) pw_pids="$pw_pids $1" ;;
+            pipewire-pulse) pulse_pids="$pulse_pids $1" ;;
+        esac
+        if [ "$prog" = sway ] && [ "${sway_socket##*/}" = "sway-ipc.$uid.$1.sock" ]; then sway_start=${22:-}; fi
+    done
+    if [ -n "${SWAYSOCK:-}" ] && [ -S "$SWAYSOCK" ] &&
+        timeout -s KILL 2 swaymsg -s "$SWAYSOCK" -t get_version >/dev/null 2>&1; then
+        active=yes
+        ok "OK: current Sway IPC responded"
+        # sound waits up to five seconds before starting the other two daemons.
+        hz=$(getconf CLK_TCK 2>/dev/null) || hz=
+        if awk -v hz="$hz" -v start="${sway_start:-}" 'NR==1 {
+            ready=(hz+0>0 && start+0>0 && $1-start/hz>=10) } END { exit !ready }' /proc/uptime 2>/dev/null; then settled=yes; fi
+    elif [ -n "${SWAYSOCK:-}" ]; then info "UNKNOWN: current Sway IPC unconfirmed"
+    else info "no SWAYSOCK in this shell; another session may be active"; fi
+    case "$visible" in *' sway '*) info "Sway process visible for current UID $uid" ;; esac
+    for prog in pipewire wireplumber pipewire-pulse; do
+        if path=$(command -v "$prog"); then info "$prog executable: $path"
+        else audio_missing "$prog executable unavailable in PATH"; fi
+        case "$visible" in
+            *" $prog "*) ok "OK: $prog visible for UID $uid" ;;
+            *) if [ "$partial" = yes ]; then info "UNAVAILABLE: incomplete process inventory for $prog"
+               else audio_missing "$prog process not visible for UID $uid"; fi ;;
+        esac
+    done
+
+    step "Shhware local audio sockets"
+    native=no pulse=no usable=no
+    case "$runtime" in
+        /*) if [ -d "$runtime" ] && [ -x "$runtime" ] && [ -r "$runtime" ]; then
+                meta=$(stat -Lc '%u:%a' "$runtime" 2>/dev/null) || meta=
+                case "$meta" in
+                    "$uid:700") usable=yes; ok "OK: XDG_RUNTIME_DIR=$runtime (owner $uid, mode 700)" ;;
+                    '') info "UNAVAILABLE: runtime ownership and permissions" ;;
+                    *) warn "WARN: $runtime owner:mode $meta, expected $uid:700" ;;
+                esac
+                [ -w "$runtime" ] || warn "WARN: runtime directory is not writable"
+            else info "UNAVAILABLE: runtime directory $runtime"; fi ;;
+        *) info "UNAVAILABLE: XDG_RUNTIME_DIR unset or not absolute" ;;
+    esac
+    if [ "$usable" = yes ]; then
+        for path in "$runtime/pipewire-0" "$runtime/pulse/native"; do
+            if [ -S "$path" ]; then
+                ok "OK: UNIX socket present: $path"
+                case "$path" in */native) pids=$pulse_pids ;; *) pids=$pw_pids ;; esac
+                if audio_listener "$path" "$pids"; then
+                    case "$path" in */native) pulse=yes ;; *) native=yes ;; esac
+                else info "UNKNOWN: daemon listener unconfirmed for $path (stale socket possible)"; fi
+            elif [ -d "${path%/*}" ] && [ ! -x "${path%/*}" ]; then info "UNAVAILABLE: cannot search ${path%/*}"
+            else audio_missing "expected socket missing: $path"; fi
+        done
+    fi
+    step "audio server and routing"
+    backend=
+    for tool in timeout wpctl pactl; do
+        command -v "$tool" >/dev/null || info "UNAVAILABLE: $tool"
+    done
+    # Only connect to an explicit local endpoint with its daemon already visible.
+    if [ "$native" = yes ] && command -v timeout >/dev/null && command -v wpctl >/dev/null; then
+        if inventory=$(audio_wpctl status); then backend=wpctl; ok "OK: PipeWire answered wpctl"
+        else warn "WARN: native socket present, wpctl query failed or timed out"; fi
+    fi
+    if [ "$native" = yes ] && [ "$pulse" = yes ] && command -v timeout >/dev/null && command -v pactl >/dev/null; then
+        if audio_pactl info >/dev/null; then
+            ok "OK: Pulse protocol answered pactl"
+            backend=${backend:-pactl}
+        else warn "WARN: Pulse socket present, pactl query failed or timed out"; fi
+    fi
+    if [ -n "$backend" ]; then audio_devices
+    else info "UNAVAILABLE: no successful bounded local audio query"; fi
+    audio_alsa
+    step "audio startup messages (wm.log, last 64 KiB)"
+    if chunk=$(log_window end "$HOME/.local/state/shh/wm.log"); then
+        lines=$(printf '%s\n' "$chunk" | awk '
+            /^sound: pipewire did not start, no / ||
+            /sound:.*(pipewire(-pulse)?|wireplumber): (not found|Permission denied)/ ||
+            /^\[E\].*(mod\.protocol-native|mod\.protocol-pulse|pw\.context).*(failed|unable|Address already in use)/ {
+                gsub(/[[:cntrl:]]/, " "); print substr($0,1,240) }' | tail -n 4)
+        info "${lines:-no matching sound launcher errors in this window}"
+    else info "UNAVAILABLE: wm.log"; fi
+    info "audible playback and physical connections: NOT TESTED"
+    [ "$problems" -eq 0 ]
+)
+
 doctor_network() (
     export LC_ALL=C
     net=/sys/class/net
@@ -1197,6 +1431,7 @@ case "${1:-}" in
                         1:) doctor_usage ;;
                         2:--config) doctor ;;
                         2:--graphics) doctor_graphics ;;
+                        2:--audio) doctor_audio ;;
                         2:--network) doctor_network ;;
                         2:--performance) doctor_performance ;;
                         2:--build) doctor_build ;;
