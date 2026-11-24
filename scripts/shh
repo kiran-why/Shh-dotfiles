@@ -7,9 +7,17 @@
 # Look after the dotfiles: pick the parts, update, check, change a color,
 # uninstall.
 #
-# Usage: shh config | update [--dry-run] | diff | doctor [--config|--graphics|--build|--performance|--network|--audio] | help
+# Usage: shh config | update [--dry-run] | diff | report | doctor [--config|--graphics|--build|--performance|--network|--audio] | help
 
 set -eu
+
+# Report has a small read-only bootstrap, including on a partial installation.
+if [ "${1:-}" = report ]; then
+    [ "$#" = 1 ] || { echo "usage: shh report" >&2; exit 2; }
+    exec 2>/dev/null
+    export LC_ALL=C
+    : "${HOME:=/dev/null}"
+fi
 
 # Where link.sh installs lib.sh, link.sh, the lists and packages/, so the
 # repo can go.
@@ -27,8 +35,14 @@ from_repo=0
 [ ! -f "$repo/lib/lib.sh" ] || from_repo=1
 
 if [ "$from_repo" = 1 ]; then lib_file="$repo/lib/lib.sh"; else lib_file="$share/lib.sh"; fi
-[ -f "$lib_file" ] || { echo "lib.sh not found: $lib_file, run sh lib/link.sh from the repo" >&2; exit 1; }
-. "$lib_file"
+if [ "${1:-}" = report ]; then
+    distro=
+    [ ! -f /etc/os-release ] || distro=$(awk -F= '$1=="ID" {gsub(/["\047]/,"",$2); print $2; exit}' /etc/os-release) || distro=
+    case "$distro" in kiss|artix|void) ;; *) distro=unknown ;; esac
+else
+    [ -f "$lib_file" ] || { echo "lib.sh not found: $lib_file, run sh lib/link.sh from the repo" >&2; exit 1; }
+    . "$lib_file"
+fi
 
 # The repo has a folder per distro ('$distro': lib.sh), share only this
 # one's.
@@ -52,7 +66,7 @@ if [ "$from_repo" = 1 ]; then hardware_script="$repo/scripts/hardware"; else har
 
 # Load pkg_*, svc_check and seat_groups. When the file is missing, only
 # doctor and the install of fzf need it.
-[ ! -f "$distro_file" ] || . "$distro_file"
+[ "${1:-}" = report ] || [ ! -f "$distro_file" ] || . "$distro_file"
 
 doctor_usage() {
     echo "usage: shh doctor OPTION"
@@ -73,6 +87,7 @@ usage() {
         'update'           'install.sh from a fresh clone (it updates the system and the configs)' \
         'update --dry-run' 'preview this local checkout, without pulling or installing' \
         'diff'             'preview dotfile changes and backups from the local checkout' \
+        'report'           'print a diagnostic summary for manual review before sharing' \
         'doctor'           'list diagnostic options' \
         'color OLD NEW'    'change a color in every config, e.g. shh color d7263d ff0000' \
         'uninstall [-n]'   'remove what link.sh put in place, put the old files back (-n: only show)' \
@@ -662,10 +677,12 @@ check_packages() {
 }
 
 # Check what sway needs without elogind.
+runtime_dir_present() { [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; }
+
 check_session() {
     step "session"
 
-    if [ -n "${XDG_RUNTIME_DIR:-}" ] && [ -d "$XDG_RUNTIME_DIR" ]; then
+    if runtime_dir_present; then
         ok "XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR"
     else
         bad "XDG_RUNTIME_DIR is not set (the login sets it: sh install.sh)"
@@ -702,13 +719,18 @@ doctor() {
     ok "all good"
 }
 
-doctor_build() {
-    local tool dir parent free
-    [ -n "${build_tools:-}" ] || error "no build checks for this distro: $distro"
-    step "$distro build/update environment"
+check_build_tools() {
+    local tool
     for tool in git $build_tools; do
         if command -v "$tool" >/dev/null; then ok "$tool"; else bad "missing tool: $tool"; fi
     done
+}
+
+doctor_build() {
+    local dir parent free
+    [ -n "${build_tools:-}" ] || error "no build checks for this distro: $distro"
+    step "$distro build/update environment"
+    check_build_tools
     if [ "$distro" = kiss ]; then
         dir=${KISS_TMPDIR:-${XDG_CACHE_HOME:-$HOME/.cache}/kiss/proc}
         info "KISS working directory: $dir"
@@ -959,10 +981,8 @@ audio_pactl() (
         PULSE_CLIENTCONFIG=/dev/null DISPLAY= timeout -s KILL 2 pactl -s "unix:$runtime/pulse/native" "$@" 2>/dev/null
 )
 
-doctor_audio() (
-    export LC_ALL=C
-    step "session and audio processes"
-    uid=$(id -u)
+audio_processes() {
+    uid=$(id -u) || return 1
     runtime=${XDG_RUNTIME_DIR:-}
     sway_socket=${SWAYSOCK:-}
     sway_start= pw_pids= pulse_pids=
@@ -990,6 +1010,12 @@ doctor_audio() (
         esac
         if [ "$prog" = sway ] && [ "${sway_socket##*/}" = "sway-ipc.$uid.$1.sock" ]; then sway_start=${22:-}; fi
     done
+}
+
+doctor_audio() (
+    export LC_ALL=C
+    step "session and audio processes"
+    audio_processes
     if [ -n "${SWAYSOCK:-}" ] && [ -S "$SWAYSOCK" ] &&
         timeout -s KILL 2 swaymsg -s "$SWAYSOCK" -t get_version >/dev/null 2>&1; then
         active=yes
@@ -1069,6 +1095,8 @@ doctor_audio() (
     [ "$problems" -eq 0 ]
 )
 
+wifi_interface() { [ -d "$1/wireless" ] || [ -d "$1/phy80211" ]; }
+
 doctor_network() (
     export LC_ALL=C
     net=/sys/class/net
@@ -1100,7 +1128,7 @@ doctor_network() (
                 else info "UNAVAILABLE: IPv$af address inventory"; fi
             done
             if [ ! -x "$path" ]; then wifi_partial=1; continue; fi
-            if [ -d "$path/wireless" ] || [ -d "$path/phy80211" ]; then
+            if wifi_interface "$path"; then
                 wifi=1
                 ok "OK: Wi-Fi interface $dev"
                 if driver=$(readlink "$path/device/driver" 2>/dev/null); then info "bound driver: ${driver##*/}"
@@ -1157,10 +1185,7 @@ doctor_network() (
     [ "$problems" -eq 0 ]
 )
 
-# A single short sample. Keep the locale and working variables in this subshell.
-doctor_performance() (
-    export LC_ALL=C
-    step "system load and memory"
+load_memory() {
     awk 'NR == 1 && $1 ~ /^[0-9]+[.][0-9]+$/ && $2 ~ /^[0-9]+[.][0-9]+$/ && $3 ~ /^[0-9]+[.][0-9]+$/ {
              print "  load average (1/5/15 min): " $1 " " $2 " " $3; seen=1
          }
@@ -1175,6 +1200,13 @@ doctor_performance() (
                 printf "  swap used / total (MiB): %.1f / %.1f\n", (kb["SwapTotal:"]-kb["SwapFree:"])/1024, kb["SwapTotal:"]/1024
             else print "  swap unknown"
         }' 2>/dev/null </proc/meminfo || info "memory unavailable"
+}
+
+# A single short sample. Keep the locale and working variables in this subshell.
+doctor_performance() (
+    export LC_ALL=C
+    step "system load and memory"
+    load_memory
     if [ -r /proc/pressure/memory ]; then
         awk '/^(some|full) / { print "  memory PSI " $0; seen=1 }
              END { if (!seen) print "  memory PSI unknown" }' /proc/pressure/memory || info "memory PSI unavailable"
@@ -1263,16 +1295,34 @@ doctor_performance() (
 
 # Read at most 64 KiB plus one lookahead byte from a regular session log.
 log_window() {
-    local LC_ALL=C chunk
+    local LC_ALL=C chunk side=$1 file=$2 mode=${3:-}
     [ -f "$2" ] && [ -r "$2" ] || return 1
     # The marker preserves trailing newlines when measuring bytes in shell.
-    case "$1" in
-        start) chunk=$(dd if="$2" bs=65537 count=1 2>/dev/null && printf .) || return 1 ;;
-        end)   chunk=$(tail -c 65537 "$2" 2>/dev/null && printf .) || return 1 ;;
+    case "$side" in
+        start) set -- dd bs=65537 count=1 ;;
+        end)   set -- tail -c 65537 ;;
+        *) return 1 ;;
     esac
+    if [ "$mode" = report ]; then
+        # Pin and verify the opened inode before reading. The deadline also
+        # bounds open() if the checked regular file is replaced with a FIFO.
+        chunk=$(timeout -s KILL 2 sh -c '
+            file=$1; shift
+            [ ! -L "$file" ] && [ -f "$file" ] || exit 1
+            inode=$(stat -c "%d:%i:%h:%u" "$file") || exit 1
+            case "$inode" in *:1:"$(id -u)") ;; *) exit 1 ;; esac
+            exec 3<"$file"
+            [ -f /proc/self/fd/3 ] &&
+                [ "$(stat -Lc "%d:%i:%h:%u" /proc/self/fd/3)" = "$inode" ] &&
+                [ "$(stat -c "%d:%i:%h:%u" "$file")" = "$inode" ] || exit 1
+            exec "$@" <&3
+        ' sh "$file" "$@" && printf .) || return 1
+    else
+        chunk=$("$@" 2>/dev/null <"$file" && printf .) || return 1
+    fi
     chunk=${chunk%.}
     if [ "${#chunk}" -le 65536 ]; then printf '%s' "$chunk"
-    elif [ "$1" = start ]; then printf '%s' "$chunk" | sed '$d'
+    elif [ "$side" = start ]; then printf '%s' "$chunk" | sed '$d'
     else printf '%s' "$chunk" | sed '1d'
     fi
 }
@@ -1280,7 +1330,7 @@ log_window() {
 # Only report a renderer from a wlroots startup that reached Sway's main loop.
 # A request, or an attempt followed by fallback, is not proof.
 logged_renderer() {
-    LC_ALL=C awk '
+    LC_ALL=C awk -v mode="${1:-}" '
         { sub(/^[[:space:]]*([0-9:.]+ )?(\[(DEBUG|INFO|WARN|ERROR)\] )?/, "") }
         /^\[wlr\] \[util\/env\.c:[0-9]+\] Loading WLR_RENDERER option: / { requested=$NF }
         /^\[wlr\] \[render\/[^]]+\] Creating .*renderer/ {
@@ -1300,6 +1350,10 @@ logged_renderer() {
         }
         /^\[sway\/server\.c:[0-9]+\] Running compositor on wayland display / { running=1; exit }
         END {
+            if (mode=="report") {
+                print (running && attempts==1 && !conflict && actual!="" ? backend : "UNKNOWN")
+                exit
+            }
             printf "requested=%s; actual=%s\n", (requested ? requested : "unknown"),
                 (running && attempts == 1 && !conflict && actual != "" ? actual : "unknown")
         }
@@ -1309,7 +1363,7 @@ logged_renderer() {
 # wm.log mixes Sway and client stderr. Only accept graphics messages from
 # known emitters; kernel evidence belongs to this boot, not necessarily this crash.
 graphics_errors() {
-    LC_ALL=C awk -v source="$1" '
+    LC_ALL=C awk -v source="$1" -v mode="${2:-}" '
         source == "kernel" && $0 == "shh: dmesg unavailable" { print "  dmesg unavailable (restricted or missing)"; next }
         {
             s=tolower($0)
@@ -1321,6 +1375,7 @@ graphics_errors() {
                      s ~ /(egl|gles|drm|kms|gpu|renderer|atomic commit|page.flip)/) label="Sway/wlroots"
             else next
             if (s !~ /(error|fail|fault|hang|timed? ?out|reset|killed|rejected|segfault|nvrm: xid|cannot|unable)/) next
+            if (mode=="report") { if (!seen[label]++) print label; next }
             gsub(/[[:cntrl:]]/, " "); print "  " label ": " substr($0, 1, 300)
         }' | tail -n 6
 }
@@ -1416,6 +1471,197 @@ color() {
 # █▄ ▄█ ▄▀▀▄ ▀█▀ █▄  █ 
 # █ ▀ █ █▀▀█  █  █ ▀▄█ 
 # ▀   ▀ ▀  ▀ ▀▀▀ ▀   ▀ 
+
+# Only release numbers from known version banners cross the output boundary.
+report_version() {
+    local tool=$1
+    command -v "$tool" >/dev/null || { echo UNAVAILABLE; return; }
+    command -v timeout >/dev/null || { echo 'NOT TESTED (timeout unavailable)'; return; }
+    { timeout -s KILL 2 "$tool" --version && echo SHH_VERSION_OK; } |
+        head -c 1024 | awk -v tool="$tool" '
+            tool=="sway" && $1=="sway" && $2=="version" { v=$3 }
+            $1=="Linked" && $2=="with" && $3=="lib"tool { v=$4 }
+            $0=="SHH_VERSION_OK" { ok=1 }
+            END { print (ok && length(v)<=16 && v~/^[0-9]+[.][0-9]+([.][0-9]+)?$/ ? v : "UNKNOWN") }'
+}
+
+report_system() {
+    local hash= tag= version='installed copy (no checkout metadata)' arch init kernel tool stat file present='' missing=''
+    if [ "$from_repo" = 1 ]; then
+        version='checkout metadata unavailable'
+        if hash=$(report_git rev-parse --short=12 HEAD); then
+            version='checkout (no recognized release tag)'
+            tag=$(report_git describe --tags --long --match 'v[0-9]*' --match '[0-9]*' HEAD) || tag=
+            tag=$(printf '%s\n' "$tag" | awk -F- '
+                NF==3 && length($1)<=20 && $1~/^v?[0-9]+[.][0-9]+([.][0-9]+)?$/ &&
+                length($2)<=10 && $2~/^[0-9]+$/ && $3~/^g[0-9a-f]+$/ {
+                    if ($2==0) print $1; else print $2 " commits after " $1
+                }')
+            version=${tag:-$version}
+        fi
+    fi
+    printf 'Shhware: %s\n' "$version"
+    case "$hash" in *[!0-9a-f]*|'') ;; *) [ "${#hash}" != 12 ] || printf 'Checkout: %s\n' "$hash" ;; esac
+    printf 'Distribution: %s\n' "$distro"
+    kernel=$(uname -r | awk 'match($0,/^[0-9]+[.][0-9]+[.][0-9]+/) && RLENGTH<=16 {print substr($0,1,RLENGTH);exit}')
+    arch=$(uname -m) || arch=
+    case "$arch" in x86_64|i386|i486|i586|i686|aarch64|armv7l|riscv64|ppc64le|s390x) ;; *) arch=UNKNOWN ;; esac
+    read -r init </proc/1/comm || init=
+    case "$init" in
+        runit|s6-svscan|systemd|openrc-init) ;;
+        init) case "$(readlink -f /sbin/init)" in
+                  */busybox) init='init (configured /sbin/init: BusyBox)' ;;
+              esac ;;
+        '') init='UNAVAILABLE (PID 1 name)' ;;
+        *) init='unrecognized PID 1' ;;
+    esac
+    printf 'Linux: %s (%s)\nInit: %s\n' "${kernel:-UNKNOWN}" "$arch" "$init"
+    for file in /proc/[0-9]*/stat; do
+        read -r stat <"$file" || continue
+        case "${stat#* }" in
+            '(runsvdir) '[RSDTI]' 1 '*) echo 'Service supervisor: runit (runsvdir is a child of PID 1)'; break ;;
+        esac
+    done
+    for tool in sway pipewire wireplumber; do printf '%s: %s\n' "$tool" "$(report_version "$tool")"; done
+    for tool in ip iw wpctl pactl swaymsg timeout; do
+        if command -v "$tool" >/dev/null; then present="$present $tool"; else missing="$missing $tool"; fi
+    done
+    printf 'Tools present:%s\nTools absent:%s\n' "${present:- none}" "${missing:- none}"
+}
+
+report_git() {
+    env -i PATH="$PATH" HOME=/dev/null GIT_CONFIG_NOSYSTEM=1 GIT_OPTIONAL_LOCKS=0 \
+        git --git-dir="$repo/.git" "$@" </dev/null
+}
+
+report_hardware() {
+    # Extract a model designation, never the free-form remainder of a CPU brand string.
+    local cpu
+    cpu=$(awk -F ': ' '/^model name[[:space:]]*:/ {
+        if (match($2,/(AMD Ryzen [3579] [0-9][0-9][0-9][0-9](HX3D|X3D|HX|HS|GE|X|G|H|U)?|Intel\(R\) Core\(TM\) i[3579]-[0-9]+(KF|KS|HX|HK|[KFUHT])?|AMD EPYC [0-9][0-9A-Z][0-9][0-9]P?|Intel\(R\) Xeon\(R\) (Platinum|Gold|Silver|Bronze) [0-9]+[A-Z]?)( |$)/) && RLENGTH<=48) {
+            model=substr($2,RSTART,RLENGTH); sub(/ $/,"",model); print model
+        }
+        exit
+    }' /proc/cpuinfo) || cpu=
+    printf 'CPU: %s\n' "${cpu:-UNKNOWN (unrecognized or unavailable model)}"
+    [ -f "$hardware_script" ] || { echo 'UNAVAILABLE: hardware helper'; return; }
+    { sh "$hardware_script" --graphics && echo SHH_DRM_OK; } | awk '
+        $1=="PCI" && $3~/^\[[[:xdigit:]][[:xdigit:]][[:xdigit:]][[:xdigit:]]:[[:xdigit:]][[:xdigit:]][[:xdigit:]][[:xdigit:]]\]$/ {
+            if (++n<=8) {
+                driver=substr($4,8)
+                if ($4!~/^driver=(amdgpu|radeon|i915|xe|nouveau|nvidia|virtio_gpu|vmwgfx|bochs-drm|ast|unbound)$/) driver="UNKNOWN"
+                print "GPU model (PCI vendor:device): " substr($3,2,9) ", driver=" driver
+            }
+        }
+        $0=="SHH_DRM_OK" { card=1 }
+        END { if (!n) print "UNKNOWN: no PCI display model identified"
+              if (n>8) print "Additional GPU entries omitted"
+              print (card ? "OK: DRM card node visible" : "UNKNOWN: no DRM card node confirmed") }'
+}
+
+report_config() {
+    if runtime_dir_present; then echo 'OK: runtime directory exists'
+    else echo 'FAIL: runtime directory unset or missing'; fi
+    if [ -f "$list" ]; then echo 'OK: installation manifest present'
+    else echo 'UNAVAILABLE: installation manifest'; fi
+    echo 'NOT TESTED: managed files, packages, groups and services'
+}
+
+report_graphics() (
+    local dir="$HOME/.local/state/shh" log chunk summary
+    # Pin the working directory and reject symlinks in its path.
+    if ! command -v timeout >/dev/null; then echo 'NOT TESTED: safe log reader unavailable'; return; fi
+    if ! cd -P "$dir" || [ "$PWD" != "$dir" ]; then
+        echo 'UNAVAILABLE: session log directory'; return
+    fi
+    for log in wm.log wm-crash.log; do
+        if chunk=$(log_window start "$log" report); then
+            printf '%s logged renderer: %s\n' "$log" "$(printf '%s\n' "$chunk" | logged_renderer report)"
+        else echo "$log: UNAVAILABLE (safe log window)"; continue; fi
+        if chunk=$(log_window end "$log" report); then
+            summary=$(printf '%s\n' "$chunk" | graphics_errors session report)
+            printf '%s historical errors (last 64 KiB): %s\n' "$log" "${summary:-no matching category}"
+        else echo "$log: UNAVAILABLE (end window)"; fi
+    done
+)
+
+report_build() {
+    local build_tools tool
+    [ -f "$distro_file" ] && [ "$distro" != unknown ] || { echo 'UNAVAILABLE: distro build checks'; return; }
+    # Read the literal package-tool list without executing distro initialization.
+    build_tools=$(sed -n "/^build_tools=/{s/^build_tools='\([a-z0-9 -]*\)'$/\1/p;q;}" "$distro_file")
+    [ -n "$build_tools" ] || { echo 'UNKNOWN: build tool list'; return; }
+    for tool in $build_tools; do
+        case "$tool" in kiss|cc|make|meson|ninja|pkg-config|pacman|makepkg|xbps-query|xbps-install) ;;
+            *) echo 'UNKNOWN: unrecognized build tool list'; return ;;
+        esac
+    done
+    ok() { printf 'OK: %s available\n' "$1"; }
+    bad() { printf 'FAIL: %s\n' "$1"; }
+    check_build_tools
+    echo 'NOT TESTED: build filesystem and compilation'
+}
+
+report_network() {
+    local path other=0 wifi=0 partial=0
+    if [ -r /sys/class/net ] && [ -x /sys/class/net ]; then
+        for path in /sys/class/net/*; do
+            [ -d "$path" ] && [ "${path##*/}" != lo ] || continue
+            other=$((other+1))
+            [ -x "$path" ] || partial=1
+            if wifi_interface "$path"; then wifi=$((wifi+1)); fi
+        done
+        printf 'Non-loopback interfaces: %d, identified Wi-Fi: %d\n' "$other" "$wifi"
+        [ "$other" != 0 ] || echo 'WARN: no non-loopback interface visible'
+        [ "$partial" = 0 ] || echo 'UNAVAILABLE: incomplete Wi-Fi inventory'
+    else echo 'UNAVAILABLE: interface inventory'; fi
+    if [ -L /etc/resolv.conf ]; then echo 'NOT TESTED: resolver file is a symbolic link'
+    elif [ -f /etc/resolv.conf ] && ! [ "$(stat -c %s /etc/resolv.conf)" -le 65536 ]; then
+        echo 'NOT TESTED: resolver file exceeds inspection limit or size unavailable'
+    else network_dns; fi
+    echo 'NOT TESTED: Wi-Fi association, addresses, routes and external reachability'
+}
+
+report_audio() {
+    local prog
+    audio_processes || { echo 'UNAVAILABLE: current-user process inventory'; return; }
+    for prog in pipewire wireplumber pipewire-pulse; do
+        case "$visible" in
+            *" $prog "*) echo "OK: $prog process visible for current user" ;;
+            *) if [ "$partial" = yes ]; then echo "UNAVAILABLE: incomplete process inventory for $prog"
+               else echo "UNKNOWN: $prog not visible (session readiness untested)"; fi ;;
+        esac
+    done
+    echo 'NOT TESTED: session readiness, audio server, routing and playback'
+}
+
+report() (
+    # Only audited helpers use these printers. Their arguments are fixed labels
+    # or numbers. A failed required probe is data, independent of output failure.
+    step() { :; }
+    info() { printf '%s\n' "$1"; }
+    ok() { printf '%s\n' "$1"; }
+    warn() { printf '%s\n' "$1"; }
+    bad() { printf '%s\n' "$1"; }
+    printf '%s\n' 'Shhware diagnostic report' \
+        'Automatic sanitization may miss personal data. Review manually before posting.'
+    for section in system hardware config graphics performance build network audio; do
+        printf '\n[%s]\n' "$section"
+        case "$section" in
+            performance) (load_memory) ;;
+            *) ("report_$section") ;;
+        esac || echo 'UNAVAILABLE: section collection incomplete'
+    done
+)
+
+if [ "${1:-}" = report ]; then
+    # BusyBox timeout detaches its short-lived timer and closes stdout. Keep
+    # the capture pipe open until those timers exit, including on a fast probe.
+    body=$(report </dev/null 4>&1) || exit 1
+    trap '' PIPE
+    printf '%s\n' "$body" || exit 1
+    exit 0
+fi
 
 [ "$(id -u)" -ne 0 ] || error "do not run as root, run as your user"
 
