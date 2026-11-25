@@ -103,8 +103,11 @@ known_menu() {
     local pick
     while :; do
         pick=$(known | menu --header="Enter: forget$gap") || return 0
-        iwctl known-networks "$pick" forget || true
-        ~/.local/bin/notify -a wifi 'wifi: forgot' "$pick" || true
+        if iwctl known-networks "$pick" forget; then
+            ~/.local/bin/notify -a wifi 'wifi: forgot' "$pick" || true
+        else
+            ~/.local/bin/notify -a wifi 'wifi: could not forget' "$pick" || true
+        fi
     done
 }
 

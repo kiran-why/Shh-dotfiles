@@ -189,7 +189,10 @@ install_file() {
     if [ "$new_tree" = 0 ] && exists "$dst"; then
         old=$(old_key "$dst")
         if [ -n "$old" ] && ! linked_parent "$dst" && same "$dst" "$old"; then owned=1; fi
-        if same "$dst" "$k" && { [ "$mode" = link ] || [ ! -L "$dst" ]; }; then
+        # The CLI loads only a managed diagnostics module. Back up an identical
+        # private entry too, so enabling the feature installs an owned copy or link.
+        if { [ "$dst" != "$share_dir/diagnostics.sh" ] || [ "$owned" = 1 ]; } &&
+            same "$dst" "$k" && { [ "$mode" = link ] || [ ! -L "$dst" ]; }; then
             # Identical unmanaged entries stay outside the uninstall manifest.
             [ "$owned" = 0 ] || records="$records$k$tab$dst$nl"
             [ "$show_diff" = 1 ] || ok "$dst"
@@ -258,9 +261,9 @@ install_tree() {
     local dst="$2"
     local new_tree="$new_tree"
 
-    [ -e "$src" ] || error "source not found: $src"
     # Skip a part turned off in 'shh config' (components.txt).
     case "$off_files" in *" ${src#"$dots_path/"} "*) return 0 ;; esac
+    [ -e "$src" ] || error "source not found: $src"
     if [ ! -d "$src" ]; then
         install_file "$src" "$dst"
         return
@@ -389,7 +392,7 @@ uninstall_all() {
     [ -f "$list" ] || error "nothing to remove: no $list"
 
     local k dst
-    while IFS="$tab" read -r k dst; do
+    while IFS="$tab" read -r k dst || [ -n "$k$dst" ]; do
         remove_entry "$k" "$dst"
     done <"$list"
     if [ "$dry_run" = 0 ]; then
@@ -465,6 +468,7 @@ install_all() {
         touch "$HOME/wallpapers/$distro.jpg"
     # Flat in share: shh and installed systems expect these paths.
     install_tree "$script_dir/lib.sh"              "$share_dir/lib.sh"
+    install_tree "$script_dir/diagnostics.sh"      "$share_dir/diagnostics.sh"
     install_tree "$script_dir/link.sh"             "$share_dir/link.sh"
     install_tree "$system_dir/services.txt"        "$share_dir/services.txt"
     install_tree "$components"                     "$share_dir/components.txt"
@@ -476,7 +480,7 @@ install_all() {
 
     # Remove the files that left the repo since the last run.
     if [ -f "$list" ]; then
-        while IFS="$tab" read -r k dst; do
+        while IFS="$tab" read -r k dst || [ -n "$k$dst" ]; do
             case "$records" in
                 *"$tab$dst$nl"*) ;;
                 *) remove_entry "$k" "$dst" ;;

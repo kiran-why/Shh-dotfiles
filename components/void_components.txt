@@ -11,6 +11,7 @@
 # The packages stay in system/void/packages/common.csv too. The sway
 # lines of a part go in config/sway/features/NAME.
 
+shh_tools||lib/diagnostics.sh|||
 record|wf-recorder|scripts/record config/sway/features/record|||
 screenshot|grim|scripts/screenshot config/sway/features/screenshot|||
 bluetooth|bluez libspa-bluetooth|scripts/bluetooth config/sway/features/bluetooth|bluetoothd||

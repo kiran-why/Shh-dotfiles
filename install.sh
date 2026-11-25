@@ -72,7 +72,7 @@ all_package_lines() {
 # An old FILE with another text is renamed to FILE.bak-DATE first. A FILE
 # with the same text is left alone.
 write_root() (
-    local file="$1" text="$2" backup="$1.bak-$stamp" n=0 stage
+    local file="$1" text="$2" backup="$1.bak-$stamp" n=0 stage saved=
     if ! sudo test -L "$file" && sudo test -e "$file"; then
         sudo test -f "$file" || error "expected a regular file: $file"
         if printf '%s\n' "$text" | sudo cmp -s "$file" -; then return 0; fi
@@ -89,9 +89,18 @@ write_root() (
         done
         sudo mv -nT "$file" "$backup" && ! sudo test -e "$file" && ! sudo test -L "$file" ||
             error "cannot back up $file"
+        saved=$backup
         msg "$red" "$sym_bak" "$file -> $backup"
     fi
-    sudo mv -nT "$stage/file" "$file" && ! sudo test -e "$stage/file" || error "cannot publish $file"
+    if ! sudo mv -nT "$stage/file" "$file" || sudo test -e "$stage/file"; then
+        if [ -n "$saved" ]; then
+            # link(2) restores the original inode only if the name is still free.
+            sudo ln -T "$saved" "$file" || error "cannot publish or restore $file; backup: $saved"
+            sudo rm -f "$saved" || error "original restored at $file; backup also remains: $saved"
+            error "cannot publish $file; original restored"
+        fi
+        error "cannot publish $file"
+    fi
 )
 
 # ▄▀▀▀ █  █ █▀▀▀ ▄▀▀▀ █ ▄▀ ▄▀▀▀ 
@@ -209,7 +218,7 @@ enable_nopasswd() {
 
     # Remove the rule on any exit, Ctrl+C too.
     trap 'sudo rm -f "$sudoers_tmp"' EXIT
-    trap 'exit 1' INT TERM
+    trap 'exit 1' HUP INT TERM
 
     echo "$USER ALL=(ALL) NOPASSWD: ALL" | sudo tee "$sudoers_tmp" >/dev/null
     sudo chmod 440 "$sudoers_tmp"
@@ -418,12 +427,22 @@ configure_power() {
     ok "poweroff, reboot, sleep: no password"
 }
 
+install_mode() {
+    local mode
+    mode=$(setting mode '')
+    case "$mode" in ''|copy|link) printf '%s' "$mode" ;; *) error "unknown install mode: $mode" ;; esac
+}
+
 link_dotfiles() {
     step "dotfiles"
     # With no mode in 'shh config' link.sh keeps what is installed.
-    local mode
-    mode=$(setting mode '')
-    DOTS_NO_LOGO=1 sh "$dots_path/lib/link.sh" ${mode:+"--$mode"}
+    case "$1" in
+        '') set -- ;;
+        copy) set -- --copy ;;
+        link) set -- --link ;;
+        *) error "unknown install mode: $1" ;;
+    esac
+    DOTS_NO_LOGO=1 sh "$dots_path/lib/link.sh" "$@"
 }
 
 # Print the packages of the graphics drivers that are not picked now.
@@ -494,8 +513,10 @@ if [ "$check_only" = 1 ]; then
     exit 0
 fi
 
+install_mode >/dev/null
 check_system
 choose_parts
+selected_mode=$(install_mode)
 start_log
 enable_nopasswd
 distro_prepare
@@ -507,7 +528,7 @@ configure_network
 enable_services
 configure_system
 configure_power
-link_dotfiles
+link_dotfiles "$selected_mode"
 leftovers
 
 echo

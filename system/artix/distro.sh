@@ -259,8 +259,16 @@ svc_apply() {
 # Every part must be up (iwd is iwd-srv and iwd-log).
 svc_check() {
     local active parts part down=''
-    active=$(s6-rc -a list 2>/dev/null) || return 3
-    parts=$(s6-rc list "$1" 2>/dev/null) || return 2
+    # The network doctor supplies a bounded runner; its 125 means already reported.
+    local query=${2:-command}
+    active=$("$query" s6-rc -a list 2>/dev/null) || {
+        [ "$?" = 125 ] && [ "$query" != command ] && return 125
+        return 3
+    }
+    parts=$("$query" s6-rc list "$1" 2>/dev/null) || {
+        [ "$?" = 125 ] && [ "$query" != command ] && return 125
+        return 2
+    }
     for part in $parts; do
         printf '%s\n' "$active" | grep -qxF "$part" || down="$down $part"
     done

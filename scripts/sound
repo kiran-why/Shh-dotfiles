@@ -4,6 +4,16 @@
 
 set -eu
 
+case "${XDG_RUNTIME_DIR:-}" in
+    /*) [ -d "$XDG_RUNTIME_DIR" ] && [ -x "$XDG_RUNTIME_DIR" ] && [ -w "$XDG_RUNTIME_DIR" ] ||
+        { echo 'sound: runtime directory unavailable' >&2; exit 1; } ;;
+    *) echo 'sound: XDG_RUNTIME_DIR must be absolute' >&2; exit 1 ;;
+esac
+
+for prog in pipewire wireplumber pipewire-pulse swaymsg; do
+    command -v "$prog" >/dev/null || { echo "sound: $prog: not found" >&2; exit 1; }
+done
+
 # Leftovers from a crashed session would block the new pipewire.
 for prog in pipewire-pulse wireplumber pipewire; do
     # No '-u': busybox pkill lacks it, and a user signals only their own
@@ -11,6 +21,16 @@ for prog in pipewire-pulse wireplumber pipewire; do
     pkill -x "$prog" || true
 done
 
+pipewire_pid= wireplumber_pid= pulse_pid= swaymsg_pid=
+cleanup() {
+    for pid in "$swaymsg_pid" "$pulse_pid" "$wireplumber_pid" "$pipewire_pid"; do
+        [ -n "$pid" ] && stat=$(cat "/proc/$pid/stat" 2>/dev/null) || continue
+        # A daemon may have exited and its PID been reused during the session.
+        case "${stat##*) }" in ?\ "$$"\ *) kill "$pid" 2>/dev/null || : ;; esac
+    done
+}
+trap cleanup EXIT
+trap 'exit 1' HUP INT TERM
 pipewire &
 pipewire_pid=$!
 
@@ -32,5 +52,7 @@ pipewire-pulse &
 pulse_pid=$!
 
 # Blocks until sway exits.
-swaymsg -t subscribe '["shutdown"]' >/dev/null 2>&1 || true
-kill "$pulse_pid" "$wireplumber_pid" "$pipewire_pid" 2>/dev/null || true
+swaymsg -t subscribe '["shutdown"]' >/dev/null 2>&1 &
+swaymsg_pid=$!
+wait "$swaymsg_pid" || :
+swaymsg_pid=''

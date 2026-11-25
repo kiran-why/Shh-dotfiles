@@ -16,6 +16,7 @@
 # There is no screenshare: KISS's firefox is built without dbus, so the
 # portal can't reach it.
 
+shh_tools||lib/diagnostics.sh|||
 record|wf-recorder|scripts/record config/sway/features/record|||
 screenshot|grim|scripts/screenshot config/sway/features/screenshot|||
 bluetooth|bluez|scripts/bluetooth config/sway/features/bluetooth|bluetoothd||
