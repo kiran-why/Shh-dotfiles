@@ -201,6 +201,17 @@ network_dns() {
     if [ "$2 $3 $4" = '0 0 0' ]; then warn "WARN: no explicit nameserver records"; fi
 }
 
+bounded_query() {
+    # BusyBox timeout signals only its command. Stop a stuck client's helpers
+    # in a private process group so they cannot keep the capture pipe open.
+    setsid sh -c '
+        timeout -s KILL "$@"
+        rc=$?
+        case "$rc" in 124|137) kill -KILL 0 ;; esac
+        exit "$rc"
+    ' sh "$@" </dev/null 3>&- 2>/dev/null
+}
+
 # Bound each IPC/netlink client and share a six-second budget across interfaces.
 # fd 3 carries diagnostic labels outside captured command output.
 network_query() {
@@ -223,14 +234,7 @@ network_query() {
         return 125
     fi
     [ "$remaining" -le 2 ] || remaining=2
-    # BusyBox timeout signals only its command. Stop a stuck client's helpers
-    # in a private process group so they cannot keep the capture pipe open.
-    setsid sh -c '
-        timeout -s KILL "$@"
-        rc=$?
-        case "$rc" in 124|137) kill -KILL 0 ;; esac
-        exit "$rc"
-    ' sh "$remaining" "$@" </dev/null 3>&- 2>/dev/null || rc=$?
+    bounded_query "$remaining" "$@" || rc=$?
     case "$rc" in
         124|137) echo "UNAVAILABLE: $1 query timed out or was killed" >&3; return 125 ;;
     esac
@@ -506,6 +510,82 @@ doctor_audio() (
 
 wifi_interface() { [ -d "$1/wireless" ] || [ -d "$1/phy80211" ]; }
 
+# Keep the external probes independent of the local snapshot's time budget.
+online_query() {
+    local seconds="$1" probe="$2" tool
+    shift 2
+    for tool in "$1" timeout setsid; do
+        if ! command -v "$tool" >/dev/null; then
+            info "$probe: NOT TESTED ($tool unavailable)" >&3
+            return 125
+        fi
+    done
+    bounded_query "$seconds" "$@"
+}
+
+online_network() {
+    local result rc http tunnel via_proxy proxy_verify
+    if online_query 2 'IPv4 route' ip -4 route get 1.1.1.1 >/dev/null; then
+        ok "IPv4 route: OK (to probe address)"
+    elif [ "$?" != 125 ]; then
+        warn "IPv4 route: WARN (could not obtain a route to probe address)"
+    fi
+    if online_query 2 'external IPv4' ping -n -c 1 1.1.1.1 >/dev/null; then
+        ok "external IPv4: OK (ICMP reply)"
+    elif [ "$?" != 125 ]; then
+        warn "external IPv4: WARN (no confirmed ICMP reply)"
+    fi
+
+    rc=0
+    result=$(online_query 3 DNS nslookup example.com.) || rc=$?
+    case "$rc" in
+        0)
+            # Both BusyBox and BIND print the resolver address before Name.
+            if printf '%s\n' "$result" | awk '
+                /^Name:[[:space:]]/ { answer=(tolower($2) ~ /^example[.]com[.]?$/); next }
+                answer && /^Address([[:space:]][0-9]+)?:/ && $NF ~ /^[0-9a-fA-F:.]+$/ { found=1 }
+                END { exit !found }'; then
+                ok "DNS resolution: OK"
+            else warn "DNS resolution: WARN (no address in answer)"; fi ;;
+        124|137) warn "DNS resolution: WARN (timed out or killed)" ;;
+        125) ;;
+        *) warn "DNS resolution: WARN (lookup failed)" ;;
+    esac
+
+    rc=0
+    result=$(online_query 6 HTTPS curl -q -sI -o /dev/null --connect-timeout 3 --max-time 5 \
+        -w '%{http_connect}:%{http_code}:%{proxy_used}:%{proxy_ssl_verify_result}' https://example.com/) || rc=$?
+    # Older curl versions leave unsupported write-out fields empty.
+    IFS=: read -r tunnel http via_proxy proxy_verify <<EOF
+$result
+EOF
+    case "$tunnel" in
+        [345][0-9][0-9]) warn "HTTPS: WARN (proxy CONNECT HTTP $tunnel)"; return 0 ;;
+    esac
+    case "$rc" in
+        0) case "$http" in
+               2[0-9][0-9]) ok "HTTPS: OK (HTTP $http)" ;;
+               [1-5][0-9][0-9]) warn "HTTPS: WARN (resource returned HTTP $http)" ;;
+               *) warn "HTTPS: WARN (no valid HTTP status)" ;;
+           esac ;;
+        5|97) warn "HTTPS: WARN (proxy resolution or handshake failed)" ;;
+        6) warn "HTTPS: WARN (target name resolution failed)" ;;
+        7) case "$via_proxy:$tunnel" in
+               1:000) warn "HTTPS: WARN (connection to proxy failed)" ;;
+               0:*|*:200) warn "HTTPS: WARN (connection to target failed)" ;;
+               *) warn "HTTPS: WARN (connection failed; peer unknown)" ;;
+           esac ;;
+        28|124|137) warn "HTTPS: WARN (timed out or killed)" ;;
+        35|51|60|77)
+            case "$proxy_verify" in
+                ''|0) warn "HTTPS: WARN (TLS handshake or certificate error)" ;;
+                *) warn "HTTPS: WARN (proxy certificate verification failed)" ;;
+            esac ;;
+        125) ;;
+        *) warn "HTTPS: WARN (transfer failed)" ;;
+    esac
+}
+
 doctor_network() (
     export LC_ALL=C
     exec 3>&1
@@ -592,9 +672,13 @@ doctor_network() (
     info "On-link DNS, loopback resolvers and specific or policy routes can work without a main default."
     network_dns
     step "external reachability"
-    info "external IP: NOT TESTED"
-    info "DNS resolution: NOT TESTED"
-    info "HTTPS: NOT TESTED"
+    if [ "${1:-}" = --online ]; then
+        online_network
+    else
+        info "external IP: NOT TESTED"
+        info "DNS resolution: NOT TESTED"
+        info "HTTPS: NOT TESTED"
+    fi
     [ "$problems" -eq 0 ]
 )
 

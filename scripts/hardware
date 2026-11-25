@@ -8,6 +8,31 @@
 
 set -eu
 
+# A PCI slot or firmware device-tree name survives DRM node renumbering.
+case "${1:-}" in
+    --render-devices|--render-node)
+        match=''
+        for sys in /sys/class/drm/renderD[0-9]*; do
+            node=/dev/dri/${sys##*/}
+            [ -c "$node" ] && [ -r "$sys/device/uevent" ] || continue
+            id=$(awk -F= '/^PCI_SLOT_NAME=/ {pci=$2} /^OF_FULLNAME=\// {of=$2}
+                END {if (pci) print "pci:" pci; else if (of) print "of:" of}' "$sys/device/uevent") || continue
+            case "$id" in ''|*[!a-zA-Z0-9_:@.,/-]*) continue ;; esac
+            if [ "$1" = --render-devices ]; then
+                driver=$(readlink "$sys/device/driver") || driver=GPU
+                printf '%s\t%s (%s)\n' "$id" "${driver##*/}" "$id"
+            elif [ "$id" = "${2:-}" ]; then
+                [ -z "$match" ] && [ -r "$node" ] && [ -w "$node" ] || exit 1
+                match=$node
+            fi
+        done
+        if [ "$1" = --render-node ]; then
+            [ -n "$match" ] || exit 1
+            printf '%s\n' "$match"
+        fi
+        exit 0 ;;
+esac
+
 # Report the kernel's device identities, not the driver chosen in shh config.
 if [ "${1:-}" = --graphics ]; then
     for dev in /sys/bus/pci/devices/*; do

@@ -69,7 +69,36 @@ if [ -z "${WAYLAND_DISPLAY:-}" ] && [ "$(tty)" = "/dev/tty1" ]; then
 
     # 'dbus-run-session' gives a session bus to pipewire and mako. If sway
     # fails you stay in the shell and see the end of its log.
-    if dbus-run-session sway >"$wm_log" 2>&1; then
+    if (
+        # Limit the setting to this session and respect the login environment.
+        graphics_setting() {
+            sed -n "s/^$1=//p" "$HOME/.config/shh/config" 2>/dev/null |
+                tail -n 1 | sed 's/#.*//; s/[[:space:]]//g'
+        }
+        if [ -z "${WLR_RENDERER+x}" ]; then
+            renderer=$(graphics_setting renderer)
+            case "$renderer" in
+                gles2|pixman) export WLR_RENDERER="$renderer" ;;
+                auto|'') ;;
+                *) echo "Unknown Shhware renderer setting; using Auto" >&2 ;;
+            esac
+        fi
+        if [ "${WLR_RENDERER:-}" != pixman ] && [ -z "${WLR_RENDER_DRM_DEVICE+x}" ]; then
+            device=$(graphics_setting render_device)
+            case "$device" in
+                auto|'') ;;
+                *)
+                    # An older hardware helper ignores unknown arguments.
+                    if ! node=$("$HOME/.local/bin/hardware" --render-node "$device") ||
+                            [[ "$node" != /dev/dri/renderD<-> ]]; then
+                        echo "Selected render device unavailable or invalid. Check hardware or choose Auto in Settings > Graphics > Render device." >&2
+                        exit 1
+                    fi
+                    export WLR_RENDER_DRM_DEVICE="$node" ;;
+            esac
+        fi
+        exec dbus-run-session sway
+    ) >"$wm_log" 2>&1; then
         exit
     fi
 

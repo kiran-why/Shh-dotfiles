@@ -376,8 +376,11 @@ user_shell() {
 
 # Print the lines of this distro in shh config > settings (line, yes_no:
 # shh).
-distro_settings() {
+distro_choices() {
     line aur_helper '' 'aur helper' "$(setting aur_helper yay) >"
+}
+
+distro_settings() {
     yes_no pacman 'Pacman colors and parallel downloads, AUR builds on all cpu cores'
 }
 
