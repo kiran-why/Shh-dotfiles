@@ -7,9 +7,86 @@
 # Look after the dotfiles: pick the parts, update, check, change a color,
 # uninstall.
 #
-# Usage: shh config | update [--dry-run] | diff | report | doctor [--config|--graphics|--build|--performance|--network|--audio] | help
+# Run shh help for the command list.
 
 set -eu
+
+usage() {
+    local example
+    case "${1:-}" in
+        '') printf '%s\n' 'usage: shh COMMAND' ''
+            printf '  %-12s%s\n' \
+                config 'select components and settings' \
+                update 'update the system and dotfiles' \
+                diff 'preview local dotfile changes and backups' \
+                report 'print a diagnostic summary for manual review' \
+                debloater 'review cleanup candidates' \
+                doctor 'choose a diagnostic mode' \
+                color 'replace a color in installed configs' \
+                uninstall 'remove managed files and restore backups' \
+                help 'show this help'
+            echo
+            echo 'Use shh COMMAND --help for options and examples.'
+            return ;;
+        config) echo 'usage: shh config'
+            echo 'Select components and settings for the next install or update.'
+            example='shh config' ;;
+        update) echo 'usage: shh update [--check]'
+            echo 'Update from the linked checkout or a fresh temporary clone.'
+            echo '  --check  Preview the update plan, packages, recipe and dotfile changes.'
+            echo 'The preview uses a local checkout. Remote repository state is not checked.'
+            example='shh update --check' ;;
+        diff) echo 'usage: shh diff'
+            echo 'Preview dotfile changes and backups using a local checkout.'
+            echo 'Remote repository state is not checked.'
+            example='shh diff' ;;
+        report) echo 'usage: shh report'
+            echo 'Print a diagnostic summary. Review it before sharing.'
+            example='shh report > report.txt' ;;
+        debloater) echo 'usage: shh debloater [OPTION]'
+            printf '%s\n' 'Review cleanup candidates. Choose at most one mode.' \
+                '  --scan        Scan the five default categories.' \
+                '  --packages    Inspect orphan package candidates.' \
+                '  --duplicates  Inspect duplicate executables.' \
+                '  --cache       Inspect package caches.' \
+                '  --history     Read cleanup history.' \
+                '  --check       Select candidates in a terminal and preview the plan.'
+            example='shh debloater --check' ;;
+        doctor) echo 'usage: shh doctor OPTION'
+            printf '%s\n' 'Choose one diagnostic mode.' \
+                '  --config       Check services, files, packages and the session.' \
+                '  --graphics     Inspect DRM devices, renderer and graphics errors.' \
+                '  --audio        Inspect session audio, sockets, ALSA and default devices.' \
+                '  --network      Inspect interfaces, Wi-Fi, routes and DNS configuration.' \
+                '    --online     Also probe external IPv4, DNS and HTTPS (after --network).' \
+                '  --performance  Sample resources, desktop processes and Sway startup.' \
+                '  --build        Check build and update tools without building.'
+            example='shh doctor --network --online' ;;
+        color) echo 'usage: shh color OLD NEW'
+            echo "Replace OLD with NEW in installed configs. Use six hex digits, optionally prefixed with a quoted '#'."
+            example='shh color d7263d ff0000' ;;
+        uninstall) echo 'usage: shh uninstall [--check]'
+            echo 'Remove managed files and restore recorded backups.'
+            echo '  --check  Preview removals and restorations.'
+            example='shh uninstall --check' ;;
+        help) echo 'usage: shh help'
+            echo 'List available commands. Use shh COMMAND --help for command details.'
+            example='shh help' ;;
+        *) return 1 ;;
+    esac
+    echo '  --help  Show this help.'
+    echo "Example: $example"
+}
+
+case "${1:-}" in
+    help|-h|--help)
+        if [ "$#" = 1 ]; then usage; exit 0; fi
+        if [ "$#" = 2 ] && [ "$1" = help ] && [ "$2" = --help ]; then usage help; exit 0; fi
+        usage help >&2; exit 2 ;;
+esac
+if [ "$#" = 2 ] && [ -n "$1" ] && [ "$2" = --help ] && usage "$1"; then exit 0; fi
+
+if [ "${1:-}" = color ] && [ "$#" != 3 ]; then usage color >&2; exit 1; fi
 
 if [ "${1:-}" = debloater ]; then
     # Keep the search order as data. Run probes from system directories.
@@ -18,37 +95,25 @@ if [ "${1:-}" = debloater ]; then
     export PATH LC_ALL=C
     unset CDPATH
     case "$#:${2:-}" in
-        1:|2:--scan|2:--packages|2:--duplicates|2:--cache|2:--history|2:--dry-run|2:--help) ;;
-        *) echo 'usage: shh debloater [--scan|--packages|--duplicates|--cache|--dry-run|--history|--help]' >&2; exit 2 ;;
+        1:|2:--scan|2:--packages|2:--duplicates|2:--cache|2:--history|2:--dry-run|2:--check) ;;
+        *) usage debloater >&2; exit 2 ;;
     esac
 fi
 
-doctor_usage() {
-    echo "usage: shh doctor OPTION"
-    printf '  shh doctor %-19s%s\n' \
-        '--config'      'check services, installed files, packages and the session' \
-        '--graphics'    'show DRM devices, renderer evidence and recent graphics errors' \
-        '--audio'        'inspect session audio, local sockets, ALSA and default devices' \
-        '--network'     'inspect local interfaces, Wi-Fi, routes and DNS configuration' \
-        '--network --online' 'also probe external IPv4, DNS and HTTPS' \
-        '--performance' 'sample system resources, desktop processes and Sway startup' \
-        '--build'       "check the distro's build/update tools without building"
-}
-
 if [ "${1:-}" = doctor ]; then
     case "$#:${2:-}:${3:-}" in
-        1::) diagnostic_action=doctor_usage ;;
+        1::) diagnostic_action=usage ;;
         2:--config:) diagnostic_action=doctor ;;
         3:--network:--online) diagnostic_action=doctor_network ;;
         2:--graphics:|2:--audio:|2:--network:|2:--performance:|2:--build:) diagnostic_action=doctor_${2#--} ;;
-        *) doctor_usage >&2; exit 2 ;;
+        *) usage doctor >&2; exit 2 ;;
     esac
 fi
 
 report_bootstrap=0
 # Report has a small read-only bootstrap, including on a partial installation.
 if [ "${1:-}" = report ]; then
-    [ "$#" = 1 ] || { echo "usage: shh report" >&2; exit 2; }
+    [ "$#" = 1 ] || { usage report >&2; exit 2; }
     report_bootstrap=1
     exec 8>&2 2>/dev/null
     export LC_ALL=C
@@ -117,23 +182,6 @@ if [ "$from_repo" = 1 ]; then hardware_script="$repo/scripts/hardware"; else har
 # Load pkg_*, svc_check and seat_groups. When the file is missing, only
 # doctor and the install of fzf need it.
 case "${1:-}" in doctor|report|debloater) ;; *) [ ! -f "$distro_file" ] || . "$distro_file" ;; esac
-
-usage() {
-    echo "usage: shh COMMAND"
-    echo
-    printf '  %-22s%s\n' \
-        'config'           'pick the parts and settings for install.sh (then: shh update)' \
-        'update'           'install.sh from a fresh clone (it updates the system and the configs)' \
-        'update --dry-run' 'preview this local checkout, without pulling or installing' \
-        'diff'             'preview dotfile changes and backups from the local checkout' \
-        'report'           'print a diagnostic summary for manual review before sharing' \
-        'debloater'        'review cleanup candidates (see debloater --help)' \
-        'doctor'           'list diagnostic options' \
-        'color OLD NEW'    'change a color in every config, e.g. shh color d7263d ff0000' \
-        'uninstall [-n]'   'remove what link.sh put in place, put the old files back (-n: only show)' \
-        'help'             'show this help'
-}
-
 
 # Copies or links now: link.sh keeps what is installed.
 if [ -L "$HOME/.local/share/shh/lib.sh" ]; then mode_now=link; else mode_now=copy; fi
@@ -243,27 +291,41 @@ fi
 [ "$(id -u)" -ne 0 ] || error "do not run as root, run as your user"
 
 case "${1:-}" in
-    config)         load_module config
+    config)         [ "$#" = 1 ] || { usage config >&2; exit 2; }
+                    load_module config
                     load_module tui
                     load_module components
                     config ;;
     update)         case "$#:${2:-}" in
                         1:) load_module update; update ;;
-                        2:--dry-run) load_module update; load_module components; preview "$@" ;;
-                        *) usage >&2; exit 2 ;;
+                        2:--check|2:--dry-run) load_module update; load_module components; preview "$@" ;;
+                        *) usage update >&2; exit 2 ;;
                     esac ;;
-    diff)           [ "$#" = 1 ] || { usage >&2; exit 2; }; load_module update; preview "$@" ;;
+    diff)           [ "$#" = 1 ] || { usage diff >&2; exit 2; }; load_module update; preview "$@" ;;
     doctor)         load_module diagnostics
+                    if [ "$diagnostic_action" = usage ]; then usage doctor; exit 0; fi
                     [ ! -f "$distro_file" ] || . "$distro_file"
                     [ "$diagnostic_action" != doctor ] || load_module components
                     "$diagnostic_action" ${3:+"$3"} ;;
     debloater)      load_module debloater
                     [ ! -f "$distro_file" ] || . "$distro_file"
+                    # API 1 modules also serve older linked entry points.
+                    [ "${2:-}" != --check ] || set -- debloater --dry-run
                     case "${2:-}" in ''|--dry-run) load_module tui ;; esac
                     shift; deb_main "$@" ;;
     color)          load_module config; shift; color "$@" ;;
-    uninstall)      shift; exec sh "$link_file" --uninstall "$@" ;;
-    help|-h|--help) usage ;;
+    uninstall)      shift
+                    case "$#:${1:-}" in
+                        1:--check) set -- -n ;;
+                        1:-h) usage uninstall; exit 0 ;;
+                        *) for arg do
+                               case "$arg" in
+                                   -n|--dry-run|--diff|--link|--copy|-u|--uninstall|-h) ;;
+                                   *) usage uninstall >&2; exit 1 ;;
+                               esac
+                           done ;;
+                    esac
+                    exec sh "$link_file" --uninstall "$@" ;;
     "")             usage >&2; exit 1 ;;
     *)              usage >&2; error "unknown command: $1" ;;
 esac

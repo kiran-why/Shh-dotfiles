@@ -50,6 +50,45 @@ compinit -d ~/.cache/zsh/zcompdump
 zstyle ':completion:*' menu select
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 
+_shh() {
+    if (( CURRENT == 2 )); then
+        compadd config update diff report debloater doctor color uninstall help
+        return
+    fi
+
+    case $words[2] in
+        doctor)
+            if (( CURRENT == 3 && $#words == 4 )) && [[ $words[4] == --online ]]; then
+                compadd -- --network
+                return
+            fi
+            if (( CURRENT == 4 && $#words == 4 )) && [[ $words[3] == --network ]]; then
+                compadd -- --online
+                return
+            fi ;;
+        color)
+            if (( CURRENT == 3 && $#words <= 4 )); then
+                if [[ $PREFIX == -* ]] && (( $#words == 3 )); then
+                    compadd -- --help
+                else
+                    _message -r 'original color (six hex digits, e.g. d7263d)'
+                fi
+            elif (( CURRENT == 4 && $#words == 4 )) && [[ $words[3] != -* ]]; then
+                _message -r 'replacement color (six hex digits, e.g. ff0000)'
+            fi
+            return ;;
+    esac
+
+    (( CURRENT == 3 && $#words == 3 )) || return 1
+    case $words[2] in
+        update|uninstall) compadd -- --check --help ;;
+        doctor) compadd -- --config --graphics --audio --network --performance --build --help ;;
+        debloater) compadd -- --scan --packages --duplicates --cache --history --check --help ;;
+        config|diff|report|help) compadd -- --help ;;
+    esac
+}
+compdef _shh shh
+
 # Keys. foot and the TTY send some keys differently, so both are bound.
 bindkey -e
 
