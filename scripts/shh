@@ -11,6 +11,18 @@
 
 set -eu
 
+if [ "${1:-}" = debloater ]; then
+    # Keep the search order as data. Run probes from system directories.
+    deb_search_path=${PATH-}
+    PATH=/usr/bin:/bin:/usr/sbin:/sbin
+    export PATH LC_ALL=C
+    unset CDPATH
+    case "$#:${2:-}" in
+        1:|2:--scan|2:--packages|2:--duplicates|2:--cache|2:--history|2:--dry-run|2:--help) ;;
+        *) echo 'usage: shh debloater [--scan|--packages|--duplicates|--cache|--dry-run|--history|--help]' >&2; exit 2 ;;
+    esac
+fi
+
 doctor_usage() {
     echo "usage: shh doctor OPTION"
     printf '  shh doctor %-19s%s\n' \
@@ -86,7 +98,7 @@ if [ "$from_repo" = 1 ]; then hardware_script="$repo/scripts/hardware"; else har
 
 # Load pkg_*, svc_check and seat_groups. When the file is missing, only
 # doctor and the install of fzf need it.
-case "${1:-}" in doctor|report) ;; *) [ ! -f "$distro_file" ] || . "$distro_file" ;; esac
+case "${1:-}" in doctor|report|debloater) ;; *) [ ! -f "$distro_file" ] || . "$distro_file" ;; esac
 
 usage() {
     echo "usage: shh COMMAND"
@@ -97,6 +109,7 @@ usage() {
         'update --dry-run' 'preview this local checkout, without pulling or installing' \
         'diff'             'preview dotfile changes and backups from the local checkout' \
         'report'           'print a diagnostic summary for manual review before sharing' \
+        'debloater'        'review cleanup candidates (see debloater --help)' \
         'doctor'           'list diagnostic options' \
         'color OLD NEW'    'change a color in every config, e.g. shh color d7263d ff0000' \
         'uninstall [-n]'   'remove what link.sh put in place, put the old files back (-n: only show)' \
@@ -181,7 +194,15 @@ label_of() {
 
 # Pick one of LIST and print its key (nothing on Esc): choose LABEL LIST.
 choose() {
-    printf '%s\n' "$2" | menu --border-label=" $(cap "$1") " | cut -f1
+    local banner
+    banner=$(config_banner "$1")
+    printf '%s\n' "$2" | menu --border-label=" $(cap "$1") " --header="$(printf ' \n%s\n ' "$banner")" | cut -f1
+}
+
+# Read the width before menu output is piped into fzf.
+menu_columns() {
+    [ -t 2 ] || return 0
+    stty size <&2 2>/dev/null | cut -d' ' -f2
 }
 
 # Print TEXT in the middle of the menu: center TEXT [WIDTH].
@@ -191,10 +212,309 @@ choose() {
 # dash counts bytes in '${#1}'.
 center() {
     local cols pad
-    cols=$(stty size 2>/dev/null </dev/tty | cut -d" " -f2)
+    cols=$(menu_columns)
     pad=$(( (${cols:-0} - 4 - ${2:-${#1}}) / 2 ))
     [ "$pad" -gt 0 ] || pad=0
     printf '%*s%s\n' "$pad" '' "$1"
+}
+
+# Keep the artwork centered as a block, including its leading spaces.
+banner_block() {
+    local cols=${1:-0} width=$2 pad
+    [ "$cols" -eq 0 ] || [ "$cols" -ge "$((width + 4))" ] || return 0
+    pad=$(( (cols - width - 4) / 2 ))
+    [ "$pad" -gt 0 ] || pad=0
+    sed "s/^/$(printf '%*s' "$pad" '')/"
+}
+
+config_banner() {
+    local cols word=$1
+    cols=$(menu_columns)
+    case "$word" in
+        settings) [ "${cols:-0}" -eq 0 ] || [ "$cols" -ge 72 ] || word=prefs ;;
+        features) [ "${cols:-0}" -eq 0 ] || [ "$cols" -ge 75 ] || word=feats ;;
+        graphics) [ "${cols:-0}" -eq 0 ] || [ "$cols" -ge 74 ] || word=gpu ;;
+        renderer) [ "${cols:-0}" -eq 0 ] || [ "$cols" -ge 76 ] || word=render ;;
+        layouts) [ "${cols:-0}" -eq 0 ] || [ "$cols" -ge 64 ] || word=keys ;;
+        recipes|'all recipes') [ "${cols:-0}" -eq 0 ] || [ "$cols" -ge 65 ] || word=recipe ;;
+    esac
+    case "$word" in
+        'shh config') banner_block "$cols" 52 <<'ART'
+                                ▄███▒  ▀▀
+ ▄████▄    ▄████▄    ██▄██▄    ▓██▀    ▄▄   ▄████▄▄
+▒██▀ ▀█   ▒██▀ ▀██▒ ▓██▀ ▀██▒ ▒████▒  ▓██▒ ▓██▀ ▀██▒
+▒▓█    ▄  ▒██   ██░ ▓██   ██▒ ░▓██░   ▒██░ ▒██▄ ▄██░
+▒ ▓███▀ ░ ░▀████▓▀  ▒██░  ██░ ░▒██░   ░██░  ▀█████▓
+░ ░▒ ▒  ░ ░ ▒░▒░▒░  ░ ▒░  ▒ ░  ▒▓░    ░▓    ▄▄  ▓██
+  ░  ▒      ░ ▒ ▒░  ░ ░░  ░ ░  ░▒      ▒ ░  ▀████▀
+░         ░ ░ ░        ░  ░     ░      ░     ░▒ ░
+░ ░           ░           ░     ░      ░      ░
+ART
+            ;;
+        settings) banner_block "$cols" 68 <<'ART'
+                    ▄██     ▄██     ▀▀
+ ▄████▒    ▄███▄   ▓█████▒ ▓█████▒  ▄▄   ██▄██▄    ▄████▄▄   ▄████▒
+▒██▄  ▀  ▓██▀ ▀██▒  ▓██     ▓██    ▓██▒ ▓██▀ ▀██▒ ▓██▀ ▀██▒ ▒██▄  ▀
+ ▀▀███▄  ▒███▀▀▀    ▒██     ▒██    ▒██░ ▓██   ██▒ ▒██▄ ▄██░  ▀▀███▄
+▒██████▒ ░▒████▄▒   ░▀██▄▒  ░▀██▄▒ ░██░ ▒██░  ██░  ▀█████▓  ▒██████▒
+▒ ▒▓▒ ▒  ░░ ▒░ ░     ▒ ░░    ▒ ░░  ░▓   ░ ▒░  ▒ ░  ▄▄  ▓██  ▒ ▒▓▒ ▒
+░ ░▒  ░   ░ ░  ░     ░ ░     ░ ░    ▒ ░ ░ ░░  ░ ░  ▀████▀   ░ ░▒  ░
+░  ░        ░          ░       ░    ░      ░  ░     ░▒ ░    ░  ░
+     ░      ░  ░     ░       ░      ░         ░      ░           ░
+ART
+            ;;
+        features) banner_block "$cols" 71 <<'ART'
+  ▄███▒                     ▄██
+ ▓██▀     ▄███▄    ▄████▄  ▓█████▒  ██   ██   ██▄██▄   ▄███▄    ▄████▒
+▒████▒  ▓██▀ ▀██▒  ▄▄▀▓██   ▓██    ▓██  ▓██▒ ▓██▀ ▀▀ ▓██▀ ▀██▒ ▒██▄  ▀
+░▓██░   ▒███▀▀▀   ▓██  ██   ▒██    ▓▓█  ▒██░ ▓██     ▒███▀▀▀    ▀▀███▄
+░▒██░   ░▒████▄▒  ░▀███▓█▄  ░▀██▄▒ ▒▒████▓█▄ ▒██░    ░▒████▄▒  ▒██████▒
+ ▒▓░    ░░ ▒░ ░   ░ ░▓░ ░    ▒ ░░  ░▒▓▒ ▒ ▒  ░ ▒▓    ░░ ▒░ ░   ▒ ▒▓▒ ▒
+ ░▒      ░ ░  ░    ░ ▒  ░    ░ ░   ░░▒░ ░ ░    ░▒ ░   ░ ░  ░   ░ ░▒  ░
+  ░        ░         ░         ░    ░░░ ░ ░    ░        ░      ░  ░
+  ░        ░  ░       ░      ░        ░         ░       ░  ░        ░
+ART
+            ;;
+        misc) banner_block "$cols" 38 <<'ART'
+                ▀▀
+ ██▄██▄ ▄██▄    ▄▄   ▄████▒   ▄████▄
+▓██▀ ▀███▀▀██▒ ▓██▒ ▒██▄  ▀  ▒██▀ ▀█
+▓██   ▓██  ██▒ ▒██░  ▀▀███▄  ▒▓█    ▄
+▒██▒  ▒██  ██░ ░██░ ▒██████▒ ▒ ▓███▀ ░
+░ ▒░  ░ ▒  ▒ ░ ░▓   ▒ ▒▓▒ ▒  ░ ░▒ ▒  ░
+░  ░  ░ ░  ░ ░  ▒ ░ ░ ░▒  ░    ░  ▒
+░     ░    ░    ░   ░  ░     ░
+      ░         ░        ░   ░ ░
+ART
+            ;;
+        recipes|'all recipes') banner_block "$cols" 61 <<'ART'
+                             ▀▀
+ ██▄██▄   ▄███▄    ▄████▄    ▄▄  ▓██▄██▄     ▄███▄    ▄████▒
+▓██▀ ▀▀ ▓██▀ ▀██▒ ▒██▀ ▀█   ▓██▒ ▓██▀ ▀██▒ ▓██▀ ▀██▒ ▒██▄  ▀
+▓██     ▒███▀▀▀   ▒▓█    ▄  ▒██░ ▒██▄ ▄██░ ▒███▀▀▀    ▀▀███▄
+▒██░    ░▒████▄▒  ▒ ▓███▀ ░ ░██░ ▒██▀██▀   ░▒████▄▒  ▒██████▒
+░ ▒▓    ░░ ▒░ ░   ░ ░▒ ▒  ░ ░▓   ▒██░      ░░ ▒░ ░   ▒ ▒▓▒ ▒
+  ░▒ ░   ░ ░  ░     ░  ▒     ▒ ░ ░▓█░       ░ ░  ░   ░ ░▒  ░
+  ░        ░      ░          ░    ░▒ ░        ░      ░  ░
+   ░       ░  ░   ░ ░        ░     ░          ░  ░        ░
+ART
+            ;;
+        mode) banner_block "$cols" 43 <<'ART'
+                              ██▓
+ ██▄██▄ ▄██▄    ▄████▄    ▄██▄██▒   ▄███▄
+▓██▀ ▀███▀▀██▒ ▒██▀ ▀██▒ ▓██▀ ▀██ ▓██▀ ▀██▒
+▓██   ▓██  ██▒ ▒██   ██░ ▒██  ▓██ ▒███▀▀▀
+▒██▒  ▒██  ██░ ░▀████▓▀  ░▀███▓█▒ ░▒████▄▒
+░ ▒░  ░ ▒  ▒ ░ ░ ▒░▒░▒░  ░ ░▓░ ░  ░░ ▒░ ░
+░  ░  ░ ░  ░ ░   ░ ▒ ▒░   ░ ▒  ░   ░ ░  ░
+░     ░    ░   ░ ░ ░        ░        ░
+      ░            ░         ░       ░  ░
+ART
+            ;;
+        'switch layout') banner_block "$cols" 53 <<'ART'
+                      ▀▀   ▄██               ██▓
+ ▄████▒  ▓█▓  ▄  ▓█▓  ▄▄  ▓█████▒  ▄████▄   ▓██▒▄██▄
+▒██▄  ▀  ▒██ ▐█▌ ██▒ ▓██▒  ▓██    ▒██▀ ▀█   ▒██▀ ▀██▒
+ ▀▀███▄  ░██▄███▄██░ ▒██░  ▒██    ▒▓█    ▄  ░██  ░██░
+▒██████▒  ▀██▀ ▀██▀  ░██░  ░▀██▄▒ ▒ ▓███▀ ░ ░▓█▒ ░██▓
+▒ ▒▓▒ ▒   ░▓░ ▒ ▒░   ░▓     ▒ ░░  ░ ░▒ ▒  ░  ▒ ░ ▒░▒
+░ ░▒  ░    ▒ ░ ░ ░    ▒ ░   ░ ░     ░  ▒     ▒ ░ ░ ░
+░  ░       ░   ░      ░       ░   ░          ░   ░
+     ░       ░        ░     ░     ░ ░        ░     ░
+ART
+            ;;
+        DNS) banner_block "$cols" 27 <<'ART'
+     ██▓
+ ▄██▄██▒  ██▄██▄    ▄████▒
+▓██▀ ▀██ ▓██▀ ▀██▒ ▒██▄  ▀
+▒██  ▓██ ▓██   ██▒  ▀▀███▄
+░▀███▓█▒ ▒██░  ██░ ▒██████▒
+░ ░▓░ ░  ░ ▒░  ▒ ░ ▒ ▒▓▒ ▒
+ ░ ▒  ░  ░ ░░  ░ ░ ░ ░▒  ░
+   ░        ░  ░   ░  ░
+    ░          ░        ░
+ART
+            ;;
+        editor) banner_block "$cols" 49 <<'ART'
+               ██▓  ▀▀   ▄██
+  ▄███▄    ▄██▄██▒  ▄▄  ▓█████▒  ▄████▄    ██▄██▄
+▓██▀ ▀██▒ ▓██▀ ▀██ ▓██▒  ▓██    ▒██▀ ▀██▒ ▓██▀ ▀▀
+▒███▀▀▀   ▒██  ▓██ ▒██░  ▒██    ▒██   ██░ ▓██
+░▒████▄▒  ░▀███▓█▒ ░██░  ░▀██▄▒ ░▀████▓▀  ▒██░
+░░ ▒░ ░   ░ ░▓░ ░  ░▓     ▒ ░░  ░ ▒░▒░▒░  ░ ▒▓
+ ░ ░  ░    ░ ▒  ░   ▒ ░   ░ ░     ░ ▒ ▒░    ░▒ ░
+   ░         ░      ░       ░   ░ ░ ░       ░
+   ░  ░       ░     ░     ░         ░        ░
+ART
+            ;;
+        'file manager') banner_block "$cols" 37 <<'ART'
+  ▄███▒  ▀▀  ▓██
+ ▓██▀    ▄▄  ▒██     ▄███▄    ▄████▒
+▒████▒  ▓██▒ ▒██░  ▓██▀ ▀██▒ ▒██▄  ▀
+░▓██░   ▒██░ ░██░  ▒███▀▀▀    ▀▀███▄
+░▒██░   ░██░ ░▓██▄ ░▒████▄▒  ▒██████▒
+ ▒▓░    ░▓   ░▒▓ ░ ░░ ▒░ ░   ▒ ▒▓▒ ▒
+ ░▒      ▒ ░  ░▒    ░ ░  ░   ░ ░▒  ░
+  ░      ░    ░       ░      ░  ░
+  ░      ░      ░     ░  ░        ░
+ART
+            ;;
+        graphics) banner_block "$cols" 70 <<'ART'
+                                      ██▓       ▀▀
+ ▄████▄▄   ██▄██▄  ▄████▄  ▓██▄██▄   ▓██▒▄██▄   ▄▄   ▄████▄    ▄████▒
+▓██▀ ▀██▒ ▓██▀ ▀▀  ▄▄▀▓██  ▓██▀ ▀██▒ ▒██▀ ▀██▒ ▓██▒ ▒██▀ ▀█   ▒██▄  ▀
+▒██▄ ▄██░ ▓██     ▓██  ██  ▒██▄ ▄██░ ░██  ░██░ ▒██░ ▒▓█    ▄   ▀▀███▄
+ ▀█████▓  ▒██░    ░▀███▓█▄ ▒██▀██▀   ░▓█▒ ░██▓ ░██░ ▒ ▓███▀ ░ ▒██████▒
+ ▄▄  ▓██  ░ ▒▓    ░ ░▓░ ░  ▒██░       ▒ ░ ▒░▒  ░▓   ░ ░▒ ▒  ░ ▒ ▒▓▒ ▒
+ ▀████▀     ░▒ ░   ░ ▒  ░  ░▓█░       ▒ ░ ░ ░   ▒ ░   ░  ▒    ░ ░▒  ░
+  ░▒ ░      ░        ░      ░▒ ░      ░   ░     ░   ░         ░  ░
+   ░         ░        ░      ░        ░     ░   ░   ░ ░            ░
+ART
+            ;;
+        layouts) banner_block "$cols" 60 <<'ART'
+▓██                                          ▄██
+▒██    ▄████▄   ██  ▓██  ▄████▄    ██   ██  ▓█████▒  ▄████▒
+▒██░   ▄▄▀▓██  ▓██  ▒██ ▒██▀ ▀██▒ ▓██  ▓██▒  ▓██    ▒██▄  ▀
+░██░  ▓██  ██  ▒██  ▓██ ▒██   ██░ ▓▓█  ▒██░  ▒██     ▀▀███▄
+░▓██▄ ░▀███▓█▄ ░▀███▓██ ░▀████▓▀  ▒▒████▓█▄  ░▀██▄▒ ▒██████▒
+░▒▓ ░ ░ ░▓░ ░       ▓██ ░ ▒░▒░▒░  ░▒▓▒ ▒ ▒    ▒ ░░  ▒ ▒▓▒ ▒
+ ░▒    ░ ▒  ░   ▀████▀    ░ ▒ ▒░  ░░▒░ ░ ░    ░ ░   ░ ░▒  ░
+ ░       ░       ░▒ ░   ░ ░ ░      ░░░ ░ ░      ░   ░  ░
+   ░      ░       ░         ░        ░        ░          ░
+ART
+            ;;
+        'render device') banner_block "$cols" 52 <<'ART'
+     ██▓                     ▀▀
+ ▄██▄██▒   ▄███▄   ▓██   █▓  ▄▄   ▄████▄     ▄███▄
+▓██▀ ▀██ ▓██▀ ▀██▒ ▒██░ ██▒ ▓██▒ ▒██▀ ▀█   ▓██▀ ▀██▒
+▒██  ▓██ ▒███▀▀▀    ▓██ █░  ▒██░ ▒▓█    ▄  ▒███▀▀▀
+░▀███▓█▒ ░▒████▄▒    ▀██▀   ░██░ ▒ ▓███▀ ░ ░▒████▄▒
+░ ░▓░ ░  ░░ ▒░ ░     ░▐░    ░▓   ░ ░▒ ▒  ░ ░░ ▒░ ░
+ ░ ▒  ░   ░ ░  ░     ░░      ▒ ░   ░  ▒     ░ ░  ░
+   ░        ░         ░      ░   ░            ░
+    ░       ░  ░     ░       ░   ░ ░          ░  ░
+ART
+            ;;
+        renderer) banner_block "$cols" 72 <<'ART'
+                                 ██▓
+ ██▄██▄   ▄███▄    ██▄██▄    ▄██▄██▒   ▄███▄    ██▄██▄   ▄███▄    ██▄██▄
+▓██▀ ▀▀ ▓██▀ ▀██▒ ▓██▀ ▀██▒ ▓██▀ ▀██ ▓██▀ ▀██▒ ▓██▀ ▀▀ ▓██▀ ▀██▒ ▓██▀ ▀▀
+▓██     ▒███▀▀▀   ▓██   ██▒ ▒██  ▓██ ▒███▀▀▀   ▓██     ▒███▀▀▀   ▓██
+▒██░    ░▒████▄▒  ▒██░  ██░ ░▀███▓█▒ ░▒████▄▒  ▒██░    ░▒████▄▒  ▒██░
+░ ▒▓    ░░ ▒░ ░   ░ ▒░  ▒ ░ ░ ░▓░ ░  ░░ ▒░ ░   ░ ▒▓    ░░ ▒░ ░   ░ ▒▓
+  ░▒ ░   ░ ░  ░   ░ ░░  ░ ░  ░ ▒  ░   ░ ░  ░     ░▒ ░   ░ ░  ░     ░▒ ░
+  ░        ░         ░  ░      ░        ░        ░        ░        ░
+   ░       ░  ░         ░       ░       ░  ░      ░       ░  ░      ░
+ART
+            ;;
+        'aur helper') banner_block "$cols" 53 <<'ART'
+ ██▓                ▓██
+▓██▒▄██▄    ▄███▄   ▒██   ▓██▄██▄     ▄███▄    ██▄██▄
+▒██▀ ▀██▒ ▓██▀ ▀██▒ ▒██░  ▓██▀ ▀██▒ ▓██▀ ▀██▒ ▓██▀ ▀▀
+░██  ░██░ ▒███▀▀▀   ░██░  ▒██▄ ▄██░ ▒███▀▀▀   ▓██
+░▓█▒ ░██▓ ░▒████▄▒  ░▓██▄ ▒██▀██▀   ░▒████▄▒  ▒██░
+ ▒ ░ ▒░▒  ░░ ▒░ ░   ░▒▓ ░ ▒██░      ░░ ▒░ ░   ░ ▒▓
+ ▒ ░ ░ ░   ░ ░  ░    ░▒   ░▓█░       ░ ░  ░     ░▒ ░
+ ░   ░       ░       ░     ░▒ ░        ░        ░
+ ░     ░     ░  ░      ░    ░          ░  ░      ░
+ART
+            ;;
+        'Large files (100 MiB)') banner_block "$cols" 42 <<'ART'
+▓██
+▒██    ▄████▄   ██▄██▄  ▄████▄▄    ▄███▄
+▒██░   ▄▄▀▓██  ▓██▀ ▀▀ ▓██▀ ▀██▒ ▓██▀ ▀██▒
+░██░  ▓██  ██  ▓██     ▒██▄ ▄██░ ▒███▀▀▀
+░▓██▄ ░▀███▓█▄ ▒██░     ▀█████▓  ░▒████▄▒
+░▒▓ ░ ░ ░▓░ ░  ░ ▒▓     ▄▄  ▓██  ░░ ▒░ ░
+ ░▒    ░ ▒  ░    ░▒ ░   ▀████▀    ░ ░  ░
+ ░       ░       ░       ░▒ ░       ░
+   ░      ░       ░       ░         ░  ░
+ART
+            ;;
+        preview) banner_block "$cols" 63 <<'ART'
+                                      ▀▀
+▓██▄██▄    ██▄██▄   ▄███▄   ▓██   █▓  ▄▄    ▄███▄   ▓█▓  ▄  ▓█▓
+▓██▀ ▀██▒ ▓██▀ ▀▀ ▓██▀ ▀██▒ ▒██░ ██▒ ▓██▒ ▓██▀ ▀██▒ ▒██ ▐█▌ ██▒
+▒██▄ ▄██░ ▓██     ▒███▀▀▀    ▓██ █░  ▒██░ ▒███▀▀▀   ░██▄███▄██░
+▒██▀██▀   ▒██░    ░▒████▄▒    ▀██▀   ░██░ ░▒████▄▒   ▀██▀ ▀██▀
+▒██░      ░ ▒▓    ░░ ▒░ ░     ░▐░    ░▓   ░░ ▒░ ░    ░▓░ ▒ ▒░
+░▓█░        ░▒ ░   ░ ░  ░     ░░      ▒ ░  ░ ░  ░     ▒ ░ ░ ░
+ ░▒ ░       ░        ░         ░      ░      ░        ░   ░
+  ░          ░       ░  ░     ░       ░      ░  ░       ░
+ART
+            ;;
+        prefs) banner_block "$cols" 44 <<'ART'
+                              ▄███▒
+▓██▄██▄    ██▄██▄   ▄███▄    ▓██▀    ▄████▒
+▓██▀ ▀██▒ ▓██▀ ▀▀ ▓██▀ ▀██▒ ▒████▒  ▒██▄  ▀
+▒██▄ ▄██░ ▓██     ▒███▀▀▀   ░▓██░    ▀▀███▄
+▒██▀██▀   ▒██░    ░▒████▄▒  ░▒██░   ▒██████▒
+▒██░      ░ ▒▓    ░░ ▒░ ░    ▒▓░    ▒ ▒▓▒ ▒
+░▓█░        ░▒ ░   ░ ░  ░    ░▒     ░ ░▒  ░
+ ░▒ ░       ░        ░        ░     ░  ░
+  ░          ░       ░  ░     ░          ░
+ART
+            ;;
+        feats) banner_block "$cols" 43 <<'ART'
+  ▄███▒                     ▄██
+ ▓██▀     ▄███▄    ▄████▄  ▓█████▒  ▄████▒
+▒████▒  ▓██▀ ▀██▒  ▄▄▀▓██   ▓██    ▒██▄  ▀
+░▓██░   ▒███▀▀▀   ▓██  ██   ▒██     ▀▀███▄
+░▒██░   ░▒████▄▒  ░▀███▓█▄  ░▀██▄▒ ▒██████▒
+ ▒▓░    ░░ ▒░ ░   ░ ░▓░ ░    ▒ ░░  ▒ ▒▓▒ ▒
+ ░▒      ░ ░  ░    ░ ▒  ░    ░ ░   ░ ░▒  ░
+  ░        ░         ░         ░   ░  ░
+  ░        ░  ░       ░      ░          ░
+ART
+            ;;
+        gpu) banner_block "$cols" 29 <<'ART'
+ ▄████▄▄  ▓██▄██▄    ██   ██
+▓██▀ ▀██▒ ▓██▀ ▀██▒ ▓██  ▓██▒
+▒██▄ ▄██░ ▒██▄ ▄██░ ▓▓█  ▒██░
+ ▀█████▓  ▒██▀██▀   ▒▒████▓█▄
+ ▄▄  ▓██  ▒██░      ░▒▓▒ ▒ ▒
+ ▀████▀   ░▓█░      ░░▒░ ░ ░
+  ░▒ ░     ░▒ ░      ░░░ ░ ░
+   ░        ░          ░
+ART
+            ;;
+        render) banner_block "$cols" 54 <<'ART'
+                                 ██▓
+ ██▄██▄   ▄███▄    ██▄██▄    ▄██▄██▒   ▄███▄    ██▄██▄
+▓██▀ ▀▀ ▓██▀ ▀██▒ ▓██▀ ▀██▒ ▓██▀ ▀██ ▓██▀ ▀██▒ ▓██▀ ▀▀
+▓██     ▒███▀▀▀   ▓██   ██▒ ▒██  ▓██ ▒███▀▀▀   ▓██
+▒██░    ░▒████▄▒  ▒██░  ██░ ░▀███▓█▒ ░▒████▄▒  ▒██░
+░ ▒▓    ░░ ▒░ ░   ░ ▒░  ▒ ░ ░ ░▓░ ░  ░░ ▒░ ░   ░ ▒▓
+  ░▒ ░   ░ ░  ░   ░ ░░  ░ ░  ░ ▒  ░   ░ ░  ░     ░▒ ░
+  ░        ░         ░  ░      ░        ░        ░
+   ░       ░  ░         ░       ░       ░  ░      ░
+ART
+            ;;
+        keys) banner_block "$cols" 36 <<'ART'
+ ██▓
+▓██▒ ██▀   ▄███▄    ██  ▓██  ▄████▒
+▒██▄█▀   ▓██▀ ▀██▒ ▓██  ▒██ ▒██▄  ▀
+░██▀██▄  ▒███▀▀▀   ▒██  ▓██  ▀▀███▄
+░▓█▒ ▀██ ░▒████▄▒  ░▀███▓██ ▒██████▒
+░▒▓▒░ ░  ░░ ▒░ ░        ▓██ ▒ ▒▓▒ ▒
+ ░▒ ░     ░ ░  ░    ▀████▀  ░ ░▒  ░
+ ░          ░        ░▒ ░   ░  ░
+  ░         ░  ░      ░          ░
+ART
+            ;;
+        recipe) banner_block "$cols" 52 <<'ART'
+                             ▀▀
+ ██▄██▄   ▄███▄    ▄████▄    ▄▄  ▓██▄██▄     ▄███▄
+▓██▀ ▀▀ ▓██▀ ▀██▒ ▒██▀ ▀█   ▓██▒ ▓██▀ ▀██▒ ▓██▀ ▀██▒
+▓██     ▒███▀▀▀   ▒▓█    ▄  ▒██░ ▒██▄ ▄██░ ▒███▀▀▀
+▒██░    ░▒████▄▒  ▒ ▓███▀ ░ ░██░ ▒██▀██▀   ░▒████▄▒
+░ ▒▓    ░░ ▒░ ░   ░ ░▒ ▒  ░ ░▓   ▒██░      ░░ ▒░ ░
+  ░▒ ░   ░ ░  ░     ░  ▒     ▒ ░ ░▓█░       ░ ░  ░
+  ░        ░      ░          ░    ░▒ ░        ░
+   ░       ░  ░   ░ ░        ░     ░          ░  ░
+ART
+            ;;
+    esac
 }
 
 # Show a menu that stays open: loop LABEL HEADER LINES ACT [ART].
@@ -202,12 +522,18 @@ center() {
 # LINES prints the lines, 'ACT KEY' does the change and may set '$note'.
 # ART goes above HEADER, under an empty line. Esc leaves.
 loop() {
-    local lines pick header pos=1
+    local lines pick header pos=1 banner="${5:-}"
+    if [ "${config_menu:-0}" = 1 ]; then
+        local title
+        title=$(config_banner "$1")
+        banner="$title${banner:+
+$banner}"
+    fi
     note=''
     while :; do
         lines=$("$3")
         # A last line of one space makes an empty line above the list.
-        header=$([ -z "${5:-}" ] || printf ' \n%s\n' "$5"; center "$2"; [ -z "$note" ] || center "$note"; echo ' ')
+        header=$([ -z "$banner" ] || printf ' \n%s\n \n' "$banner"; center "$2"; [ -z "$note" ] || center "$note"; echo ' ')
         pick=$(printf '%s\n' "$lines" |
             menu --border-label=" $(cap "$1") " --header="$header" --bind="load:pos($pos)") || return 0
         pos=$(printf '%s\n' "$lines" | grep -nxF -- "$pick" | cut -d: -f1)
@@ -311,7 +637,7 @@ group_lines() {
     local name default
     group "$tab_group" | while IFS='|' read -r name default; do
         case "$name" in
-            shh_tools) yes_no "$name" 'System diagnostics and reports' yes 'Shhware Tools' ;;
+            shh_tools) yes_no "$name" 'Diagnostics, reports and debloater' yes 'Shhware Tools' ;;
             *) yes_no "$name" '' "${default:-yes}" ;;
         esac
     done
@@ -337,7 +663,9 @@ show_recipe_changes() {
 recipe_act() {
     case "$1" in
         preview)
-            show_recipe_changes | fzf --no-input --header='Local sources only; rebuilds are estimates. Esc: back' >/dev/null || :
+            local header
+            header=$(printf ' \n%s\n \n%s' "$(config_banner preview)" 'Local sources only; rebuilds are estimates. Esc: back')
+            show_recipe_changes | fzf --no-input --header="$header" >/dev/null || :
             ;;
         all)
             loop 'all recipes' 'Enter: on / off   Esc: back' all_recipe_lines all_recipe_act \
@@ -506,6 +834,7 @@ layout_act() {
 # Show 'shh config': the tabs settings, features, misc (and recipes on
 # KISS). Every change goes to the config at once.
 config() {
+    local config_menu=1
     [ -f "$components_file" ] || error "not found: $components_file (sh lib/link.sh)"
     command -v fzf >/dev/null || pkg_install "" fzf || error "cannot install fzf"
     # The look of every menu. .zprofile sets it only after the install.
@@ -521,22 +850,7 @@ config() {
             >"$shh_config"
     fi
 
-    # The font Bloody (patorjk.com), like the fastfetch logo, with N made
-    # narrower. 47 columns wide.
-    art=$(while IFS= read -r l; do center "$l" 47; done <<'EOF'
- ▄████▄   ▒█████   ███▄  █   █████▒ ██▓  ▄████
-▒██▀ ▀█  ▒██▒  ██▒ ██ ▀█ █ ▓██   ▒ ▓██▒ ██▒ ▀█▒
-▒▓█    ▄ ▒██░  ██▒▓██  ▀██▒▒████ ░ ▒██▒▒██░▄▄▄░
-▒▓▓▄ ▄██▒▒██   ██░▓██▒ ▐██▒░▓█▒  ░ ░██░░▓█  ██▓
-▒ ▓███▀ ░░ ████▓▒░▒██░  ██░░▒█░    ░██░░▒▓███▀▒
-░ ░▒ ▒  ░░ ▒░▒░▒░ ░ ▒░  ▒ ▒ ▒ ░    ░▓   ░▒   ▒
-  ░  ▒     ░ ▒ ▒░ ░ ░░  ░ ▒ ░       ▒ ░  ░   ░
-░        ░ ░ ░ ▒     ░  ░ ░ ░ ░     ▒ ░░ ░   ░
-░ ░          ░ ░          ░         ░        ░
-░
-EOF
-)
-    loop 'shh config' 'Enter: open   Esc: done' top_lines top_act "$art"
+    loop 'shh config' 'Enter: open   Esc: done' top_lines top_act
 
     info "saved in $shh_config"
     [ -n "${SHH_INSTALL:-}" ] || info "apply: shh update (before the first install: sh install.sh)"
@@ -731,8 +1045,9 @@ tools_error() {
     exit 1
 }
 
-load_diagnostics() {
-    local config="$HOME/.config/shh/config" module="$share/diagnostics.sh" key='' cli sum header
+load_tools_module() {
+    case "$1" in diagnostics|debloater) ;; *) tools_error 'unknown module' ;; esac
+    local config="$HOME/.config/shh/config" module="$share/$1.sh" key='' cli sum header
     local dir
     for dir in "$HOME/.config" "$HOME/.config/shh"; do
         if [ -e "$dir" ] || [ -L "$dir" ]; then
@@ -748,7 +1063,7 @@ load_diagnostics() {
         [ "$key" = yes ] || tools_error 'disabled in shh config > Features'
     fi
     if [ "$from_repo" = 1 ]; then
-        module="$repo/lib/diagnostics.sh"
+        module="$repo/lib/$1.sh"
         [ ! -L "$module" ] || tools_error 'unexpected checkout module link'
     else
         [ -f "$list" ] && [ ! -L "$list" ] && [ -r "$list" ] &&
@@ -768,13 +1083,13 @@ load_diagnostics() {
     # Pin the inode so a concurrent linker rename cannot switch the file after verification.
     exec 7<"$module"
     local pinned=/proc/$$/fd/7
-    [ -f "$pinned" ] || tools_error 'cannot open diagnostic module'
+    [ -f "$pinned" ] || tools_error 'cannot open tools module'
     if [ "$from_repo" = 0 ]; then
         case "$key" in
             /*) cli=$(readlink -f "$0") || tools_error 'linked checkout unavailable'
                 [ -L "$0" ] &&
                     [ "$cli" = "${cli%/scripts/shh}/scripts/shh" ] &&
-                    [ "$key" = "${cli%/scripts/shh}/lib/diagnostics.sh" ] &&
+                    [ "$key" = "${cli%/scripts/shh}/lib/$1.sh" ] &&
                     [ "$(readlink "$module")" = "$key" ] && [ "$(readlink -f "$module")" = "$key" ] &&
                     [ "$pinned" -ef "$key" ] ||
                     tools_error 'unexpected module link; apply shh update' ;;
@@ -782,14 +1097,14 @@ load_diagnostics() {
                     tools_error 'module differs from installed copy; review before updating' ;;
         esac
     fi
-    IFS= read -r header <"$pinned" && [ "$header" = '# Shhware diagnostics API 1' ] ||
+    IFS= read -r header <"$pinned" && [ "$header" = "# Shhware $1 API 1" ] ||
         tools_error 'incompatible module version; apply shh update'
     . "$pinned"
     exec 7<&-
 }
 
 if [ "${1:-}" = report ]; then
-    load_diagnostics
+    load_tools_module diagnostics
     exec 8>&-
     print_report
     exit
@@ -805,9 +1120,12 @@ case "${1:-}" in
                         *) usage >&2; exit 2 ;;
                     esac ;;
     diff)           [ "$#" = 1 ] || { usage >&2; exit 2; }; preview "$@" ;;
-    doctor)         load_diagnostics 8>&2
+    doctor)         load_tools_module diagnostics 8>&2
                     [ ! -f "$distro_file" ] || . "$distro_file"
                     "$diagnostic_action" ${3:+"$3"} ;;
+    debloater)      load_tools_module debloater 8>&2
+                    [ ! -f "$distro_file" ] || . "$distro_file"
+                    shift; deb_main "$@" ;;
     color)          shift; color "$@" ;;
     uninstall)      shift; exec sh "$link_file" --uninstall "$@" ;;
     help|-h|--help) usage ;;

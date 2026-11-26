@@ -189,9 +189,9 @@ install_file() {
     if [ "$new_tree" = 0 ] && exists "$dst"; then
         old=$(old_key "$dst")
         if [ -n "$old" ] && ! linked_parent "$dst" && same "$dst" "$old"; then owned=1; fi
-        # The CLI loads only a managed diagnostics module. Back up an identical
+        # The CLI loads only managed tools modules. Back up an identical
         # private entry too, so enabling the feature installs an owned copy or link.
-        if { [ "$dst" != "$share_dir/diagnostics.sh" ] || [ "$owned" = 1 ]; } &&
+        if { { [ "$dst" != "$share_dir/diagnostics.sh" ] && [ "$dst" != "$share_dir/debloater.sh" ]; } || [ "$owned" = 1 ]; } &&
             same "$dst" "$k" && { [ "$mode" = link ] || [ ! -L "$dst" ]; }; then
             # Identical unmanaged entries stay outside the uninstall manifest.
             [ "$owned" = 0 ] || records="$records$k$tab$dst$nl"
@@ -469,6 +469,7 @@ install_all() {
     # Flat in share: shh and installed systems expect these paths.
     install_tree "$script_dir/lib.sh"              "$share_dir/lib.sh"
     install_tree "$script_dir/diagnostics.sh"      "$share_dir/diagnostics.sh"
+    install_tree "$script_dir/debloater.sh"        "$share_dir/debloater.sh"
     install_tree "$script_dir/link.sh"             "$share_dir/link.sh"
     install_tree "$system_dir/services.txt"        "$share_dir/services.txt"
     install_tree "$components"                     "$share_dir/components.txt"
