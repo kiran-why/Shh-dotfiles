@@ -268,3 +268,70 @@ distro_undo() {
     echo "             sudo rm /etc/sudoers.d/shh-power; older versions of some are next to them as FILE.bak-DATE"
     echo "  without seatd or dumb_runtime_dir sway will not start"
 }
+
+deb_base_packages='base-system base-files base-voidstrap base-devel xbps musl glibc runit void-runit linux linux-firmware grub dracut gcc make binutils'
+deb_package_reason='XBPS orphan; automatically installed dependency'
+deb_xbps_names() {
+    local versions version
+    versions=$(xbps-query "$1") || return 1
+    while IFS= read -r version; do
+        [ -n "$version" ] || continue
+        xbps-uhelper getpkgname "$version" || return 1
+    done <<VERSIONS
+$versions
+VERSIONS
+}
+deb_installed_packages() {
+    local rows versions
+    rows=$(xbps-query -l) || return 1
+    versions=$(printf '%s\n' "$rows" | awk 'NF && $1!="ii" {exit 1} NF {print $2}') || return 1
+    [ -n "$versions" ] || return 0
+    printf '%s\n' "$versions" | xargs -n 64 xbps-uhelper getpkgname
+}
+deb_orphans() { deb_xbps_names -O; }
+deb_native_protection() { deb_xbps_names -H && deb_xbps_names -m; }
+deb_package_version() { xbps-query -p pkgver "$1"; }
+deb_owner() {
+    local rows
+    rows=$(xbps-query -o "$1") || return 1
+    DEB_PATH="$1" awk '{
+        i=index($0,": "); if (!i) next
+        path=substr($0,i+2); sub(/ [(](regular file|configuration file)[)]$/, "", path)
+        if (path==ENVIRON["DEB_PATH"]) {owner=substr($0,1,i-1); count++}
+    } END {if (count!=1) exit 1; print owner}' <<ROWS
+$rows
+ROWS
+}
+deb_native_plan() {
+    local rows versions version
+    rows=$(xbps-remove -n -- "$@") || return 1
+    versions=$(printf '%s\n' "$rows" | awk 'NF!=6 || $2!="remove" {exit 1} {print $1}') || return 1
+    for version in $versions; do xbps-uhelper getpkgname "$version" || return 1; done
+}
+deb_cache() {
+    local conf
+    for conf in /etc/xbps.d/*.conf /usr/share/xbps.d/*.conf; do
+        [ -e "$conf" ] || continue
+        [ -r "$conf" ] || return 1
+        if grep -Eq '^[[:space:]]*(cachedir|include)[[:space:]]*=' "$conf"; then
+            deb_notice 'UNKNOWN: custom XBPS cache configuration' 1
+            return
+        fi
+    done
+    deb_cache_dir /var/cache/xbps
+}
+deb_archive_reason() {
+    local file=${1##*/} version pkg installed
+    case "$file" in
+        *.xbps)
+            version=${file%.xbps}; version=${version%.*}
+            pkg=$(xbps-uhelper getpkgname "$version" 2>/dev/null) &&
+                installed=$(xbps-query -p pkgver "$pkg" 2>/dev/null) || installed=''
+            if [ "$installed" = "$version" ]; then echo 'Installed version archive'
+            elif [ -n "$installed" ]; then echo 'Alternate version archive'
+            else echo 'Package archive; installed version unknown'; fi ;;
+        *.sig*) echo 'Archive signature' ;;
+        *) echo 'Unidentified cache file' ;;
+    esac
+}
+deb_builds() { deb_notice 'NOT TESTED: no verified temporary build root'; }

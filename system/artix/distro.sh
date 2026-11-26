@@ -406,3 +406,45 @@ distro_undo() {
     echo "             older versions of some are next to them as FILE.bak-DATE"
     echo "  without seatd or pam_rundir sway will not start"
 }
+
+deb_base_packages='base base-devel pacman glibc filesystem bash coreutils linux linux-firmware grub mkinitcpio s6 s6-rc gcc make binutils'
+deb_package_reason='Dependency with no required or optional consumers'
+deb_installed_packages() { pacman -Qq; }
+deb_orphans() {
+    local result rc
+    result=$(pacman -Qdtq 2>&1) || {
+        rc=$?
+        [ "$rc" = 1 ] && [ -z "$result" ] && [ -n "$deb_installed" ] && return 0
+        return 1
+    }
+    printf '%s\n' "$result"
+}
+deb_package_version() {
+    local result
+    result=$(pacman -Q -- "$1") || return 1
+    printf '%s\n' "${result#* }"
+}
+deb_owner() { pacman -Qqo -- "$1"; }
+deb_native_protection() { pacman-conf HoldPkg; }
+deb_native_plan() { pacman -Rp --print-format '%n' -- "$@"; }
+deb_cache() {
+    local dirs dir
+    dirs=$(pacman-conf CacheDir) && [ -n "$dirs" ] || return 1
+    while IFS= read -r dir; do deb_cache_dir "$dir"; done <<DIRS
+$dirs
+DIRS
+}
+deb_archive_reason() {
+    local archive installed
+    case "$1" in
+        *.sig) echo 'Archive signature' ;;
+        *.pkg.tar.*)
+            archive=$(pacman -Qp -- "$1" 2>/dev/null) || { echo 'Unreadable package archive'; return; }
+            installed=$(pacman -Q -- "${archive%% *}" 2>/dev/null) || installed=''
+            if [ "$archive" = "$installed" ]; then echo 'Installed version archive'
+            elif [ -n "$installed" ]; then echo 'Alternate version archive'
+            else echo 'Package archive; installed version unknown'; fi ;;
+        *) echo 'Unidentified cache file' ;;
+    esac
+}
+deb_builds() { deb_notice 'NOT TESTED: no verified temporary build root'; }

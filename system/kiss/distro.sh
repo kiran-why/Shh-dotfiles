@@ -538,3 +538,84 @@ distro_undo() {
     echo "             older versions of some are next to them as FILE.bak-DATE"
     echo "  without seatd or rc.d/shh.boot sway will not start"
 }
+
+# Read installed metadata directly. Starting kiss would initialize its cache.
+deb_base_packages='baseinit baselayout busybox bzip2 e2fsprogs gcc git grub kiss make musl runit binutils'
+deb_package_reason='Leaf package; installation reason unknown'
+deb_kiss_db() { printf '%s/%s' "${KISS_ROOT:-}" "${pkg_db:-var/db/kiss/installed}"; }
+
+deb_installed_packages() {
+    local db dir
+    db=$(deb_kiss_db)
+    [ -r "$db" ] && [ -x "$db" ] || return 1
+    for dir in "$db"/*; do
+        [ -d "$dir" ] || continue
+        [ -r "$dir/version" ] || return 1
+        printf '%s\n' "${dir##*/}"
+    done
+}
+
+deb_orphans() {
+    local db leaves dependencies dir file
+    db=$(deb_kiss_db)
+    [ "${pkg_db:-var/db/kiss/installed}" = var/db/kiss/installed ] || return 1
+    leaves=$(kiss-orphans) || return 1
+    set --
+    for dir in "$db"/*; do
+        [ -d "$dir" ] && [ -x "$dir" ] || return 1
+        file=$dir/depends
+        [ -e "$file" ] || continue
+        [ -f "$file" ] && [ -r "$file" ] || return 1
+        set -- "$@" "$file"
+    done
+    dependencies=''
+    [ "$#" = 0 ] || dependencies=$(awk 'NF {print $1}' "$@") || return 1
+    printf '%s\n' "$leaves" | DEB_DEPS="$dependencies" awk '
+        BEGIN {n=split(ENVIRON["DEB_DEPS"],a,"\n"); for(i=1;i<=n;i++) dep[a[i]]=1}
+        NF && !($0 in dep)'
+}
+
+deb_package_version() { awk 'NR==1 && NF==2 {print $1 "-" $2}' "$(deb_kiss_db)/$1/version"; }
+deb_native_protection() { :; }
+deb_native_plan() { return 1; }
+
+deb_owner() {
+    local db matches path physical
+    db=$(deb_kiss_db)
+    case "$1" in *"$deb_nl"*) return 1 ;; esac
+    physical=$(CDPATH='' cd -P "${1%/*}/" && pwd -P && printf .) || return 1
+    physical=${physical%"$deb_nl."}
+    path=${physical%/}/${1##*/}
+    matches=$(grep -lFx -- "${path#"${KISS_ROOT:-}"}" "$db"/*/manifest) || {
+        [ "$?" = 1 ] && printf 'Unowned\n' && return
+        return 1
+    }
+    case "$matches" in *"$deb_nl"*) return 1 ;; esac
+    matches=${matches%/manifest}
+    printf '%s\n' "${matches##*/}"
+}
+
+deb_cache() { deb_cache_dir "${XDG_CACHE_HOME:-$HOME/.cache}/kiss/bin"; }
+deb_archive_reason() {
+    local file=${1##*/} pkg version
+    case "$file" in *@*.tar.*)
+        pkg=${file%%@*}
+        if deb_pkg_name "$pkg" && version=$(awk 'NR==1 {print $1 "-" $2}' "$(deb_kiss_db)/$pkg/version" 2>/dev/null); then
+            case "$file" in "$pkg@$version".tar.*) echo 'Installed version archive';; *) echo 'Alternate version archive';; esac
+        else echo 'Package archive; installed version unknown'; fi ;;
+        *) echo 'Unidentified cache file' ;;
+    esac
+}
+deb_builds() {
+    local root dir id reason
+    root=${KISS_TMPDIR:-${XDG_CACHE_HOME:-$HOME/.cache}/kiss/proc}
+    deb_directory "$root" || return 0
+    for dir in "$root"/*; do
+        [ -d "$dir/build" ] && [ ! -L "$dir" ] && [ ! -L "$dir/build" ] || continue
+        id=${dir##*/}
+        case "$id" in ''|*[!0-9]*) continue ;; esac
+        reason='KISS work directory; build activity unknown'
+        [ ! -d "/proc/$id" ] || reason='Matching process exists; possible active build'
+        deb_file "$dir" "$reason" 'Preserve build tree'
+    done
+}
