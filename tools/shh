@@ -1,0 +1,269 @@
+#!/bin/sh
+# ASCII : https://patorjk.com/software/taag/#p=display&f=Linguaholic+Mini+Block&t=SHH-DOTFILES&x=none&v=4&h=4&w=80&we=false
+
+#  ▄▄▄ █▄▄  █▄▄
+# ▀▀▄▄ █  █ █  █
+# ▀▀▀  ▀  ▀ ▀  ▀
+# Look after the dotfiles: pick the parts, update, check, change a color,
+# uninstall.
+#
+# Usage: shh config | update [--dry-run] | diff | report | doctor [--config|--graphics|--build|--performance|--network|--audio] | help
+
+set -eu
+
+if [ "${1:-}" = debloater ]; then
+    # Keep the search order as data. Run probes from system directories.
+    deb_search_path=${PATH-}
+    PATH=/usr/bin:/bin:/usr/sbin:/sbin
+    export PATH LC_ALL=C
+    unset CDPATH
+    case "$#:${2:-}" in
+        1:|2:--scan|2:--packages|2:--duplicates|2:--cache|2:--history|2:--dry-run|2:--help) ;;
+        *) echo 'usage: shh debloater [--scan|--packages|--duplicates|--cache|--dry-run|--history|--help]' >&2; exit 2 ;;
+    esac
+fi
+
+doctor_usage() {
+    echo "usage: shh doctor OPTION"
+    printf '  shh doctor %-19s%s\n' \
+        '--config'      'check services, installed files, packages and the session' \
+        '--graphics'    'show DRM devices, renderer evidence and recent graphics errors' \
+        '--audio'        'inspect session audio, local sockets, ALSA and default devices' \
+        '--network'     'inspect local interfaces, Wi-Fi, routes and DNS configuration' \
+        '--network --online' 'also probe external IPv4, DNS and HTTPS' \
+        '--performance' 'sample system resources, desktop processes and Sway startup' \
+        '--build'       "check the distro's build/update tools without building"
+}
+
+if [ "${1:-}" = doctor ]; then
+    case "$#:${2:-}:${3:-}" in
+        1::) diagnostic_action=doctor_usage ;;
+        2:--config:) diagnostic_action=doctor ;;
+        3:--network:--online) diagnostic_action=doctor_network ;;
+        2:--graphics:|2:--audio:|2:--network:|2:--performance:|2:--build:) diagnostic_action=doctor_${2#--} ;;
+        *) doctor_usage >&2; exit 2 ;;
+    esac
+fi
+
+report_bootstrap=0
+# Report has a small read-only bootstrap, including on a partial installation.
+if [ "${1:-}" = report ]; then
+    [ "$#" = 1 ] || { echo "usage: shh report" >&2; exit 2; }
+    report_bootstrap=1
+    exec 8>&2 2>/dev/null
+    export LC_ALL=C
+    : "${HOME:=/dev/null}"
+fi
+
+# Where link.sh installs lib.sh, link.sh, the lists and packages/, so the
+# repo can go.
+share="$HOME/.local/share/shh"
+list="$HOME/.local/state/shh/installed"
+repo_url="https://github.com/kiran-why/Shh-dotfiles.git"
+tab=$(printf '\t')
+
+# Read the installed copies, or the files of the repo when started from
+# it ('sh tools/shh config', install.sh): they can be newer.
+#
+# ~/.local/bin/shh finds no lib/lib.sh in ~/.local, so it is not the repo.
+cli_dir=$(cd "$(dirname "$0")" && pwd -P)
+repo=${cli_dir%/*}
+repo=${repo:-/}
+from_repo=0
+legacy_root=''
+if [ -f "$repo/lib/lib.sh" ]; then
+    case "$cli_dir" in
+        "$repo/tools"|"$repo/scripts") from_repo=1 ;;
+    esac
+fi
+# Old installed links still point at scripts/shh after a pull.
+if [ "$from_repo" = 0 ] && [ -L "$0" ]; then
+    target=$(readlink "$0")
+    case "$target" in
+        /*/scripts/shh)
+            legacy_root=${target%/scripts/shh}
+            [ "$(readlink -f "$0")" = "$legacy_root/tools/shh" ] || exit 1 ;;
+    esac
+fi
+
+if [ "$from_repo" = 1 ]; then lib_file="$repo/lib/lib.sh"; else lib_file="$share/lib.sh"; fi
+if [ "${1:-}" = report ]; then
+    distro=unknown
+else
+    [ -f "$lib_file" ] || { echo "lib.sh not found: $lib_file, run sh lib/link.sh from the repo" >&2; exit 1; }
+    . "$lib_file"
+fi
+
+# The repo has a folder per distro ('$distro': lib.sh), share only this
+# one's.
+if [ "$from_repo" = 1 ]; then
+    link_file="$repo/lib/link.sh"
+    components_file="$repo/components/${distro}_components.txt"
+    services_file="$repo/system/$distro/services.txt"
+    packages_dir="$repo/system/$distro/packages"
+    distro_file="$repo/system/$distro/distro.sh"
+    recipes_dir="$repo/system/$distro/repo"
+else
+    link_file="$share/link.sh"
+    components_file="$share/components.txt"
+    services_file="$share/services.txt"
+    packages_dir="$share/packages"
+    distro_file="$share/distro.sh"
+    recipes_dir="$share/repo"
+fi
+# scripts/hardware tells what the machine is (the cards).
+if [ "$from_repo" = 1 ]; then hardware_script="$repo/scripts/hardware"; else hardware_script="$HOME/.local/bin/hardware"; fi
+
+# Load pkg_*, svc_check and seat_groups. When the file is missing, only
+# doctor and the install of fzf need it.
+case "${1:-}" in doctor|report|debloater) ;; *) [ ! -f "$distro_file" ] || . "$distro_file" ;; esac
+
+usage() {
+    echo "usage: shh COMMAND"
+    echo
+    printf '  %-22s%s\n' \
+        'config'           'pick the parts and settings for install.sh (then: shh update)' \
+        'update'           'install.sh from a fresh clone (it updates the system and the configs)' \
+        'update --dry-run' 'preview this local checkout, without pulling or installing' \
+        'diff'             'preview dotfile changes and backups from the local checkout' \
+        'report'           'print a diagnostic summary for manual review before sharing' \
+        'debloater'        'review cleanup candidates (see debloater --help)' \
+        'doctor'           'list diagnostic options' \
+        'color OLD NEW'    'change a color in every config, e.g. shh color d7263d ff0000' \
+        'uninstall [-n]'   'remove what link.sh put in place, put the old files back (-n: only show)' \
+        'help'             'show this help'
+}
+
+
+# Copies or links now: link.sh keeps what is installed.
+if [ -L "$HOME/.local/share/shh/lib.sh" ]; then mode_now=link; else mode_now=copy; fi
+
+# Use fixed messages here: report must never copy a path or config value into output.
+tools_error() {
+    if [ "$report_bootstrap" = 1 ]; then
+        printf 'Shhware Tools: %s\n' "$1" >&8
+    else
+        printf 'Shhware Tools: %s\n' "$1" >&2
+    fi
+    exit 1
+}
+
+check_tools_enabled() {
+    local config="$HOME/.config/shh/config" key dir
+    for dir in "$HOME/.config" "$HOME/.config/shh"; do
+        if [ -e "$dir" ] || [ -L "$dir" ]; then
+            [ -d "$dir" ] && [ -x "$dir" ] || tools_error 'feature configuration unavailable'
+        fi
+    done
+    if [ -e "$config" ] || [ -L "$config" ]; then
+        [ -f "$config" ] && [ -r "$config" ] || tools_error 'feature configuration unavailable'
+        # Same last-value and comment rules as setting(), without sourcing lib.sh in report.
+        key=$(awk '/^shh_tools=/ { sub(/^shh_tools=/,""); sub(/#.*/,""); gsub(/[[:space:]]/,""); v=$0 }
+            END {print (v=="" || v=="yes") ? "yes" : "no"}' "$config") ||
+            tools_error 'feature configuration unavailable'
+        [ "$key" = yes ] || tools_error 'disabled in shh config > Features'
+    fi
+}
+
+load_module() {
+    local module="$share/tools/$1.sh" key='' header lookup
+    case "$1" in
+        diagnostics|debloater) check_tools_enabled ;;
+        tui|config|components|update) ;;
+        *) tools_error 'unknown module' ;;
+    esac
+    if [ "$from_repo" = 1 ]; then
+        module="$repo/tools/$1.sh"
+        [ ! -L "$module" ] || tools_error 'unexpected checkout module link'
+    else
+        [ -f "$list" ] && [ ! -L "$list" ] && [ -r "$list" ] &&
+            [ "$(cd "${list%/*}" && pwd -P)" = "$(cd "$HOME" && pwd -P)/.local/state/shh" ] ||
+            tools_error 'installation manifest unavailable; apply shh update'
+        lookup=$module
+        if [ -n "$legacy_root" ]; then
+            case "$1" in
+                diagnostics|debloater) module="$share/$1.sh"; lookup=$module ;;
+                *) lookup="$HOME/.local/bin/shh"; module="$legacy_root/tools/$1.sh" ;;
+            esac
+        fi
+        key=$(SHH_MODULE="$lookup" awk -F '\t' '
+            NF!=2 || index($2,ENVIRON["HOME"] "/")!=1 || $2 ~ /(^|\/)[.][.]?(\/|$)|\/\// ||
+                !($1 ~ /^\// || (length($1)==64 && $1 ~ /^[a-f0-9]+$/)) { invalid=1 }
+            $2==ENVIRON["HOME"] "/.local/state/shh" || index($2,ENVIRON["HOME"] "/.local/state/shh/")==1 ||
+                seen[$2]++ { invalid=1 }
+            $2==ENVIRON["SHH_MODULE"] { key=$1; count++ }
+            END { if (!NR || invalid || count>1) exit 1; print key }' "$list") ||
+            tools_error 'damaged installation manifest; apply shh update'
+        [ -n "$key" ] || tools_error 'enabled but not installed; apply shh update'
+    fi
+    [ -f "$module" ] && [ -r "$module" ] || tools_error 'module unavailable; apply shh update'
+    # Pin the inode so a concurrent linker rename cannot switch the file after verification.
+    exec 7<"$module"
+    local pinned=/proc/$$/fd/7
+    [ -f "$pinned" ] || tools_error 'cannot open tools module'
+    if [ "$from_repo" = 0 ]; then
+        if [ "$lookup" = "$HOME/.local/bin/shh" ]; then
+            [ "$key" = "$legacy_root/scripts/shh" ] && [ "$(readlink "$lookup")" = "$key" ] &&
+                [ "$(readlink -f "$module")" = "$module" ] && [ "$pinned" -ef "$module" ] ||
+                tools_error 'unexpected checkout module'
+        else
+            verify_installed_module "$1" "$module" "$key" "$pinned"
+        fi
+    fi
+    IFS= read -r header <"$pinned" && [ "$header" = "# Shhware $1 API 1" ] ||
+        tools_error 'incompatible module version; apply shh update'
+    . "$pinned"
+    exec 7<&-
+}
+
+# Check the open descriptor against the recorded copy or checkout link.
+verify_installed_module() {
+    local module=$2 key=$3 pinned=$4 cli expected target sum
+    case "$key" in
+        /*) cli=$(readlink -f "$0") || tools_error 'linked checkout unavailable'
+            case "$cli" in */tools/shh) ;; *) tools_error 'unexpected CLI link' ;; esac
+            expected=${cli%/shh}/$1.sh
+            target=$expected
+            [ -z "$legacy_root" ] || target="$legacy_root/lib/$1.sh"
+            [ -L "$0" ] && [ "$key" = "$target" ] && [ "$(readlink "$module")" = "$key" ] &&
+                [ "$(readlink -f "$module")" = "$expected" ] && [ "$pinned" -ef "$expected" ] ||
+                tools_error 'unexpected module link; apply shh update' ;;
+        *)  [ ! -L "$module" ] && sum=$(sha256sum <"$pinned") && [ "${sum%% *}" = "$key" ] ||
+                tools_error 'module differs from installed copy; review before updating' ;;
+    esac
+}
+
+if [ "${1:-}" = report ]; then
+    load_module diagnostics
+    exec 8>&-
+    print_report
+    exit
+fi
+
+[ "$(id -u)" -ne 0 ] || error "do not run as root, run as your user"
+
+case "${1:-}" in
+    config)         load_module config
+                    load_module tui
+                    load_module components
+                    config ;;
+    update)         case "$#:${2:-}" in
+                        1:) load_module update; update ;;
+                        2:--dry-run) load_module update; load_module components; preview "$@" ;;
+                        *) usage >&2; exit 2 ;;
+                    esac ;;
+    diff)           [ "$#" = 1 ] || { usage >&2; exit 2; }; load_module update; preview "$@" ;;
+    doctor)         load_module diagnostics
+                    [ ! -f "$distro_file" ] || . "$distro_file"
+                    [ "$diagnostic_action" != doctor ] || load_module components
+                    "$diagnostic_action" ${3:+"$3"} ;;
+    debloater)      load_module debloater
+                    [ ! -f "$distro_file" ] || . "$distro_file"
+                    case "${2:-}" in ''|--dry-run) load_module tui ;; esac
+                    shift; deb_main "$@" ;;
+    color)          load_module config; shift; color "$@" ;;
+    uninstall)      shift; exec sh "$link_file" --uninstall "$@" ;;
+    help|-h|--help) usage ;;
+    "")             usage >&2; exit 1 ;;
+    *)              usage >&2; error "unknown command: $1" ;;
+esac

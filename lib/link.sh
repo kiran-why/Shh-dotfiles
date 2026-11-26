@@ -148,7 +148,7 @@ check_destination() {
         dir=${dir%/*}
     done
     physical=$(cd "$dir" && pwd -P) || error "cannot resolve $dir"
-    if [ -f "$dots_path/scripts/shh" ] && [ -f "$dots_path/lib/link.sh" ]; then
+    if [ -f "$dots_path/tools/shh" ] && [ -f "$dots_path/lib/link.sh" ]; then
         case "$physical/" in "$dots_path/"*) error "destination inside checkout: $1" ;; esac
         if [ -d "$1" ] && [ ! -L "$1" ]; then
             case "$dots_path/" in "$physical/${1##*/}/"*) error "destination contains checkout: $1" ;; esac
@@ -179,6 +179,8 @@ put_aside() {
 install_file() {
     local src="$1" dst="$2" k old='' owned=0 rc
     check_destination "$dst"
+    local cli_file=0
+    case "$src" in "$dots_path"/tools/*) cli_file=1 ;; esac
     if [ "$mode" = link ]; then
         k=$src
     elif [ "$src" = - ]; then
@@ -191,7 +193,7 @@ install_file() {
         if [ -n "$old" ] && ! linked_parent "$dst" && same "$dst" "$old"; then owned=1; fi
         # The CLI loads only managed tools modules. Back up an identical
         # private entry too, so enabling the feature installs an owned copy or link.
-        if { { [ "$dst" != "$share_dir/diagnostics.sh" ] && [ "$dst" != "$share_dir/debloater.sh" ]; } || [ "$owned" = 1 ]; } &&
+        if { [ "$cli_file" = 0 ] || [ "$owned" = 1 ]; } &&
             same "$dst" "$k" && { [ "$mode" = link ] || [ ! -L "$dst" ]; }; then
             # Identical unmanaged entries stay outside the uninstall manifest.
             [ "$owned" = 0 ] || records="$records$k$tab$dst$nl"
@@ -237,13 +239,20 @@ install_file() {
         put_aside "$dst"
     fi
     if [ "$dry_run" = 0 ]; then
+        if [ "$cli_file" = 1 ]; then
+            ln "$stage/file" "$stage/witness"
+            (umask 077; printf '%s\t%s\t%s\n' "$dst" "$k" "$stage" >"$lock/pending")
+            mv -fT "$lock/pending" "$state/cli-pending"
+        fi
         if [ "$owned" = 1 ]; then
             mv -fT "$stage/file" "$dst"
         else
             mv -nT "$stage/file" "$dst" && ! exists "$stage/file" || error "destination appeared: $dst"
         fi
         save_entry "$dst" "$k"
+        if [ "$cli_file" = 1 ]; then rm "$stage/witness"; fi
         rmdir "$stage"
+        if [ "$cli_file" = 1 ]; then rm "$state/cli-pending"; fi
         stage=''
     fi
     records="$records$k$tab$dst$nl"
@@ -287,6 +296,7 @@ install_entries() {
     for f in "$1"/.[!.]* "$1"/..?* "$1"/*; do
         [ -e "$f" ] || continue
         [ "${f##*/}" != ".gitkeep" ] || continue
+        [ "$f" != "$dots_path/scripts/shh" ] || continue
         install_tree "$f" "$2/${f##*/}"
     done
 }
@@ -455,6 +465,17 @@ install_all() {
     off_files=" $(off_items "$components" 3 | tr '\n' ' ') ${distro_skip:-} "
 
     local f k dst first_wall=0
+    local cli_modules='tui config components update diagnostics debloater' header
+    [ -f "$dots_path/tools/shh" ] && [ ! -L "$dots_path/tools/shh" ] &&
+        [ -x "$dots_path/tools/shh" ] && sh -n "$dots_path/tools/shh" || error "invalid CLI entry point"
+    for f in $cli_modules; do
+        case "$off_files" in *" tools/$f.sh "*) continue ;; esac
+        [ -f "$dots_path/tools/$f.sh" ] && [ ! -L "$dots_path/tools/$f.sh" ] &&
+            IFS= read -r header <"$dots_path/tools/$f.sh" &&
+            [ "$header" = "# Shhware $f API 1" ] && sh -n "$dots_path/tools/$f.sh" ||
+            error "invalid CLI module: $f"
+    done
+    linked_parent "$share_dir/tools" && error "symlink parent for CLI modules"
     install_entries "$dots_path/config"  "$config_dir"
     [ -d "$dots_path/config/sway" ] || install_input
     install_entries "$dots_path/home"    "$HOME"
@@ -468,8 +489,6 @@ install_all() {
         touch "$HOME/wallpapers/$distro.jpg"
     # Flat in share: shh and installed systems expect these paths.
     install_tree "$script_dir/lib.sh"              "$share_dir/lib.sh"
-    install_tree "$script_dir/diagnostics.sh"      "$share_dir/diagnostics.sh"
-    install_tree "$script_dir/debloater.sh"        "$share_dir/debloater.sh"
     install_tree "$script_dir/link.sh"             "$share_dir/link.sh"
     install_tree "$system_dir/services.txt"        "$share_dir/services.txt"
     install_tree "$components"                     "$share_dir/components.txt"
@@ -478,6 +497,16 @@ install_all() {
     # Our package recipes (KISS only): 'shh config' lists them and kiss_repos
     # copies them.
     [ ! -d "$system_dir/repo" ] || install_tree "$system_dir/repo" "$share_dir/repo"
+
+    if [ -L "$share_dir/tools" ] || { exists "$share_dir/tools" && [ ! -d "$share_dir/tools" ]; }; then
+        put_aside "$share_dir/tools"
+        [ "$dry_run" = 0 ] || new_tree=1
+    fi
+    for f in $cli_modules; do
+        install_tree "$dots_path/tools/$f.sh" "$share_dir/tools/$f.sh"
+    done
+    new_tree=0
+    install_tree "$dots_path/tools/shh" "$bin_dir/shh"
 
     # Remove the files that left the repo since the last run.
     if [ -f "$list" ]; then
@@ -555,8 +584,8 @@ if [ "$dry_run" = 0 ]; then
     mkdir -p "$state"
     lock="$state/.link-lock"
     mkdir -m 700 "$lock" || error "another or interrupted link operation: $lock"
-    trap 'if [ -n "$stage" ]; then rm -f "$stage/file"; rmdir "$stage"; fi
-        rm -f "$lock/installed" "$lock/backups"
+    trap 'if [ -n "$stage" ] && [ ! -e "$state/cli-pending" ]; then rm -f "$stage/file" "$stage/witness"; rmdir "$stage"; fi
+        rm -f "$lock/installed" "$lock/backups" "$lock/pending"
         rmdir "$lock"' EXIT
     trap 'exit 1' HUP INT TERM
 fi
@@ -573,6 +602,28 @@ if [ -f "$list" ]; then
         case "$dst/" in *"$tab"*|*//*|*/../*|*/./*) error "invalid manifest path: $dst" ;; esac
         [ -n "$k" ] && [ "$dst" != "$row" ] || error "invalid manifest record"
     done <"$list"
+fi
+
+# Recover ownership only when the destination is still the very same staged inode.
+if exists "$state/cli-pending"; then
+    [ "$dry_run" = 0 ] || error "interrupted CLI installation; retry before preview"
+    [ -f "$state/cli-pending" ] && [ ! -L "$state/cli-pending" ] &&
+        IFS="$tab" read -r dst k pending <"$state/cli-pending" || error "invalid CLI checkpoint"
+    case "$dst" in
+        "$bin_dir/shh"|"$share_dir/tools/"config.sh|"$share_dir/tools/"tui.sh|"$share_dir/tools/"components.sh|"$share_dir/tools/"update.sh|"$share_dir/tools/"diagnostics.sh|"$share_dir/tools/"debloater.sh) ;;
+        *) error "invalid CLI checkpoint destination" ;;
+    esac
+    [ "${pending%/*}" = "${dst%/*}" ] || error "invalid staging directory"
+    case "${pending##*/}" in .shh-install.??????) ;; *) error "invalid staging directory" ;; esac
+    linked_parent "$pending/witness" && error "symlink parent for CLI checkpoint"
+    if exists "$dst" && exists "$pending/witness" &&
+        installed_inode=$(stat -c '%d:%i' "$dst") && staged_inode=$(stat -c '%d:%i' "$pending/witness") &&
+        [ "$installed_inode" = "$staged_inode" ] && same "$dst" "$k"; then
+        save_entry "$dst" "$k"
+    fi
+    rm -f "$pending/file" "$pending/witness"
+    [ ! -d "$pending" ] || rmdir "$pending"
+    rm "$state/cli-pending"
 fi
 
 if [ "$uninstall" = 1 ]; then

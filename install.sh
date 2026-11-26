@@ -146,7 +146,7 @@ choose_parts() {
     if [ -f "$shh_config" ]; then
         info "choices: $shh_config (change: shh config)"
     else
-        SHH_INSTALL=1 sh "$dots_path/scripts/shh" config || error "shh config failed"
+        SHH_INSTALL=1 sh "$dots_path/tools/shh" config || error "shh config failed"
     fi
     ok "done"
 }
