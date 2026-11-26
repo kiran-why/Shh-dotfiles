@@ -89,15 +89,33 @@ if [ -z "${WAYLAND_DISPLAY:-}" ] && [ "$(tty)" = "/dev/tty1" ]; then
                 auto|'') ;;
                 *)
                     # An older hardware helper ignores unknown arguments.
-                    if ! node=$("$HOME/.local/bin/hardware" --render-node "$device") ||
-                            [[ "$node" != /dev/dri/renderD<-> ]]; then
+                    # Give coldplug a short window to publish the selected node.
+                    for attempt in 0 1 2 3; do
+                        node=$("$HOME/.local/bin/hardware" --render-node "$device") && break
+                        node=''
+                        case "$device" in pci:*|of:*) ;; *) break ;; esac
+                        [ "$attempt" -lt 3 ] && [ -x "$HOME/.local/bin/hardware" ] || break
+                        sleep 1
+                    done
+                    if [[ "$node" != /dev/dri/renderD<-> ]]; then
                         echo "Selected render device unavailable or invalid. Check hardware or choose Auto in Settings > Graphics > Render device." >&2
                         exit 1
                     fi
-                    export WLR_RENDER_DRM_DEVICE="$node" ;;
+                    export WLR_RENDER_DRM_DEVICE="$node"
+                    if [ -z "${WLR_DRM_DEVICES+x}" ]; then
+                        if ! cards=$("$HOME/.local/bin/hardware" --drm-order "$node") ||
+                                [[ -n "$cards" && ! "$cards" =~ '^/dev/dri/card[0-9]+(:/dev/dri/card[0-9]+)+$' ]]; then
+                            echo "Cannot resolve DRM card order for the selected render device." >&2
+                            exit 1
+                        fi
+                        [ -z "$cards" ] || export WLR_DRM_DEVICES="$cards"
+                    fi ;;
             esac
         fi
-        exec dbus-run-session sway
+        case "$hardware" in
+            *nvidia*) exec dbus-run-session sway --unsupported-gpu ;;
+            *) exec dbus-run-session sway ;;
+        esac
     ) >"$wm_log" 2>&1; then
         exit
     fi

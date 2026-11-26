@@ -10,6 +10,26 @@ set -eu
 
 # A PCI slot or firmware device-tree name survives DRM node renumbering.
 case "${1:-}" in
+    --drm-order)
+        # Match the resolved render node to its display card by physical device.
+        node=${2:-}
+        case "$node" in /dev/dri/renderD*) ;; *) exit 1 ;; esac
+        case "${node##*/renderD}" in ''|*[!0-9]*) exit 1 ;; esac
+        render=/sys/class/drm/${node##*/}/device
+        [ -c "$node" ] && [ -d "$render" ] || exit 1
+        first='' others=''
+        for card in /dev/dri/card[0-9]*; do
+            [ -c "$card" ] || continue
+            if [ "/sys/class/drm/${card##*/}/device" -ef "$render" ]; then
+                [ -z "$first" ] || exit 1
+                first=$card
+            else
+                others="$others:$card"
+            fi
+        done
+        # A render-only GPU or a single display card needs no KMS override.
+        if [ -n "$first" ] && [ -n "$others" ]; then printf '%s%s\n' "$first" "$others"; fi
+        exit 0 ;;
     --render-devices|--render-node)
         match=''
         for sys in /sys/class/drm/renderD[0-9]*; do
