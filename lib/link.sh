@@ -494,6 +494,7 @@ install_all() {
     install_tree "$components"                     "$share_dir/components.txt"
     install_tree "$system_dir/packages"            "$share_dir/packages"
     install_tree "$system_dir/distro.sh"           "$share_dir/distro.sh"
+    [ ! -f "$system_dir/download" ] || install_tree "$system_dir/download" "$share_dir/download"
     # Our package recipes (KISS only): 'shh config' lists them and kiss_repos
     # copies them.
     [ ! -d "$system_dir/repo" ] || install_tree "$system_dir/repo" "$share_dir/repo"

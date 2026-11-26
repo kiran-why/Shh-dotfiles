@@ -239,6 +239,16 @@ pkg_installed() {
     recipe_valid "${KISS_ROOT:-}/${pkg_db:-var/db/kiss/installed}/$1"
 }
 
+# KISS passes a private temporary output path and the source URL to KISS_GET.
+kiss_build() {
+    local backend="${system_dir:-${distro_file%/*}}"
+    if [ -z "${KISS_GET:-}" ] && command -v curl >/dev/null; then
+        KISS_GET="$backend/download" kiss "$@"
+    else
+        kiss "$@"
+    fi
+}
+
 # Build and install a package: pkg_install TAG PKG (no tags on KISS).
 #
 # With KISS_PROMPT=0 'kiss b' installs the dependencies but only builds
@@ -247,7 +257,7 @@ pkg_installed() {
 # distro_prepare, hence the kiss_repos.
 pkg_install() {
     [ -d "$kiss_dir/shh" ] || kiss_repos || return 1
-    kiss b "$2" </dev/null && kiss i "$2" </dev/null
+    kiss_build b "$2" </dev/null && kiss i "$2" </dev/null
 }
 
 # --check reads the active repositories. Before the first overlay copy,
@@ -304,7 +314,7 @@ distro_prepare() {
     step "system update"
     kiss_repos || error "cannot prepare KISS repositories"
     kiss u </dev/null || error "cannot update the repos (no internet?)"
-    kiss U </dev/null || error "system update failed"
+    kiss_build U </dev/null || error "system update failed"
     ok "system updated"
 }
 

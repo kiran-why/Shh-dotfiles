@@ -71,7 +71,11 @@ pkg_installed() {
 # refuses to install anything until it updates itself. That happens on a
 # fresh system, when 'shh config' installs fzf.
 pkg_install() {
+    local rc
     sudo xbps-install -y "$2" </dev/null && return 0
+    rc=$?
+    # EBUSY requires an XBPS upgrade, ENOTSUP an initial repository sync.
+    case "$rc" in 16|95) ;; *) return "$rc" ;; esac
     sudo xbps-install -Suy xbps </dev/null && sudo xbps-install -y "$2" </dev/null
 }
 
