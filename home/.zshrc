@@ -83,7 +83,7 @@ _shh() {
     case $words[2] in
         update|uninstall) compadd -- --check --help ;;
         doctor) compadd -- --config --graphics --audio --network --performance --build --help ;;
-        debloater) compadd -- --scan --packages --duplicates --cache --history --check --help ;;
+        debloater) compadd -- --scan --list --build --packages --duplicates --cache --history --check --help ;;
         config|diff|report|help) compadd -- --help ;;
     esac
 }

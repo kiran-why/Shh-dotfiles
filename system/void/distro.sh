@@ -273,17 +273,13 @@ distro_undo() {
     echo "  without seatd or dumb_runtime_dir sway will not start"
 }
 
-deb_base_packages='base-system base-files base-voidstrap base-devel xbps musl glibc runit void-runit linux linux-firmware grub dracut gcc make binutils'
+deb_package_class=Orphan
+deb_base_packages='coreutils sudo opendoas eudev util-linux efibootmgr dosfstools e2fsprogs base-system base-files base-voidstrap base-devel xbps musl glibc runit void-runit linux linux-firmware grub dracut gcc make binutils'
 deb_package_reason='XBPS orphan; automatically installed dependency'
 deb_xbps_names() {
-    local versions version
+    local versions
     versions=$(xbps-query "$1") || return 1
-    while IFS= read -r version; do
-        [ -n "$version" ] || continue
-        xbps-uhelper getpkgname "$version" || return 1
-    done <<VERSIONS
-$versions
-VERSIONS
+    [ -z "$versions" ] || printf '%s\n' "$versions" | xargs -n 64 xbps-uhelper getpkgname
 }
 deb_installed_packages() {
     local rows versions
@@ -293,18 +289,27 @@ deb_installed_packages() {
     printf '%s\n' "$versions" | xargs -n 64 xbps-uhelper getpkgname
 }
 deb_orphans() { deb_xbps_names -O; }
-deb_native_protection() { deb_xbps_names -H && deb_xbps_names -m; }
-deb_package_version() { xbps-query -p pkgver "$1"; }
+deb_native_protection() {
+    local deps
+    deb_xbps_names -H && deb_xbps_names -m || return 1
+    case "$deb_nl$deb_installed$deb_nl" in *"${deb_nl}xbps$deb_nl"*) ;; *) return 0 ;; esac
+    deps=$(xbps-query --fulldeptree -x xbps) || return 1
+    [ -z "$deps" ] || printf '%s\n' "$deps" | xargs -n 64 xbps-uhelper getpkgname
+}
+deb_package_version() { local v; v=$(xbps-query -p pkgver "$1") || return 1; printf '%s\n' "${v#"$1-"}"; }
 deb_owner() {
     local rows
     rows=$(xbps-query -o "$1") || return 1
-    DEB_PATH="$1" awk '{
+    local owner
+    owner=$(DEB_PATH="$1" awk '{
         i=index($0,": "); if (!i) next
         path=substr($0,i+2); sub(/ [(](regular file|configuration file)[)]$/, "", path)
         if (path==ENVIRON["DEB_PATH"]) {owner=substr($0,1,i-1); count++}
     } END {if (count!=1) exit 1; print owner}' <<ROWS
 $rows
 ROWS
+) || return 1
+    xbps-uhelper getpkgname "$owner"
 }
 deb_native_plan() {
     local rows versions version
@@ -312,30 +317,47 @@ deb_native_plan() {
     versions=$(printf '%s\n' "$rows" | awk 'NF!=6 || $2!="remove" {exit 1} {print $1}') || return 1
     for version in $versions; do xbps-uhelper getpkgname "$version" || return 1; done
 }
-deb_cache() {
-    local conf
-    for conf in /etc/xbps.d/*.conf /usr/share/xbps.d/*.conf; do
-        [ -e "$conf" ] || continue
-        [ -r "$conf" ] || return 1
-        if grep -Eq '^[[:space:]]*(cachedir|include)[[:space:]]*=' "$conf"; then
-            deb_notice 'UNKNOWN: custom XBPS cache configuration' 1
-            return
-        fi
-    done
-    deb_cache_dir /var/cache/xbps
+deb_manager_names='xbps-install xbps-remove xbps-reconfigure xbps-rindex xbps-src'
+deb_cache_roots() {
+    local config
+    config=$(LC_ALL=C xbps-query -d -l 2>&1 >/dev/null) || return 1
+    printf '%s\n' "$config" | awk '
+        /Processing configuration directory:/ {loaded=1}
+        /: cachedir set to / {sub(/^.*: cachedir set to /,""); path=$0}
+        /: rootdir set to / {sub(/^.*: rootdir set to /,""); root=$0}
+        END {
+            if (!loaded) exit 1
+            if (!path) path="var/cache/xbps"
+            if (path !~ /^\//) {sub(/\/$/,"",root);path=root "/" path}
+            print path
+        }'
 }
-deb_archive_reason() {
-    local file=${1##*/} version pkg installed
-    case "$file" in
-        *.xbps)
-            version=${file%.xbps}; version=${version%.*}
-            pkg=$(xbps-uhelper getpkgname "$version" 2>/dev/null) &&
-                installed=$(xbps-query -p pkgver "$pkg" 2>/dev/null) || installed=''
-            if [ "$installed" = "$version" ]; then echo 'Installed version archive'
-            elif [ -n "$installed" ]; then echo 'Alternate version archive'
-            else echo 'Package archive; installed version unknown'; fi ;;
-        *.sig*) echo 'Archive signature' ;;
-        *) echo 'Unidentified cache file' ;;
-    esac
+deb_archive_id() {
+    local pkgver name version arch
+    case "$1" in *.xbps) ;; *) return 1 ;; esac
+    pkgver=$(xbps-uhelper binpkgver "${1##*/}") && arch=$(xbps-uhelper binpkgarch "${1##*/}") &&
+        name=$(xbps-uhelper getpkgname "$pkgver") && version=$(xbps-uhelper getpkgversion "$pkgver") || return 1
+    printf '%s\t%s\t%s\n' "$name" "$version" "$arch"
+}
+deb_compare_versions() {
+    local rc=0
+    xbps-uhelper cmpver "$1" "$2" || rc=$?
+    case "$rc" in 255) echo -1 ;; 0|1) echo "$rc" ;; *) return 1 ;; esac
+}
+deb_package_sizes() {
+    local pkg size
+    for pkg in $1; do
+        deb_pkg_name "$pkg" || continue
+        size=$(xbps-query -p installed_size "$pkg") || continue
+        case "$size" in
+            *[KMGTPE]B) case "$size" in *[!0-9.KMGTPEB]*) continue ;; esac
+                printf '%s\t%s\tRounded\n' "$pkg" "$size"; continue ;;
+            *B) size=${size%B} ;;
+        esac
+        case "$size" in ''|*[!0-9]*) continue ;; esac
+        printf '%s\t%s\tFull\n' "$pkg" "$size"
+    done
 }
 deb_builds() { deb_notice 'NOT TESTED: no verified temporary build root'; }
+
+deb_archive_arch() { local arch; arch=$(xbps-query -p architecture "$1") && [ "$2" = "$arch" ]; }

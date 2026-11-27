@@ -33,6 +33,35 @@ choose() {
     printf '%s\n' "$2" | menu --border-label=" $(cap "$1") " --header="$(printf ' \n%s\n ' "$banner")" | cut -f1
 }
 
+# Animate stderr while the foreground shell owns the scan and its signal handlers.
+tui_spinner() {
+    local color=$(printf '\033[31m')
+    case ${COLORTERM:-} in truecolor|24bit) color=$(printf '\033[38;2;215;38;61m') ;; esac
+    local owner=$1 label=$2 stopped=0 nap='' stat frame
+    trap 'stopped=1; if [ -n "$nap" ]; then kill "$nap" 2>/dev/null || :; fi' TERM HUP
+    trap 'printf "\r\033[2K" >&2' EXIT
+    case ${TERM:-}:${LC_ALL:-${LC_CTYPE:-${LANG:-}}} in
+        linux:*|vt100:*|vt220:*) set -- '|' '/' '-' '\' ;;
+        *UTF-8*|*utf8*|*utf-8*) set -- ⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏ ;;
+        *) set -- '|' '/' '-' '\' ;;
+    esac
+    while [ "$stopped" = 0 ]; do
+        for frame do
+            # The kernel reparents this child if the caller exits on a signal.
+            IFS= read -r stat </proc/self/stat || return 0
+            stat=${stat##*) }; stat=${stat#* }
+            [ "${stat%% *}" = "$owner" ] && [ "$stopped" = 0 ] || return 0
+            printf '\r%s%s %s%s' "$color" "$label" "$frame" "$reset" >&2
+            sleep 0.1 2>/dev/null &
+            nap=$!
+            [ "$stopped" = 0 ] || kill "$nap" 2>/dev/null || :
+            wait "$nap" 2>/dev/null || { wait "$nap" 2>/dev/null || :; return 0; }
+            [ "$stopped" = 0 ] || return 0
+            nap=''
+        done
+    done
+}
+
 # Read the width before menu output is piped into fzf.
 menu_columns() {
     [ -t 2 ] || return 0
@@ -372,6 +401,7 @@ $banner}"
             menu --border-label=" $(cap "$1") " --header="$header" --bind="load:pos($pos)") || return 0
         pos=$(printf '%s\n' "$lines" | grep -nxF -- "$pick" | cut -d: -f1)
         pick=${pick%%"$tab"*}
+        [ "$pick" != :back ] || return 0
         [ "$pick" != - ] || continue
         "$4" "$pick"
     done
@@ -392,29 +422,7 @@ deb_banner() {
    ░        ░       ░  ░      ░    ░ ░ ░        ░         ░      ░        ░
     ░       ░  ░    ░           ░      ░         ░      ░        ░  ░      ░
 ART
-    elif [ "$cols" -ge 75 ]; then
-        banner_block "$cols" 71 <<'ART'
-     ██▓          ██▓     ▓██                    ▄██
- ▄██▄██▒  ▄███▄  ▓██▒▄██▄ ▒██   ▄████▄   ▄████▄ ▓█████▒  ▄███▄   ██▄██▄
-▓██▀ ▀██▓██▀ ▀██▒▒██▀  ▀██▒██░ ▒██▀ ▀██▒ ▄▄▀▓██  ▓██   ▓██▀ ▀██▒▓██▀ ▀▀
-▒██  ▓██▒███▀▀▀  ░██▄  ▄██░██░ ▒██   ██░▓██  ██  ▒██   ▒███▀▀▀  ▓██
-░▀███▓█▒░▒████▄▒ ░▓█▒███▀ ░▓██▄░▀████▓▀ ░▀███▓█▄ ░▀██▄▒░▒████▄▒ ▒██░
-░ ░▓░ ░ ░░ ▒░ ░  ░▒▓▒░ ░  ░▒▓ ░░ ▒░▒░▒░ ░ ░▓░ ░   ▒ ░░ ░░ ▒░ ░  ░ ▒▓
- ░ ▒  ░  ░ ░  ░  ▒░▒ ░ ░   ░▒    ░ ▒ ▒░  ░ ▒  ░   ░ ░   ░ ░  ░    ░▒ ░
-   ░       ░      ░  ░     ░   ░ ░ ░       ░        ░     ░       ░
-    ░      ░  ░   ░          ░     ░        ░     ░       ░  ░     ░
-ART
     else
-        banner_block "$cols" 44 <<'ART'
-          ▓██
- ▄████▄   ▒██     ▄███▄    ▄████▄   ██▄██▄
-▒██▀ ▀█   ▒██░  ▓██▀ ▀██▒  ▄▄▀▓██  ▓██▀ ▀██▒
-▒▓█    ▄  ░██░  ▒███▀▀▀   ▓██  ██  ▓██   ██▒
-▒ ▓███▀ ░ ░▓██▄ ░▒████▄▒  ░▀███▓█▄ ▒██░  ██░
-░ ░▒ ▒  ░ ░▒▓ ░ ░░ ▒░ ░   ░ ░▓░ ░  ░ ▒░  ▒ ░
-  ░  ▒     ░▒    ░ ░  ░    ░ ▒  ░  ░ ░░  ░ ░
-░          ░       ░         ░        ░  ░
-░ ░          ░     ░  ░       ░          ░
-ART
+        center Debloater
     fi
 }

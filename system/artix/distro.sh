@@ -407,7 +407,8 @@ distro_undo() {
     echo "  without seatd or pam_rundir sway will not start"
 }
 
-deb_base_packages='base base-devel pacman glibc filesystem bash coreutils linux linux-firmware grub mkinitcpio s6 s6-rc gcc make binutils'
+deb_package_class=Orphan
+deb_base_packages='sudo opendoas eudev udev s6-linux-init artix-s6 efibootmgr dosfstools e2fsprogs util-linux base base-devel pacman glibc filesystem bash coreutils linux linux-firmware grub mkinitcpio s6 s6-rc gcc make binutils'
 deb_package_reason='Dependency with no required or optional consumers'
 deb_installed_packages() { pacman -Qq; }
 deb_orphans() {
@@ -424,27 +425,59 @@ deb_package_version() {
     result=$(pacman -Q -- "$1") || return 1
     printf '%s\n' "${result#* }"
 }
-deb_owner() { pacman -Qqo -- "$1"; }
-deb_native_protection() { pacman-conf HoldPkg; }
-deb_native_plan() { pacman -Rp --print-format '%n' -- "$@"; }
-deb_cache() {
-    local dirs dir
-    dirs=$(pacman-conf CacheDir) && [ -n "$dirs" ] || return 1
-    while IFS= read -r dir; do deb_cache_dir "$dir"; done <<DIRS
-$dirs
-DIRS
+deb_owner() {
+    local result
+    result=$(LC_ALL=C pacman -Qqo -- "$1" 2>&1) || {
+        [ "$result" = "error: No package owns $1" ] || return 1
+        result=Unowned
+    }
+    printf '%s\n' "$result"
 }
-deb_archive_reason() {
-    local archive installed
-    case "$1" in
-        *.sig) echo 'Archive signature' ;;
-        *.pkg.tar.*)
-            archive=$(pacman -Qp -- "$1" 2>/dev/null) || { echo 'Unreadable package archive'; return; }
-            installed=$(pacman -Q -- "${archive%% *}" 2>/dev/null) || installed=''
-            if [ "$archive" = "$installed" ]; then echo 'Installed version archive'
-            elif [ -n "$installed" ]; then echo 'Alternate version archive'
-            else echo 'Package archive; installed version unknown'; fi ;;
-        *) echo 'Unidentified cache file' ;;
-    esac
+deb_native_protection() {
+    local db
+    pacman-conf HoldPkg || return 1
+    case "$deb_nl$deb_installed$deb_nl" in *"${deb_nl}pacman$deb_nl"*) ;; *) return 0 ;; esac
+    db=$(pacman-conf DBPath) || return 1
+    awk '
+        /^%/ {field=$0; next} !NF {next}
+        field=="%NAME%" {pkg=$0; providers[pkg]=providers[pkg] " " pkg}
+        field=="%PROVIDES%" {sub(/[<>=].*/,""); providers[$0]=providers[$0] " " pkg}
+        field=="%DEPENDS%" {sub(/[<>=].*/,""); deps[pkg]=deps[pkg] " " $0}
+        function protect(p,   a,b,n,m,i,j) {
+            if (seen[p]++) return
+            print p
+            n=split(deps[p],a," ")
+            for(i=1;i<=n;i++) {
+                m=split(providers[a[i]],b," "); if(!m) bad=1
+                for(j=1;j<=m;j++) protect(b[j])
+            }
+        }
+        END {protect("pacman"); if (bad || !providers["pacman"]) exit 1}' "$db"/local/*/desc
+}
+deb_native_plan() { pacman -Rp --print-format '%n' -- "$@"; }
+deb_manager_names='pacman makepkg yay paru'
+deb_cache_roots() { pacman-conf CacheDir; }
+deb_archive_id() {
+    local info
+    case "$1" in *.pkg.tar|*.pkg.tar.*) ;; *) return 1 ;; esac
+    info=$(LC_ALL=C pacman -Qip -- "$1") || return 1
+    printf '%s\n' "$info" | awk -F ' *: +' '
+        $1=="Name" {n=$2} $1=="Version" {v=$2} $1=="Architecture" {a=$2}
+        END {if (!n || !v || !a) exit 1; print n "\t" v "\t" a}'
+}
+deb_compare_versions() { vercmp "$1" "$2"; }
+deb_package_sizes() {
+    local db
+    db=$(pacman-conf DBPath) || return 1
+    [ -n "$db" ] && [ -d "$db/local" ] || return 1
+    awk '/^%NAME%$/ {getline name} /^%SIZE%$/ {if (getline && $0 ~ /^[0-9]+$/) print name "\t" $0 "\tFull"}' "$db"/local/*/desc
 }
 deb_builds() { deb_notice 'NOT TESTED: no verified temporary build root'; }
+
+deb_archive_arch() { local arch; arch=$(pacman-conf Architecture) && { [ "$2" = any ] || [ "$2" = "$arch" ]; }; }
+
+deb_manager_locked() {
+    local db
+    db=$(pacman-conf DBPath) && [ -d "$db" ] || return 2
+    [ -e "$db/db.lck" ]
+}

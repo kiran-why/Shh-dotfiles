@@ -27,7 +27,7 @@ pixman${tab}Pixman"
 
 # Change NAME in the config, or add it: set_value NAME VALUE.
 set_value() {
-    if grep -q "^$1=" "$shh_config"; then
+    if [ -f "$shh_config" ] && grep -q "^$1=" "$shh_config"; then
         sed -i "s|^$1=.*|$1=$2|" "$shh_config"
     else
         printf '%s=%s\n' "$1" "$2" >>"$shh_config"

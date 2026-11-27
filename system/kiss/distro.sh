@@ -550,7 +550,8 @@ distro_undo() {
 }
 
 # Read installed metadata directly. Starting kiss would initialize its cache.
-deb_base_packages='baseinit baselayout busybox bzip2 e2fsprogs gcc git grub kiss make musl runit binutils'
+deb_package_class=Leaf
+deb_base_packages='coreutils mdevd sudo opendoas efibootmgr dosfstools util-linux b3sum curl tar xz gzip patch sed grep awk samurai cmake meson pkgconf clang baseinit baselayout busybox bzip2 e2fsprogs gcc git grub kiss make musl runit binutils'
 deb_package_reason='Leaf package; installation reason unknown'
 deb_kiss_db() { printf '%s/%s' "${KISS_ROOT:-}" "${pkg_db:-var/db/kiss/installed}"; }
 
@@ -586,7 +587,61 @@ deb_orphans() {
 }
 
 deb_package_version() { awk 'NR==1 && NF==2 {print $1 "-" $2}' "$(deb_kiss_db)/$1/version"; }
-deb_native_protection() { :; }
+deb_native_protection() {
+    local db file
+    db=$(deb_kiss_db)
+    [ -d "$db/kiss" ] || return 0
+    set --
+    for file in "$db"/*/depends; do
+        [ -e "$file" ] || continue
+        set -- "$@" "$file"
+    done
+    [ "$#" = 0 ] || awk '
+        {n=split(FILENAME,p,"/"); deps[p[n-1]]=deps[p[n-1]] " " $1}
+        function protect(pkg,   n,a,i) {
+            if (seen[pkg]++) return
+            print pkg
+            n=split(deps[pkg],a," "); for(i=1;i<=n;i++) protect(a[i])
+        }
+        END {protect("kiss")}' "$@"
+}
+
+# Read only manifest entries. The final link contributes its own length.
+deb_package_sizes() (
+    local db pkg file path parent checked root
+    db=$(deb_kiss_db)
+    root=${KISS_ROOT:-}
+    for pkg in $1; do
+        deb_pkg_name "$pkg" || continue
+        file=$db/$pkg/manifest
+        [ -f "$file" ] && [ -r "$file" ] || continue
+        {
+            set --
+            checked=''
+            while IFS= read -r path || [ -n "$path" ]; do
+                case "$path/" in *'/../'*|*'/./'*|//* ) echo missing; continue ;; esac
+                case "$path" in /*/) continue ;; /*) ;; *) echo missing; continue ;; esac
+                parent=${path%/*}
+                if [ "$parent" != "$checked" ]; then
+                    checked=$parent
+                    while [ -n "$parent" ]; do
+                        if [ -L "$root$parent" ]; then checked=''; break; fi
+                        parent=${parent%/*}
+                    done
+                    if [ -z "$checked" ]; then echo missing; continue; fi
+                fi
+                set -- "$@" "$root$path"
+                if [ "$#" = 96 ]; then stat -c '%d:%i %s %f %h' "$@" || echo missing; set --; fi
+            done <"$file" || echo missing
+            if [ "$#" -gt 0 ]; then stat -c '%d:%i %s %f %h' "$@" || echo missing; fi
+        } | awk -v pkg="$pkg" '
+            NF!=4 {bad=1; next}
+            $3 ~ /^4/ {next}
+            !seen[$1]++ {total+=$2; n++; if ($4>1) links=links "," $1 "=" $2}
+            END {if (!bad || n) printf "%s\t%.0f\t%s\t%s\n",pkg,total,bad?"Partial":"Full",links?links:"-"}'
+    done
+)
+
 deb_native_plan() { return 1; }
 
 deb_owner() {
@@ -605,27 +660,91 @@ deb_owner() {
     printf '%s\n' "${matches##*/}"
 }
 
-deb_cache() { deb_cache_dir "${XDG_CACHE_HOME:-$HOME/.cache}/kiss/bin"; }
-deb_archive_reason() {
+deb_cache_roots() { printf '%s\n' "${XDG_CACHE_HOME:-$HOME/.cache}/kiss/bin"; }
+deb_archive_id() {
     local file=${1##*/} pkg version
-    case "$file" in *@*.tar.*)
-        pkg=${file%%@*}
-        if deb_pkg_name "$pkg" && version=$(awk 'NR==1 {print $1 "-" $2}' "$(deb_kiss_db)/$pkg/version" 2>/dev/null); then
-            case "$file" in "$pkg@$version".tar.*) echo 'Installed version archive';; *) echo 'Alternate version archive';; esac
-        else echo 'Package archive; installed version unknown'; fi ;;
-        *) echo 'Unidentified cache file' ;;
-    esac
+    case "$file" in *@*.tar.gz|*@*.tar.xz|*@*.tar.zst|*@*.tar.bz2|*@*.tar.lz|*@*.tar.lzma) ;; *) return 1 ;; esac
+    pkg=${file%%@*}; version=${file#*@}; version=${version%.tar.*}
+    deb_pkg_name "$pkg" && deb_version_valid "$version" || return 1
+    printf '%s\t%s\tnative\n' "$pkg" "$version"
 }
+deb_compare_versions() { return 1; }
+deb_manager_names='kiss'
+deb_work_root() { printf '%s\n' "${KISS_TMPDIR:-${XDG_CACHE_HOME:-$HOME/.cache}/kiss/proc}"; }
+deb_source_root() { printf '%s\n' "${XDG_CACHE_HOME:-$HOME/.cache}/kiss/sources"; }
 deb_builds() {
-    local root dir id reason
-    root=${KISS_TMPDIR:-${XDG_CACHE_HOME:-$HOME/.cache}/kiss/proc}
+    local root dir state gate reason
+    root=$(deb_work_root)
     deb_directory "$root" || return 0
     for dir in "$root"/*; do
-        [ -d "$dir/build" ] && [ ! -L "$dir" ] && [ ! -L "$dir/build" ] || continue
-        id=${dir##*/}
-        case "$id" in ''|*[!0-9]*) continue ;; esac
-        reason='KISS work directory; build activity unknown'
-        [ ! -d "/proc/$id" ] || reason='Matching process exists; possible active build'
-        deb_file "$dir" "$reason" 'Preserve build tree'
+        [ -d "$dir" ] && [ ! -L "$dir" ] || continue
+        case "${dir##*/}" in ''|*[!0-9]*) continue ;; esac
+        reason=$(deb_build_state "$dir"); state=${reason%%"$tab"*}; reason=${reason#*"$tab"}
+        if [ ! -d "$dir/build" ] || [ -L "$dir/build" ]; then state='Unknown state'; reason='Unrecognized work directory'; fi
+        gate=blocked
+        [ "$state" != 'Inactive build' ] || gate=review
+        deb_file "$dir" "$reason" 'Check current process tree before cleanup' N/A "$state" "$gate"
     done
 }
+
+# Compare cached names with installed and configured recipes without sourcing them.
+deb_sources() {
+    local root dir pkg repos repo file expected complete
+    root=$(deb_source_root)
+    deb_directory "$root" || return 0
+    for dir in "$root"/* "$root"/.[!.]* "$root"/..?*; do
+        [ -e "$dir" ] || [ -L "$dir" ] || continue
+        pkg=${dir##*/}; expected=''; complete=$deb_db_ok
+        if ! deb_pkg_name "$pkg" || [ -L "$dir" ] || [ ! -d "$dir" ]; then
+            deb_file "$dir" 'Unrecognized source cache entry' 'Preserve unknown source' N/A 'Unknown state' blocked
+            continue
+        fi
+        set --
+        file=$(deb_kiss_db)/$pkg/sources
+        [ ! -e "$file" ] || set -- "$file"
+        repos=${KISS_PATH:-}:
+        while [ -n "$repos" ]; do
+            repo=${repos%%:*}; repos=${repos#*:}
+            case "$repo" in /*) ;; *) complete=0; continue ;; esac
+            [ -r "$repo" ] && [ -x "$repo" ] || { complete=0; continue; }
+            [ ! -e "$repo/$pkg/sources" ] || set -- "$@" "$repo/$pkg/sources"
+        done
+        if [ "$#" -gt 0 ]; then
+            expected=$(awk '
+                /^[[:space:]]*#/ || !NF {next}
+                $1 ~ /:\/\// {
+                    n=split($1,a,"/"); dest=$2; sub(/\/+$/,"",dest)
+                    name=a[n]; if ($1 ~ /^git\+/) sub(/[@#].*/,"",name)
+                    print (dest?dest "/":"") name
+                }' "$@") || complete=0
+        fi
+        [ "$#" -gt 0 ] || complete=0
+        deb_source_entries "$dir" ''
+    done
+}
+
+deb_source_entries() {
+    local entry rel state reason gate
+    deb_directory "$1" || return 0
+    for entry in "$1"/* "$1"/.[!.]* "$1"/..?*; do
+        [ -e "$entry" ] || [ -L "$entry" ] || continue
+        rel=$2${entry##*/}
+        gate=blocked; reason='No matching source in available recipes'
+        case "$entry" in
+            *.part|*.partial|*.download|*.aria2|*.tmp) state='Unknown state'; reason='Possible unfinished download' ;;
+            *) case "$deb_nl$expected$deb_nl" in
+                *"$deb_nl$rel$deb_nl"*) state='Known source'; reason='Referenced by an installed or configured recipe' ;;
+                *"$deb_nl$rel/"*) if [ -d "$entry" ] && [ ! -L "$entry" ]; then
+                        deb_source_entries "$entry" "$rel/"; continue
+                    fi
+                    state='Unknown state' ;;
+                *) if [ "$complete" = 1 ] && [ -f "$entry" ] && [ ! -L "$entry" ]; then
+                        state='Possibly unused'; [ "$deb_operation" != Idle ] || gate=review
+                    else state='Unknown state'; fi ;;
+            esac ;;
+        esac
+        deb_file "$entry" "$reason" "Offline recipes may use this source; package activity: $deb_operation" N/A "$state" "$gate"
+    done
+}
+
+deb_archive_arch() { [ "$2" = native ]; }

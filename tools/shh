@@ -45,8 +45,10 @@ usage() {
             example='shh report > report.txt' ;;
         debloater) echo 'usage: shh debloater [OPTION]'
             printf '%s\n' 'Review cleanup candidates. Choose at most one mode.' \
-                '  --scan        Scan the five default categories.' \
-                '  --packages    Inspect orphan package candidates.' \
+                '  --scan        Scan enabled categories and show a brief summary.' \
+                '  --list        Scan the same categories and list detailed findings.' \
+                '  --build       Inspect build directories and possible activity.' \
+                '  --packages    Inspect package candidates (leaf packages on KISS).' \
                 '  --duplicates  Inspect duplicate executables.' \
                 '  --cache       Inspect package caches.' \
                 '  --history     Read cleanup history.' \
@@ -95,7 +97,7 @@ if [ "${1:-}" = debloater ]; then
     export PATH LC_ALL=C
     unset CDPATH
     case "$#:${2:-}" in
-        1:|2:--scan|2:--packages|2:--duplicates|2:--cache|2:--history|2:--dry-run|2:--check) ;;
+        1:|2:--list|2:--build|2:--scan|2:--packages|2:--duplicates|2:--cache|2:--history|2:--dry-run|2:--check) ;;
         *) usage debloater >&2; exit 2 ;;
     esac
 fi
@@ -311,7 +313,10 @@ case "${1:-}" in
                     [ ! -f "$distro_file" ] || . "$distro_file"
                     # API 1 modules also serve older linked entry points.
                     [ "${2:-}" != --check ] || set -- debloater --dry-run
-                    case "${2:-}" in ''|--dry-run) load_module tui ;; esac
+                    case "${2:-}" in ''|--dry-run) load_module tui ;;
+                        --scan|--list|--build|--packages|--duplicates|--cache)
+                            if [ -t 0 ] && [ -t 1 ] && [ -t 2 ] && [ "${TERM:-dumb}" != dumb ]; then load_module tui; fi ;;
+                    esac
                     shift; deb_main "$@" ;;
     color)          load_module config; shift; color "$@" ;;
     uninstall)      shift
